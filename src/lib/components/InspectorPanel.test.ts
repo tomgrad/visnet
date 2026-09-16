@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/svelte';
+import { fireEvent, render, screen } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { NetworkStore } from '../editor/networkStore.svelte';
@@ -25,10 +25,15 @@ describe('InspectorPanel', () => {
   it('edits a linear layer unit count', async () => {
     const store = storeWithSelection(1);
     render(InspectorPanel, { props: { store } });
-    const input = screen.getByTestId('param-units');
-    await userEvent.clear(input);
-    await userEvent.type(input, '16');
+    await fireEvent.change(screen.getByTestId('param-units'), { target: { value: '16' } });
     expect(store.network.blocks[1]).toMatchObject({ units: 16 });
+  });
+
+  it('leaves the network alone when a numeric field is cleared', async () => {
+    const store = storeWithSelection(1);
+    render(InspectorPanel, { props: { store } });
+    await fireEvent.change(screen.getByTestId('param-units'), { target: { value: '' } });
+    expect(store.network.blocks[1]).toMatchObject({ units: 8 });
   });
 
   it('shows no unit control for an activation block', () => {

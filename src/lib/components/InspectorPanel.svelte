@@ -107,7 +107,7 @@
           data-testid="param-units"
           title={PARAM_DESCRIPTIONS.units}
           value={block.units}
-          oninput={(event) => commitNumber(event, 'units')}
+          onchange={(event) => commitNumber(event, 'units')}
         />
         <small>{PARAM_DESCRIPTIONS.units}</small>
       </label>
@@ -122,7 +122,7 @@
           data-testid="param-filters"
           title={PARAM_DESCRIPTIONS.filters}
           value={block.filters}
-          oninput={(event) => commitNumber(event, 'filters')}
+          onchange={(event) => commitNumber(event, 'filters')}
         />
         <small>{PARAM_DESCRIPTIONS.filters}</small>
       </label>
