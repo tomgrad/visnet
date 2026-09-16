@@ -17,8 +17,11 @@ live decision boundary. Convolutional networks on MNIST follow in a later phase.
 
 - Build a network visually from blocks, with drag-and-drop and connectable ports.
 - Train it in the browser with TensorFlow.js and watch learning happen live.
-- Teach the relationship between network shape and behaviour through explicit
-  tensor-shape annotations.
+- Teach the relationship between network shape and behaviour through tensor shapes
+  that are visible at every point in the pipeline.
+- Be genuinely beginner-friendly: sensible defaults, plain-language explanations
+  for every block and parameter, and error messages that say what is wrong and how
+  to fix it.
 - Keep the editor a self-contained, reusable component so example pages can embed
   it next to their own dataset and visualization.
 - Ship as a fully static site with no backend.
@@ -32,7 +35,33 @@ live decision boundary. Convolutional networks on MNIST follow in a later phase.
 - Training in a Web Worker, model export/import to files, sharing via URL,
   multiple named saved networks, regression tasks, or custom layer authoring.
 
-## 2. Stack and tooling
+## 2. User experience principles
+
+These are requirements, not aspirations. They are the reason several later
+decisions look the way they do.
+
+1. **Nothing is hidden.** The shape of the data flowing through the network is
+   visible at every point: on every block, on every connection, and as a complete
+   table of the whole pipeline.
+2. **No block stores its input size.** Every block's input is derived from the
+   previous block's output. Users describe their data once, at the Input block,
+   and the rest follows automatically.
+3. **Every parameter is explained.** Each block and each parameter has a one-line
+   plain-language description, shown in the palette, the inspector, and on hover.
+4. **Errors are instructions, not verdicts.** Every error and warning names what
+   is wrong in ordinary language and states exactly how to fix it. No error is a
+   bare type name or a stack trace.
+5. **No dead ends.** The app opens on a working network. Invalid states are
+   explainable and recoverable, never a blank screen or a disabled button with no
+   reason given.
+6. **Automatic corrections are announced.** If a parameter must change to stay
+   valid, the change is applied and the user is told what changed and why.
+7. **Mistakes are cheap.** Undo and redo cover every structural and parameter edit,
+   including drag-and-drop reorders.
+8. **Feedback is immediate.** Shapes, warnings, and the decision boundary update as
+   soon as the network changes.
+
+## 3. Stack and tooling
 
 | Concern | Choice |
 | --- | --- |
@@ -62,7 +91,7 @@ Prerendering therefore succeeds and pages hydrate client-side without
 
 `dev`, `build`, `preview`, `check` (svelte-check), `lint`, `format`, `test`.
 
-## 3. Architecture
+## 4. Architecture
 
 ```
                      ┌────────────────────────────────────────────┐
@@ -72,12 +101,13 @@ Prerendering therefore succeeds and pages hydrate client-side without
                                      │ Network (value) + onchange
                      ┌───────────────▼────────────────────────────┐
                      │ NetworkEditor.svelte  (controlled, embed)   │
-                     │  BlockPalette · BlockCanvas · Inspector     │
-                     │  IssuesPanel                               │
+                     │  Toolbar · Palette · Canvas · Inspector     │
+                     │  ShapeTable · IssuesPanel                   │
                      └───────────────┬────────────────────────────┘
                                      │ reads/writes
                      ┌───────────────▼────────────────────────────┐
                      │ editor/networkStore.svelte.ts (runes)       │
+                     │ editor/history.svelte.ts (undo/redo)        │
                      └───────────────┬────────────────────────────┘
                                      │ delegates to
         ┌────────────────────────────┼────────────────────────────┐
@@ -95,10 +125,10 @@ Prerendering therefore succeeds and pages hydrate client-side without
 ```
 
 The load-bearing rule: **`src/lib/network/` is pure.** No Svelte, no TF.js, no
-DOM. It is the single source of truth for what a network is and whether it is
-valid. Everything else derives from it.
+DOM. It is the single source of truth for what a network is, what shape flows
+through each block, and whether it is valid. Everything else derives from it.
 
-## 4. Domain model
+## 5. Domain model
 
 `src/lib/network/types.ts`:
 
@@ -170,6 +200,13 @@ export interface Network {
 }
 ```
 
+**Note what is absent: no block stores its input dimension.** A `LinearBlock`
+stores only `units`. Its input size comes from whatever precedes it. This is the
+data-model expression of principle 2, and it is also exactly how TensorFlow.js
+works — each layer infers its input size from the previous layer's output, and
+only the very first layer needs an explicit `inputShape`, which comes from the
+Input block.
+
 ### Structural invariants
 
 - Exactly one `input` block, first in the array.
@@ -209,9 +246,31 @@ block's `units`.
 ```
 
 This default is a working MLP for the 2D example, so the app is useful on first
-load.
+load and a new user starts from something that already trains.
 
-## 5. Pure network modules
+### Block explanations
+
+Every block kind has a one-line plain-language description, defined once in
+`src/lib/network/descriptions.ts` and used by the palette, the inspector, and the
+canvas tooltip:
+
+| Kind | Description |
+| --- | --- |
+| `input` | "Describes the shape of one example your network receives." |
+| `linear` | "Learns a weighted sum of its inputs. Also called a fully connected or dense layer." |
+| `conv2d` | "Slides small filters over an image to detect local patterns such as edges." |
+| `flatten` | "Turns image-shaped data into a flat list so Linear layers can read it." |
+| `relu` | "Keeps positive values and turns negative ones into zero. Helps the network learn curved patterns." |
+| `sigmoid` | "Squashes each value into the range 0 to 1." |
+| `softmax` | "Turns raw scores into probabilities that add up to 1." |
+| `output` | "Declares what the network predicts and how many classes there are." |
+
+Each parameter has a one-line description in the same module, e.g. `units`: "How
+many numbers this layer produces.", `kernelSize`: "How large the window sliding
+over the image is.", `learningRate`: "How big each learning step is. Smaller is
+slower but steadier.".
+
+## 6. Pure network modules
 
 `src/lib/network/` — no Svelte, no TF.js, no DOM.
 
@@ -225,8 +284,23 @@ load.
 - `removeBlock(net, id)` — refuses to remove input or output.
 - `replaceBlock(net, id, patch)` — used by the inspector for parameter edits.
 
-**`inferShapes.ts`** — `inferShapes(net): ShapeResult` walks the chain and returns
-the shape produced by each block. Rules:
+**`inferShapes.ts`** — the source of every shape the UI displays.
+
+```ts
+export interface ShapeInfo {
+  blockId: string;
+  inShape: number[] | null;   // null when the shape is unknown (earlier error)
+  outShape: number[] | null;
+  paramCount: number | null;  // trainable parameters this block contributes
+}
+
+export function inferShapes(net: Network): {
+  perBlock: ShapeInfo[];
+  edges: { fromId: string; toId: string; shape: number[] | null }[];
+}
+```
+
+Shape rules:
 
 | Block | Output shape |
 | --- | --- |
@@ -237,32 +311,64 @@ the shape produced by each block. Rules:
 | `relu` / `sigmoid` / `softmax` | unchanged |
 | `output` | unchanged (marker) |
 
+`paramCount` is computed per block so the inspector can show, for example, "this
+layer has 24 trainable numbers", and so a whole-network total can be displayed.
+This is informative for teaching and costs nothing.
+
 **`validate.ts`** — `validate(net, options?): Issue[]`, where
-`Issue = { severity: 'error' | 'warning'; blockId?: string; message: string }`.
+
+```ts
+export interface Issue {
+  severity: 'error' | 'warning';
+  title: string;          // short, plain language, e.g. "Linear layer needs flat input"
+  message: string;        // what is wrong, in ordinary words
+  fix: string;            // what to do about it, imperative
+  blockId?: string;       // offending block, if any
+}
+```
+
+Every issue carries a `title`, a `message`, and a `fix`. There is no issue shape
+that permits a message without a fix — that is enforced by the type.
+
+### Message catalog
 
 Errors (block training):
-- missing input or output block; more than one of either
-- fewer than one layer between input and output
-- `linear` receiving a rank-3 tensor (needs a `flatten` first)
-- `conv2d` receiving a non-rank-3 tensor
-- `flatten` receiving a rank-1 tensor
-- `conv2d` producing a zero or negative spatial dimension (kernel/stride too large)
-- unknown block kind
+
+| Condition | Title | Message | Fix |
+| --- | --- | --- | --- |
+| No input block | "Missing Input block" | "A network needs exactly one Input block to describe the shape of the data it receives." | "Add an Input block to the start of the network." |
+| No output block | "Missing Output block" | "A network needs exactly one Output block to say what it predicts." | "Add an Output block to the end of the network." |
+| More than one input | "More than one Input block" | "There are {n} Input blocks, but a network can only have one." | "Delete the extra Input blocks." |
+| More than one output | "More than one Output block" | "There are {n} Output blocks, but a network can only have one." | "Delete the extra Output blocks." |
+| No layers between input and output | "Nothing to learn" | "The Input connects straight to the Output, so there are no layers for the network to learn with." | "Add at least one layer, such as a Linear layer, between Input and Output." |
+| `linear` on rank-3 input | "Linear layer needs a flat list" | "This Linear layer receives {shape}, which is image-shaped. Linear layers need a flat list of numbers." | "Add a Flatten layer before this Linear layer." |
+| `conv2d` on non-rank-3 input | "Convolution layer needs image data" | "This Convolution layer receives {shape}. It expects image data shaped [height, width, channels]." | "Give the Input block a 3D shape such as [28, 28, 1], or remove the Convolution layer." |
+| `flatten` on rank-1 input | "Nothing to flatten" | "This Flatten layer receives {shape}, which is already a flat list." | "Remove this Flatten layer, or move it after a Convolution layer." |
+| `conv2d` output dimension ≤ 0 | "Kernel is larger than the image" | "A {kernelSize}×{kernelSize} kernel with stride {stride} leaves no room to slide over a {H}×{W} image." | "Use a smaller kernel or stride, or set padding to 'same'." |
+| Unknown block kind | "Unrecognised block" | "This network contains a block type this version of VisNet does not understand ({kind})." | "Delete the block, or reset the network to start fresh." |
 
 Warnings (do not block training):
-- cross-entropy loss without a `softmax` block
-- mean squared error loss with a `softmax` block
-- `softmax` not on the last real layer
-- output block `units` differing from the dataset's class count, when the caller
-  passes `expectedClasses`
-- `input.shape` rank 3 with no `conv2d` block, or rank 1 with a `conv2d` block
+
+| Condition | Title | Message | Fix |
+| --- | --- | --- | --- |
+| Cross-entropy without softmax | "Add a Softmax for probabilities" | "Cross-entropy works best when the network's outputs are probabilities, but the network currently ends with raw scores. Training will still run, but it may be less stable." | "Add a Softmax block after the last Linear layer." |
+| MSE with softmax | "Softmax is unusual with mean squared error" | "Mean squared error is normally used with raw scores, not probabilities." | "Switch the loss to cross-entropy, or remove the Softmax block." |
+| Softmax not last | "Softmax is not the last layer" | "This Softmax block is followed by more layers, so the probabilities it produces get transformed again." | "Move the Softmax block to just before the Output block." |
+| Output units ≠ dataset classes | "Output size does not match the data" | "The Output block says {units} classes, but the dataset has {n}." | "Set the Output block to {n} units." |
+| Rank-3 input, no conv2d | "Image input without a Convolution layer" | "The Input block is image-shaped {shape}, but the network has no Convolution layer to look at it." | "Add a Convolution layer, or change the Input shape to a flat list." |
+| Rank-1 input with conv2d | "Convolution layer without image input" | "The network has a Convolution layer, but the Input block is a flat list {shape}." | "Set the Input shape to 3D such as [28, 28, 1], or remove the Convolution layer." |
+
+Messages are composed by small functions so values like `{shape}` and `{n}` are
+substituted at validation time, and so each message can be unit-tested.
+
+**`descriptions.ts`** — block and parameter descriptions (section 5).
 
 **`serialize.ts`** — `toJSON(net): string`, `fromJSON(raw: string): Network | null`.
 `fromJSON` validates the version field, runs `migrate(raw)` when the version is
 older, and returns `null` for corrupt data or a version newer than supported so
 callers can fall back to the default network with a notice.
 
-## 6. Reactive store
+## 7. Reactive store and history
 
 `src/lib/editor/networkStore.svelte.ts` — a Svelte 5 runes class:
 
@@ -276,8 +382,9 @@ class NetworkStore {
   warnings = $derived(this.issues.filter((i) => i.severity === 'warning'));
   shapes = $derived(inferShapes(this.network));
   isValid = $derived(this.errors.length === 0);
+  paramCount = $derived(/* sum of shapes.perBlock paramCount */);
 
-  // mutators delegate to network/chain.ts, then bump a revision counter
+  // mutators delegate to network/chain.ts and record history
 }
 ```
 
@@ -285,13 +392,21 @@ class NetworkStore {
 defaults to `undefined`. The store holds no rules of its own — it is a thin
 reactive shell over the pure modules.
 
-## 7. Canvas projection
+`src/lib/editor/history.svelte.ts` — undo/redo as a bounded stack of `Network`
+snapshots (limit 50). Because `Network` is an immutable value, history is a
+`push`/`pop` of a reference and costs almost nothing. Every structural and
+parameter change records a snapshot; the stack is cleared when a different network
+is loaded. Exposed as `undo()`, `redo()`, `canUndo`, `canRedo`, wired to toolbar
+buttons and to `Ctrl/Cmd+Z` and `Ctrl/Cmd+Shift+Z`.
+
+## 8. Canvas projection
 
 `src/lib/editor/flow.ts` converts between the domain model and Svelte Flow:
 
-- `toFlow(net): { nodes: Node[]; edges: Edge[] }` — one node per block, positioned
-  left-to-right from the chain index, with one edge between each pair of adjacent
-  blocks. Positions are computed, never stored.
+- `toFlow(net, shapes): { nodes: Node[]; edges: Edge[] }` — one node per block,
+  positioned left-to-right from the chain index, with one edge between each pair
+  of adjacent blocks. Node and edge data carry the shapes from `inferShapes`.
+  Positions are computed, never stored.
 - `connectionToIntent(connection, net): ChainOp | null` — converts a user-drawn
   wire into an operation on the array:
   - dragging block A's output onto block B's input where A precedes B → move A to
@@ -307,22 +422,74 @@ network. A wire is a gesture that reorders an array, not stored state.
 
 - Pan and zoom are enabled (Svelte Flow defaults), with a fit-view control.
 - Blocks are draggable; dropping a block onto a wire or between neighbours
-  reorders the chain.
+  reorders the chain. Every reorder is one undoable step.
 - Clicking a block selects it and opens the inspector.
-- Each block node shows its kind, its most important parameter, a tensor-shape
-  badge, and a delete affordance (hidden for input/output).
+- Each block node shows its kind, its most important parameter, and its shapes
+  (section 9), plus a delete affordance hidden for input and output.
+- Hovering a block shows a tooltip with its description, all its parameters, its
+  input and output shape, and its parameter count.
 - The palette adds a block by click (appends after the selection, or before the
   output) or by dragging onto the canvas. A drag-drop is resolved to an index by
   finding the gap between existing blocks whose centre is nearest the drop point;
   drops outside the interior clamp to the first or last interior slot.
+- Palette entries and their tooltips use the descriptions from
+  `descriptions.ts`, so the user learns what a block does before adding it.
 
-## 8. Model building
+## 9. Shapes: visibility and automatic input selection
+
+This section implements principles 1, 2, and 6.
+
+### Visibility
+
+Shapes come from `inferShapes` and are rendered in four places:
+
+1. **On every block node** — `in → out`, e.g. `[2] → [8]`, so the pipeline reads as
+   a sequence of transformations.
+2. **On every connection** — the edge label shows the tensor shape travelling
+   along that wire, so it is clear what is handed from one block to the next.
+3. **In the inspector**, for the selected block — a read-only "Input: [8], from
+   ReLU" line, the output shape, and the block's parameter count.
+4. **In a shape table** (`ShapeTable.svelte`) — a compact list of the entire
+   pipeline: position, block name, input shape, output shape, parameter count, and
+   a total parameter count for the network. This is the "see the shape at any
+   point in the pipeline" view, and it doubles as an explanation of why a
+   particular layer has the number of weights it does.
+
+Shapes recompute reactively on every change, including mid-drag, so the numbers
+never lag behind the diagram. When a shape cannot be computed because an earlier
+block is invalid, the affected entries show `—` rather than a wrong value.
+
+### Automatic input selection
+
+- The user sets the shape of their data exactly once, on the Input block.
+- No other block accepts or stores an input size. Each block's input is the
+  previous block's output.
+- The inspector renders the incoming shape as read-only context above the
+  parameters, labelled with the block it came from.
+- Parameters that depend on the incoming shape are constrained to valid values and
+  pre-selected with a valid default:
+  - `conv2d` `kernelSize`: choices from 1 to `min(H, W)`
+  - `conv2d` `stride`: choices from 1 to `min(H, W)`
+  - `conv2d` `padding`: `same` and `valid`, each shown with the output size it
+    would produce (e.g. "'same' — stays 28×28", "'valid' — becomes 26×26")
+  - `linear` `units`: any positive integer, default 8
+- If a change upstream makes a stored parameter invalid, the value is clamped to
+  the nearest valid option and the correction is **announced inline** in the
+  inspector: "Kernel size changed from 5 to 3 to fit a 3×3 input." Silent
+  correction is not permitted.
+- The Output block's `units` defaults to the dataset's class count when the
+  embedding page provides `expectedClasses`, and a mismatch produces the
+  corresponding warning rather than being auto-corrected (the user may genuinely
+  be changing the problem).
+
+## 10. Model building
 
 `src/lib/tf/buildModel.ts` — `buildModel(net): tf.Sequential`.
 
-Refuses to build when validation reports errors (throws `NetworkInvalidError`).
-Skips the `input` block and uses its `shape` as `inputShape` on the first layer
-actually added. Skips the `output` block.
+Refuses to build when validation reports errors (throws `NetworkInvalidError`,
+which carries the `Issue[]` so callers can display the same plain-language
+messages the Issues panel shows). Skips the `input` block and uses its `shape` as
+`inputShape` on the first layer actually added. Skips the `output` block.
 
 | Block | TF.js layer |
 | --- | --- |
@@ -331,6 +498,10 @@ actually added. Skips the `output` block.
 | `flatten` | `tf.layers.flatten()` |
 | `relu` / `sigmoid` / `softmax` | `tf.layers.activation({ activation: kind })` |
 | `output` | nothing |
+
+No layer is given an explicit input size except the first, which receives the
+Input block's shape. Every later layer's input size is inferred by TensorFlow.js
+from the previous layer, which is the runtime counterpart of principle 2.
 
 Then `model.compile(...)`:
 
@@ -348,7 +519,7 @@ Changing architecture rebuilds the model and discards weights. The UI must
 therefore warn before an architecture change when the model has been trained, and
 must dispose the previous model on every rebuild.
 
-## 9. Training
+## 11. Training
 
 `src/lib/training/Trainer.ts` — runs on the main thread, deliberately.
 
@@ -358,6 +529,7 @@ interface TrainStats {
   batch: number;
   batchLoss: number;
   epochMeanLoss: number;
+  epochAccuracy: number; // fraction correct on the training set, classification only
 }
 
 class Trainer {
@@ -381,8 +553,10 @@ class Trainer {
   to slice the dataset tensors. `trainOnBatch` returns a scalar loss, read once
   with `dataSync()` and disposed inside the same `tf.tidy`.
 - Epoch bookkeeping: `batchesPerEpoch = ceil(N / batchSize)`; the epoch counter
-  advances when the batch counter wraps, and the mean of that epoch's batch
-  losses is recorded for the chart.
+  advances when the batch counter wraps. At the end of each epoch the mean batch
+  loss and the training accuracy are computed and emitted, so the UI can show both
+  numbers and a learner can see that loss going down is not the same thing as
+  accuracy going up.
 - `step()` runs one batch without entering the play loop.
 
 **Why the main thread:** the models are tiny, `tf.nextFrame()` yields to the
@@ -390,7 +564,7 @@ browser so the UI stays responsive, and a worker would require running TF.js in
 the worker plus marshalling weights and dataset tensors. The `Trainer` interface
 is narrow enough to move into a worker later without changing callers.
 
-## 10. Data (2D points)
+## 12. Data (2D points)
 
 `src/lib/data/rng.ts` — `mulberry32(seed)`, a seeded PRNG so generators and tests
 are reproducible.
@@ -404,13 +578,15 @@ interface PointDataset { points: Point[]; numClasses: 2 }
 
 - Domain is `x, y ∈ [-1, 1]`, matching the rendering surface.
 - Generators, each taking a point count and a seed: `twoGaussians`, `spirals`,
-  `xor`, `circles`.
+  `xor`, `circles`. Each generator is labelled with a plain-language description
+  in the dataset picker (e.g. spirals: "Two interlocking spirals. Needs a hidden
+  layer to separate.").
 - `addPoint(dataset, x, y, label)` and `clearPoints(dataset)` are pure.
 - `toTensors(dataset): { xs: tf.Tensor2D; ys: tf.Tensor2D }` — `xs` is `[N, 2]`
   float32, `ys` is `[N, 2]` one-hot float32. Tensors are rebuilt when the dataset
   changes and disposed when replaced.
 
-## 11. Decision boundary rendering
+## 13. Decision boundary rendering
 
 `src/lib/render/boundary.ts`:
 
@@ -426,20 +602,26 @@ interface PointDataset { points: Point[]; numClasses: 2 }
   `[-1, 1]²` domain and appends a point with the currently selected class.
 - The boundary is recomputed at most once per animation frame while training, and
   once after every model rebuild, step, pause, or dataset change. If the model is
-  invalid, the canvas renders points on a neutral background and no boundary.
+  invalid, the canvas renders points on a neutral background and no boundary, with
+  a short caption explaining that the network needs fixing first.
 
-## 12. Loss chart
+## 14. Loss chart and stats
 
 `src/lib/components/LossChart.svelte` — an SVG polyline of per-epoch mean loss, a
 rolling window of the most recent 200 epochs, with min/max axis labels and the
 latest value shown. No dependency; roughly 40 lines.
 
-## 13. Persistence
+Beside it, a compact stats readout shows epoch, current loss, and training
+accuracy as percentages or decimals, with a one-line explanation of each. Accuracy
+is shown for classification only.
+
+## 15. Persistence
 
 **Architecture** — `localStorage`, key `visnet:network:v1`, storing
 `{ version: 1, network }` via `serialize.toJSON`. Autosaved, debounced ~500 ms
 after a change. On load, `fromJSON` is used; corrupt or unsupported data falls
-back to `createEmptyNetwork()` with a notice.
+back to `createEmptyNetwork()` with a notice explaining that the saved network
+could not be read.
 
 **Weights** — IndexedDB via TF.js's built-in handler:
 `model.save('indexeddb://visnet/weights/main')` and
@@ -455,25 +637,31 @@ network and the data it was trained on.
 
 Named/multiple saved networks are deferred.
 
-## 14. Error handling
+## 16. Error handling and messages
 
-- Validation errors disable training; the Issues panel lists each error with the
-  offending block highlighted and selectable.
-- Warnings are shown but do not block.
+- Validation errors disable training; the Issues panel lists each error by its
+  `title`, with the `message` underneath and the `fix` highlighted as an
+  instruction. Clicking an issue selects and centres the offending block.
+- Warnings are shown the same way but do not block training.
+- No raw exception text or type name is ever shown to the user. `NetworkInvalidError`
+  carries `Issue[]`; other failures are mapped to a plain-language banner plus a
+  collapsible technical detail for anyone who wants it.
 - `buildModel` failures are caught: the error is surfaced in a banner, the model
   is disposed, training stays disabled.
 - Backend selection tries WebGL and falls back to the CPU backend, showing a
-  one-line notice when it does.
-- Resource hygiene: rebuilds dispose the previous model and its tensors;
-  training wraps tensor creation in `tf.tidy`; route teardown disposes the model,
-  dataset tensors, and render resources to avoid leaking WebGL contexts on
-  navigation.
+  one-line notice that training will be slower and why.
+- Resource hygiene: rebuilds dispose the previous model and its tensors; training
+  wraps tensor creation in `tf.tidy`; route teardown disposes the model, dataset
+  tensors, and render resources to avoid leaking WebGL contexts on navigation.
 - Storage failures (quota exceeded, IndexedDB unavailable) are non-fatal: state
-  stays in memory and the user sees a notice.
-- Illegal canvas connections are rejected at `connectionToIntent` and produce no
-  change.
+  stays in memory and the user sees a notice saying what was not saved.
+- Illegal canvas connections are rejected at `connectionToIntent`, produce no
+  change, and show a brief inline hint explaining why the connection was not
+  allowed.
+- Destructive actions are undoable rather than gated behind confirmation dialogs,
+  except where weights would be lost, which warns explicitly (section 10).
 
-## 15. Routes and the embedding contract
+## 17. Routes and the embedding contract
 
 - `/` — landing page: what VisNet is, and links to the examples.
 - `/examples/mlp` — the complete MVP experience.
@@ -499,7 +687,7 @@ touching the editor.
 `ExampleLayout.svelte` is the shared page shell (editor on one side, experiment
 panel on the other) so example pages stay small.
 
-## 16. Testing strategy
+## 18. Testing strategy
 
 Vitest, run with `npm test`. Tests live beside their modules as `*.test.ts`.
 
@@ -507,60 +695,81 @@ Covered:
 - `chain.ts` — insert/move/remove/replace, including refusal to move or delete
   input and output and index clamping.
 - `inferShapes.ts` — each block kind, conv output sizes for `same` and `valid`,
-  flatten, and the MLP default chain.
-- `validate.ts` — every error and warning rule, including the `expectedClasses`
-  warning.
+  flatten, `paramCount` for a known MLP, edge shapes, and `null` propagation when
+  an earlier block is invalid.
+- `validate.ts` — every error and warning rule in the catalog, including the
+  `expectedClasses` warning, plus an assertion that every issue produced by every
+  rule has a non-empty `title`, `message`, and `fix` (guarding the beginner-friendly
+  contract).
+- `descriptions.ts` — every `BlockKind` and every tunable parameter has a
+  non-empty description.
 - `serialize.ts` — round-trip equality, corrupt input, unsupported version,
   migration seam.
-- `flow.ts` — `toFlow` node/edge derivation and `connectionToIntent` for legal
-  reorders and every illegal case.
+- `flow.ts` — `toFlow` node/edge derivation, shape attachment, and
+  `connectionToIntent` for legal reorders and every illegal case.
 - `points.ts` / `rng.ts` — seeded generators are deterministic; one-hot encoding
   is correct; `addPoint`/`clearPoints` are pure.
+- `history.svelte.ts` — undo/redo across structural and parameter edits, stack
+  limit, and that a new load clears history.
 - `buildModel.ts` — on the CPU backend in Node: a valid MLP builds with the
   expected number of layers, input shape `[null, 2]`, output shape `[null, 2]`;
-  an invalid network throws; changing only training config preserves weights while
-  changing architecture does not.
+  an invalid network throws `NetworkInvalidError` carrying issues; changing only
+  training config preserves weights while changing architecture does not.
 
 Not covered by automated tests in this phase: the Svelte components, the canvas
 interaction, and the training animation. These are verified manually.
 
-## 17. Manual verification checklist
+## 19. Manual verification checklist
 
 1. `npm run dev`, open `/examples/mlp`; the default network renders as a
-   left-to-right pipeline with shape badges.
-2. Add, delete, and drag blocks; the pipeline reorders and edges stay consistent.
-3. Try to delete the input and output blocks — both are refused.
-4. Drag a wire into an illegal configuration — nothing changes.
-5. Pick each dataset generator; points appear and the boundary renders.
-6. Click the canvas to add points; change the selected class and add more.
-7. Press play — the loss curve descends and the boundary visibly adapts.
-8. Press pause, then step — exactly one batch of progress.
-9. Break the network (e.g. delete the softmax with cross-entropy selected) — a
-   warning appears and training still works.
-10. Make the network invalid (e.g. a linear layer directly after a rank-3 input)
-    — training is disabled and the error names the block.
-11. Reload the page — network, dataset, and (after Save model) weights are
+   left-to-right pipeline with `in → out` shape badges on every block and shape
+   labels on every wire.
+2. The shape table lists the whole pipeline with correct shapes and parameter
+   counts, and the network total matches.
+3. Add, delete, and drag blocks; shapes, edges, and the shape table update
+   immediately, and every change is undoable with `Ctrl/Cmd+Z` and redoable with
+   `Ctrl/Cmd+Shift+Z`.
+4. Try to delete the input and output blocks — both are refused.
+5. Drag a wire into an illegal configuration — nothing changes and a hint
+   explains why.
+6. Hover a block — the tooltip explains what it does, its parameters, its shapes,
+   and its parameter count.
+7. Add a Convolution layer to the default 2D network — an error appears whose
+   message and fix are both in plain language, naming the block.
+8. Change the Input shape so a stored kernel size becomes invalid — the value is
+   clamped and the inspector says what changed and why.
+9. Pick each dataset generator; points appear and the boundary renders.
+10. Click the canvas to add points; change the selected class and add more.
+11. Press play — the loss curve descends, accuracy is shown, and the boundary
+    visibly adapts.
+12. Press pause, then step — exactly one batch of progress.
+13. Break the network (e.g. delete the softmax with cross-entropy selected) — a
+    warning appears and training still works.
+14. Reload the page — network, dataset, and (after Save model) weights are
     restored and the boundary redraws.
-12. Resize the window and navigate away and back — no WebGL context warnings in
+15. Resize the window and navigate away and back — no WebGL context warnings in
     the console.
 
-## 18. Implementation order
+## 20. Implementation order
 
 1. Scaffold SvelteKit + TypeScript + tooling, design tokens, ESLint/Prettier,
    Vitest wiring. Verify `dev`, `build`, `check`, `test` all run.
-2. `src/lib/network/` pure modules with their tests.
+2. `src/lib/network/` pure modules, `descriptions.ts`, and the message catalog,
+   with their tests.
 3. `src/lib/tf/buildModel.ts` and `src/lib/training/Trainer.ts` with tests.
 4. `src/lib/data/` and `src/lib/render/boundary.ts`.
-5. Editor UI: `BlockNode`, `BlockPalette`, `BlockCanvas`, `InspectorPanel`,
-   `IssuesPanel`, `NetworkEditor`.
-6. `/examples/mlp`: dataset controls, `TrainingPanel`, `LossChart`,
-   `DecisionBoundary`, and the wiring that ties them to the editor.
-7. `src/lib/persist/` and the save/load UI.
-8. Landing page, `/examples/cnn` placeholder.
-9. Update `AGENTS.md` and `README.md` to match this design; run `lint`, `check`,
-   and `test` to green.
+5. Editor UI: `BlockNode` (with shapes and tooltip), `BlockPalette`,
+   `BlockCanvas`, `InspectorPanel`, `ShapeTable`, `IssuesPanel`,
+   `EditorToolbar`, `NetworkEditor`.
+6. `editor/history.svelte.ts` and keyboard shortcuts.
+7. `/examples/mlp`: dataset controls, `TrainingPanel`, `LossChart`, stats
+   readout, `DecisionBoundary`, and the wiring that ties them to the editor.
+8. `src/lib/persist/` and the save/load UI.
+9. Landing page, `/examples/cnn` placeholder.
+10. Update `AGENTS.md` and `README.md` to match this design; run `lint`, `check`,
+    and `test` to green.
 
-## 19. Deferred work
+## 21. Deferred work
 
 - CNN / MNIST example, including enabling the `flatten` block in the palette.
 - Training in a Web Worker behind the existing `Trainer` interface.
@@ -568,8 +777,9 @@ interaction, and the training animation. These are verified manually.
 - SGD momentum, learning-rate schedules, and other optimizer options.
 - Model export/import as files, and share-via-URL.
 - Component and end-to-end tests.
+- A guided tour or inline lesson mode.
 
-## 20. Decisions and deviations
+## 22. Decisions and deviations
 
 Recorded so later readers know these were deliberate.
 
@@ -588,3 +798,14 @@ Recorded so later readers know these were deliberate.
    worker.
 8. **`flatten` exists in the type system and model builder but is not in the MVP
    palette.** Avoids dead UI while removing rework when the CNN example lands.
+9. **No block stores its input size.** Inputs are always derived from the previous
+   block's output, matching both the teaching goal and TensorFlow.js's own
+   behaviour.
+10. **Shapes are shown in four places**, including per-edge labels and a whole
+    pipeline table, because shape reasoning is the main skill the app teaches.
+11. **Every validation issue must carry a plain-language fix.** Enforced by the
+    `Issue` type and by a test that walks every rule.
+12. **Undo/redo is in scope.** Added for beginner-friendliness; it is cheap
+    because `Network` is immutable and history is a stack of snapshots.
+13. **Accuracy is reported alongside loss.** Seeing the two diverge is a teaching
+    moment worth the small cost of an evaluation pass per epoch.
