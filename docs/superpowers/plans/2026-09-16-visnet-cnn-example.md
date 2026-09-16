@@ -48,7 +48,7 @@
 - Test: `src/lib/examples/cnn/example.test.ts`
 
 **Interfaces:**
-- Consumes: `createBlock`, `newBlockId` from `../../network/factory`; `StorageKeys` from `../../persist/storage`; `Block`, `BlockKind`, `InputBlock`, `LinearBlock`, `Network`, `OutputBlock` from `../../network/types`.
+- Consumes: `createBlock` from `../../network/factory`; `StorageKeys` from `../../persist/storage`; `Block`, `BlockKind`, `InputBlock`, `LinearBlock`, `Network`, `OutputBlock` from `../../network/types`.
 - Produces:
 
 ```ts
@@ -157,7 +157,7 @@ Expected: FAIL — `Failed to resolve import "./example"`.
 `src/lib/examples/cnn/example.ts`:
 
 ```ts
-import { createBlock, newBlockId } from '../../network/factory';
+import { createBlock } from '../../network/factory';
 import type { Block, BlockKind, InputBlock, LinearBlock, Network, OutputBlock } from '../../network/types';
 import type { StorageKeys } from '../../persist/storage';
 
@@ -204,8 +204,6 @@ export function defaultSampleIndices(): number[] {
   return Array.from({ length: SAMPLE_GRID_SIZE }, (_, index) => index);
 }
 ```
-
-`newBlockId` is imported but unused in this module — remove it from the import list before committing.
 
 - [ ] **Step 4: Run the test to verify it passes**
 
@@ -796,6 +794,8 @@ git commit -m "refactor: share one runtime facade between the examples"
 
 **Tensor ownership.** The page builds the sample batch and passes it in as `sampleXs`; the grid never creates or disposes tensors. That keeps every tensor's lifetime in one place, the page.
 
+**Colours are literals.** A canvas context cannot resolve a CSS custom property, so the border colours are hex literals matching the tokens (`#10b981` for `--color-success`, `#dc2626` for `--color-error`, `#cbd5e1` for `--color-border`). This is the same duplication `src/lib/render/palette.ts` already accepts for the class colours.
+
 **Behaviour:**
 - The wrapper is `columns * cellWidth + (columns - 1) * gap` wide and `rows * cellHeight + (rows - 1) * gap` tall, where `rows = indices.length / columns`. Both canvases are sized to the device pixel ratio and scaled back down with CSS, so the digits stay crisp.
 - The base layer draws each image at its cell's top-left plus a 4-pixel margin, at the dataset's own `cols × rows` size.
@@ -849,7 +849,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ImageDataset } from '../data/images';
 import SampleGridHarness from './__stubs__/SampleGridHarness.svelte';
 
-const COLUMNS = 8;
 const SIZE = 40;
 
 class FakeImageData {
@@ -1013,8 +1012,6 @@ describe('SampleGrid', () => {
 });
 ```
 
-`COLUMNS` is declared in the test but unused — remove it, or use it in an assertion. Prefer removing it.
-
 - [ ] **Step 2: Run the test to verify it fails**
 
 Run: `npx vitest run --project ui src/lib/components/SampleGrid.test.ts`
@@ -1054,9 +1051,7 @@ Expected: FAIL — `Failed to resolve import "./__stubs__/SampleGridHarness.svel
   } = $props();
 
   const IMAGE_MARGIN = 4;
-  const NEUTRAL = 'var(--color-border)';
-  const CORRECT = 'var(--color-success)';
-  const WRONG = 'var(--color-error)';
+  const NEUTRAL = '#cbd5e1';
   const CORRECT_COLOUR = '#10b981';
   const WRONG_COLOUR = '#dc2626';
 
@@ -1071,7 +1066,6 @@ Expected: FAIL — `Failed to resolve import "./__stubs__/SampleGridHarness.svel
   let base: HTMLCanvasElement | null = $state(null);
   let overlay: HTMLCanvasElement | null = $state(null);
   let baseLayer: HTMLCanvasElement | null = null;
-  let baseContext: CanvasRenderingContext2D | null = null;
   let marks: GridPrediction[] | null = $state(null);
 
   function prepare(element: HTMLCanvasElement | null): CanvasRenderingContext2D | null {
@@ -1089,13 +1083,9 @@ Expected: FAIL — `Failed to resolve import "./__stubs__/SampleGridHarness.svel
   $effect(() => {
     const element = base;
     const data = dataset;
-    if (!element || !data || indices.length === 0) {
-      baseContext = null;
-      return;
-    }
+    if (!element || !data || indices.length === 0) return;
 
     const context = prepare(element);
-    baseContext = context;
     if (!context) return;
 
     if (!baseLayer) baseLayer = document.createElement('canvas');
@@ -1194,7 +1184,6 @@ Expected: FAIL — `Failed to resolve import "./__stubs__/SampleGridHarness.svel
   });
 
   onDestroy(() => {
-    baseContext = null;
     baseLayer = null;
   });
 </script>
@@ -1241,8 +1230,6 @@ Expected: FAIL — `Failed to resolve import "./__stubs__/SampleGridHarness.svel
   }
 </style>
 ```
-
-Remove the unused `CORRECT` and `WRONG` string constants before committing — the numeric colours are what the canvas uses, because a canvas cannot resolve a CSS custom property. Remove the unused `baseContext` field too: it is assigned but never read.
 
 - [ ] **Step 4: Run the test to verify it passes**
 
@@ -1330,11 +1317,11 @@ git commit -m "feat: add the live digit sample grid"
   let banner = $state<string | null>(null);
   let saving = $state(false);
   let builtSignature = $state('');
+  let trainData = $state.raw<ImageDataset | null>(null);
   let loadState = $state<'loading' | 'ready' | 'unavailable'>('loading');
   let redrawKey = $state(0);
   let trainCount = $state(0);
 
-  let trainData: ImageDataset | null = null;
   let currentModel: Model | null = null;
   let data: ModelData | null = null;
   let currentSampleData: ModelData | null = null;
@@ -1562,11 +1549,11 @@ git commit -m "feat: add the live digit sample grid"
         </p>
       </div>
     {:else}
-      <p class="note">Training on {trainCount} digits, checking against {testData?.count}.</p>
+      <p class="note">Training on {trainCount} digits, checking against {testData.count}.</p>
       <SampleGrid
         {model}
         dataset={testData}
-        {indices}
+        indices={sampleIndices}
         sampleXs={sampleData?.xs ?? null}
         {redrawKey}
         onerror={(message) => (banner = message)}
@@ -1621,10 +1608,6 @@ git commit -m "feat: add the live digit sample grid"
   }
 </style>
 ```
-
-Two corrections to apply before committing:
-- `{indices}` in the `SampleGrid` call is a shorthand for a prop named `indices`, but the variable is `sampleIndices`. Write `indices={sampleIndices}`.
-- `testData?.count` renders `undefined` while loading; since that branch only runs when `loadState === 'ready'`, `testData` is non-null, so write `{testData.count}`.
 
 - [ ] **Step 2: Verify**
 
