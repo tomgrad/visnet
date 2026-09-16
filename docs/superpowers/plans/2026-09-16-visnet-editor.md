@@ -3720,6 +3720,7 @@ export interface KeyValueStore {
 export interface NetworkStorage {
   saveNetwork(net: Network): void;
   loadNetwork(): Network | null;
+  hasStoredNetwork(): boolean;
   saveDataset(dataset: PointDataset): void;
   loadDataset(): PointDataset | null;
   clear(): void;
@@ -3738,7 +3739,8 @@ export function loadWeightsInto(model: tf.LayersModel): Promise<boolean>;
 
 **Behaviour that matters:**
 - `createStorage` takes an injected `KeyValueStore` so it is testable in Node with an in-memory fake. `createBrowserStorage` returns `null` when `localStorage` is unavailable or throws on write (private browsing, quota), so the page can degrade to in-memory state and tell the user rather than crashing.
-- `loadNetwork` returns `null` for a missing key, corrupt JSON, or an unsupported version, by delegating to `fromJSON`. The caller falls back to `createEmptyNetwork()` and tells the user the saved network could not be read.
+- `loadNetwork` returns `null` for a missing key, corrupt JSON, or an unsupported version, by delegating to `fromJSON`.
+- `hasStoredNetwork()` reports whether a network entry exists at all, **regardless of whether it can be read**. It exists so the page can tell "you have never saved anything" apart from "what you saved cannot be read", which is what the design's notice requirement needs. The caller falls back to `createEmptyNetwork()` and tells the user the saved network could not be read.
 - `saveDataset` and `loadDataset` are defensive in the same way: a dataset that is not an array of `{x, y, label}` points with finite coordinates and labels `0` or `1` is treated as absent.
 - `weightShapes` returns each weight tensor's shape as a plain array, and `shapesMatch` compares two such lists. Together they answer "can these saved weights be loaded into this model?" without touching IndexedDB, which is what makes the decision testable in Node.
 - `saveWeights` writes to IndexedDB through `model.save(WEIGHTS_URL)` and rethrows nothing: it resolves on success and rejects on failure so the caller can show a notice. `loadWeightsInto` returns `false` when no saved weights exist, when the shapes do not match, or when loading fails, and `true` when it has successfully applied them with `model.setWeights`. It must dispose any model it loads for comparison.
@@ -3791,6 +3793,18 @@ describe('network storage', () => {
   it('returns null for an unsupported version', () => {
     backing.setItem(NETWORK_KEY, JSON.stringify({ version: 99, network: createEmptyNetwork() }));
     expect(createStorage(backing).loadNetwork()).toBeNull();
+  });
+
+  it('distinguishes an unreadable saved network from no saved network', () => {
+    const storage = createStorage(backing);
+    expect(storage.hasStoredNetwork()).toBe(false);
+
+    storage.saveNetwork(createEmptyNetwork());
+    expect(storage.hasStoredNetwork()).toBe(true);
+
+    backing.setItem(NETWORK_KEY, '{not json');
+    expect(storage.hasStoredNetwork()).toBe(true);
+    expect(storage.loadNetwork()).toBeNull();
   });
 });
 
@@ -3969,6 +3983,9 @@ export function createStorage(backing: KeyValueStore): NetworkStorage {
     loadNetwork() {
       const raw = backing.getItem(NETWORK_KEY);
       return raw === null ? null : fromJSON(raw);
+    },
+    hasStoredNetwork() {
+      return backing.getItem(NETWORK_KEY) !== null;
     },
     saveDataset(dataset) {
       backing.setItem(DATASET_KEY, JSON.stringify({ points: dataset.points }));
