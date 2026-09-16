@@ -704,10 +704,12 @@ describe('a four-dimensional feature batch', () => {
 });
 ```
 
-- [ ] **Step 3: Run the test to verify it fails**
+- [ ] **Step 3: Verify the test fails to type-check**
 
-Run: `npx vitest run src/lib/training/Trainer.test.ts`
-Expected: FAIL — `tf.Tensor4D` is not assignable to the `xs: tf.Tensor2D` parameter.
+Run: `npm run check`
+Expected: FAIL — `tf.Tensor4D` is not assignable to the `xs: tf.Tensor2D` parameter at the new test.
+
+Note that `npx vitest run src/lib/training/Trainer.test.ts` will **pass** at this point. Vitest strips types, so a type-only mismatch is invisible to it, and the type check is the real RED step for this change. Do not "fix" the test to make Vitest fail.
 
 - [ ] **Step 4: Widen the Trainer's data type**
 
@@ -812,9 +814,11 @@ Expected: build succeeds, which is the evidence that the dynamic imports in the 
 - [ ] **Step 9: Commit**
 
 ```bash
-git add src/lib/examples/runtime.ts src/lib/examples/mlp/runtime.ts src/lib/training/Trainer.ts src/lib/training/Trainer.test.ts src/routes/examples/mlp/+page.svelte
+git add src/lib/examples/runtime.ts src/lib/training/Trainer.ts src/lib/training/Trainer.test.ts src/routes/examples/mlp/+page.svelte
 git commit -m "refactor: share one runtime facade between the examples"
 ```
+
+The old path is deliberately absent from that `git add`: `git mv` already staged the rename, and naming a path that no longer exists makes git exit non-zero. Confirm with `git status --short` that the rename is staged as a rename rather than an add plus a delete.
 
 ---
 
