@@ -256,15 +256,26 @@ defaults to every image. The caller owns the tensors.
 ```ts
 {
   model: tf.LayersModel | null;
-  dataset: ImageDataset;
+  dataset: ImageDataset | null;
   indices: number[];
+  sampleXs: tf.Tensor | null;
   redrawKey: number;
   onerror?: (message: string) => void;
 }
 ```
 
-- One canvas, `SAMPLE_GRID_SIZE` (40) cells laid out in 8 columns × 5 rows, drawn at
-  device pixel ratio so the digits stay crisp.
+- `SAMPLE_GRID_SIZE` (40) cells in 8 columns × 5 rows, each cell 36 wide and 48 tall:
+  36 holds a 28-pixel image with a 4-pixel margin, and 48 leaves a strip beneath it for
+  the predicted digit. Eight columns plus gaps is 316 pixels, which fits the example
+  column's 320-pixel minimum.
+- **Two stacked canvases.** The images never change during training but the marks change
+  every frame, so the images are drawn once per dataset change into a base canvas and
+  only the borders and digits are redrawn into an overlay each frame. That keeps a frame
+  to `strokeRect` and `fillText`, confines the fiddly `ImageData` code to a path that
+  runs once, and makes the per-frame path testable with a fake context.
+- **The page owns the tensors.** It builds the sample batch and passes it in as
+  `sampleXs`; the grid never creates or disposes a tensor, so every tensor's lifetime
+  lives in one place.
 - Each cell shows the digit image, the predicted digit beneath it, and a border that
   is green when the prediction matches the label and red when it does not.
 - Re-evaluated at most once per animation frame while training, driven by the same
@@ -292,15 +303,17 @@ export function predictionsFromLogits(
 export function gridCellRect(
   cell: number,
   columns: number,
-  cellSize: number,
+  cellWidth: number,
+  cellHeight: number,
   gap: number
-): { x: number; y: number; size: number };
+): { x: number; y: number; width: number; height: number };
 ```
 
 `predictionsFromLogits` takes the `argMax` of each row and compares it with the
 label at the matching index, so `predictions[i]` describes the image at
-`indices[i]`. `gridCellRect` returns the cell's top-left pixel and its side length,
-**excluding** the gap; the gap is added between cells only. Both are pure and
+`indices[i]`; a tie resolves to the lowest class index. `gridCellRect` returns the
+cell's top-left pixel and its width and height, **excluding** the gap; the gap is
+added between cells only. Both are pure and
 unit-tested; the canvas drawing is verified by `svelte-check`, the build, and the
 manual checklist — the same accepted limitation as `DecisionBoundary`.
 
@@ -310,6 +323,14 @@ manual checklist — the same accepted limitation as `DecisionBoundary`.
   `ImageDataUnavailableError`; the page shows a panel reading "The digit images are
   not prepared. Run `npm run data:mnist`, then reload." and disables training. This
   is the expected state on a fresh clone, so it is a designed path, not an error.
+- **The Input block disagrees with the data.** The page builds its tensors as
+  `[n, 28, 28, 1]` and the model takes its input shape from the Input block, so the two
+  can disagree if a user edits the block — producing an opaque TensorFlow.js shape error
+  at training time. `validate` therefore gains an `expectedInputShape` option, and the
+  page passes `[28, 28, 1]`, which yields a plain-language **warning** naming both
+  shapes and telling the user what to set. It is a warning rather than an error because
+  the network is still buildable; the mismatch is a statement about the data, exactly
+  like the existing output-units warning.
 - **Build without assets.** `static/mnist/` is gitignored and may not exist; the
   build simply omits it and still succeeds, because the data is fetched at runtime
   and never during prerendering.
