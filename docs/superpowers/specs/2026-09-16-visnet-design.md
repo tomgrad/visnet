@@ -248,9 +248,10 @@ training fail at runtime, and an error blocks training before that can happen.
 
 ```ts
 {
-  version: 1,
+  version: 2,
   blocks: [input([2]), linear(8), relu(), linear(2), softmax(), output(2)],
   training: { loss: 'crossEntropy', optimizer: 'adam', learningRate: 0.01, batchSize: 32 },
+  positions: {},
 }
 ```
 
@@ -447,9 +448,6 @@ buttons and to `Ctrl/Cmd+Z` and `Ctrl/Cmd+Shift+Z`.
   - `NODE_HEIGHT` is a layout constant, so `BlockNode` sets `min-height` from it.
     That keeps the spacing math and the rendered box from drifting apart, the same
     guarantee the node's width already has.
-  - Because the chain is vertical, a canvas drop is resolved against the **y**
-    coordinate: `dropIndexFor(flowY, blockCount, NODE_HEIGHT, NODE_GAP)` returns the
-    interior slot whose block centre is nearest below the drop point.
 - `connectionToIntent(connection, net): ChainOp | null` — converts a user-drawn
   wire into an operation on the array:
   - dragging block A's output onto block B's input where A precedes B → move A to
@@ -687,7 +685,9 @@ is shown for classification only.
 ## 15. Persistence
 
 **Architecture** — `localStorage`, key `visnet:network:v1`, storing
-`{ version: 1, network }` via `serialize.toJSON`. Autosaved, debounced ~500 ms
+`{ version: 2, network }` via `serialize.toJSON`. The key names the storage slot,
+kept unchanged so existing saves survive; the payload's `version` is authoritative
+and `fromJSON` migrates older versions. Autosaved, debounced ~500 ms
 after a change. On load, `fromJSON` is used; corrupt or unsupported data falls
 back to `createEmptyNetwork()` with a notice explaining that the saved network
 could not be read.
@@ -740,18 +740,22 @@ Named/multiple saved networks are deferred.
 
 ```ts
 interface Props {
-  network: Network;          // controlled value
-  palette: BlockKind[];      // which blocks this example permits
-  expectedClasses?: number;  // drives the output-units warning
-  readonly?: boolean;
-  onchange: (net: Network) => void;
+  store: NetworkStore;   // the example page owns the store and its lifetime
+  palette: BlockKind[];  // which blocks this example permits
+  onsave?: () => void;   // model callbacks, rendered only when supplied
+  onload?: () => void;
+  saving?: boolean;
 }
 ```
 
-The editor knows nothing about datasets, training, or visualization. An example
-page owns its dataset, its training panel, and its visualization, and composes
-them around `NetworkEditor`. Adding a new example means adding a route, not
-touching the editor.
+The example page owns the store, the dataset, the training controls, and the
+visualization; the editor renders the store and reports edits through it. The
+editor knows nothing about datasets, training, or persistence beyond the two
+optional model callbacks. Adding a new example means adding a route, not touching
+the editor.
+
+`expectedClasses` is set by the page on the store rather than passed as a prop, and
+`readonly` was dropped: no example needs a non-editable editor.
 
 `ExampleLayout.svelte` is the shared page shell (editor on one side, experiment
 panel on the other) so example pages stay small.

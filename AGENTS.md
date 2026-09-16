@@ -15,7 +15,8 @@ Shipped modules: `src/lib/network/` (pure domain), `src/lib/tf/` (model builder)
 `src/lib/examples/` (the MLP example), and design tokens in
 `src/lib/styles/tokens.css`.
 
-Component tests run in jsdom; engine tests run in Node. See `npm test`.
+The `ui` Vitest project runs component tests in jsdom; the `engine` project runs
+the rest in Node. See `npm test`.
 
 ## Stack
 
