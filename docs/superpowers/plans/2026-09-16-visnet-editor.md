@@ -384,7 +384,9 @@ export function clampBlockPatch(net: Network, id: string, patch: Partial<Block>)
 - `clampBlockPatch` enforces the app's rule that no automatic correction is ever silent. It:
   - clamps `units` and `filters` to integers of at least 1, announcing `Units changed from {from} to {to}. A layer must produce at least one number.` or the same sentence with `Filters`;
   - clamps `kernelSize` and `stride` into `parameterBounds(inShape)` when bounds exist, announcing `Kernel size changed from {from} to {to} because the incoming data is {height}×{width}.` or the same with `Stride`;
-  - returns the untouched patch and a `null` announcement when nothing needed correcting, and when the block or its incoming shape is unknown.
+  - returns the patch untouched with `announcement: null` when the block id is unknown, and when nothing needed correcting;
+  - when the incoming shape is unknown or is not rank 3, still clamps `units` and `filters` — they do not depend on the shape — but leaves `kernelSize` and `stride` alone, because there are no spatial dimensions to bound them;
+  - when several parameters in one patch are corrected, the **first** correction's announcement is the one returned.
 - The announcement uses `×` (U+00D7) between the dimensions, matching `shapeLabel`'s style.
 - This module is pure and lives under `src/lib/network/`, so it must not import Svelte, TensorFlow.js, or DOM.
 
