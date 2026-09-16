@@ -1046,6 +1046,43 @@ describe('SampleGrid', () => {
     expect(context.fillText).not.toHaveBeenCalled();
   });
 
+  it('draws the images once rather than on every frame', async () => {
+    const view = render(SampleGridHarness, {
+      props: {
+        model: null,
+        dataset: dataset(),
+        indices: Array.from({ length: SIZE }, (_, i) => i),
+        sampleXs: null
+      }
+    });
+    await tick();
+
+    const before = context.drawImage.mock.calls.length;
+    expect(before).toBeGreaterThan(0);
+
+    const harness = view.component as unknown as { bump: () => void };
+    harness.bump();
+    await tick();
+
+    expect(context.drawImage.mock.calls.length).toBe(before);
+  });
+
+  it('does not throw when the canvas has no 2d context', async () => {
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
+
+    expect(() =>
+      render(SampleGridHarness, {
+        props: {
+          model: null,
+          dataset: dataset(),
+          indices: Array.from({ length: SIZE }, (_, i) => i),
+          sampleXs: null
+        }
+      })
+    ).not.toThrow();
+    await tick();
+  });
+
   it('keeps the grid the expected size', async () => {
     render(SampleGridHarness, {
       props: {
@@ -1119,6 +1156,7 @@ Expected: FAIL — `Failed to resolve import "./__stubs__/SampleGridHarness.svel
   let overlay: HTMLCanvasElement | null = $state(null);
   let baseLayer: HTMLCanvasElement | null = null;
   let marks: GridPrediction[] | null = $state(null);
+  let failed = $state(false);
 
   function prepare(element: HTMLCanvasElement | null): CanvasRenderingContext2D | null {
     if (!element) return null;
@@ -1187,24 +1225,30 @@ Expected: FAIL — `Failed to resolve import "./__stubs__/SampleGridHarness.svel
     if (!context) return;
 
     let predictions: GridPrediction[] | null = null;
+    let problem = false;
     const xs = sampleXs;
     if (model && xs) {
       try {
         const logits = model.predict(xs) as tf.Tensor;
-        const values = logits.arraySync() as number[][];
-        logits.dispose();
-        predictions = predictionsFromLogits(values, data.labels, indices);
+        try {
+          const values = logits.arraySync() as number[][];
+          predictions = predictionsFromLogits(values, data.labels, indices);
+        } finally {
+          logits.dispose();
+        }
       } catch (error) {
         console.error(error);
         onerror?.('The sample predictions could not be updated.');
         predictions = null;
+        problem = true;
       }
     }
 
     marks = predictions;
+    failed = problem;
     context.clearRect(0, 0, width, height);
     context.lineWidth = 2;
-    context.font = '12px var(--font-mono)';
+    context.font = '12px ui-monospace, SFMono-Regular, Menlo, monospace';
     context.textAlign = 'center';
     context.textBaseline = 'middle';
 
@@ -1246,7 +1290,9 @@ Expected: FAIL — `Failed to resolve import "./__stubs__/SampleGridHarness.svel
     <canvas bind:this={overlay}></canvas>
   </div>
   <figcaption data-testid="sample-grid-caption">
-    {#if marks}
+    {#if failed}
+      The predictions could not be updated. They will come back once training continues.
+    {:else if marks}
       Each digit shows what the network predicts; a green outline means it is right, a red one
       that it is wrong.
     {:else}
@@ -1266,13 +1312,13 @@ Expected: FAIL — `Failed to resolve import "./__stubs__/SampleGridHarness.svel
 
   .stack {
     position: relative;
+    background: var(--color-surface);
+    border-radius: var(--radius-sm);
   }
 
   canvas {
     position: absolute;
     inset: 0;
-    background: var(--color-surface);
-    border-radius: var(--radius-sm);
   }
 
   figcaption {
