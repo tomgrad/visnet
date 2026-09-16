@@ -19,6 +19,7 @@ export class NetworkStore {
   canRedo = $state(false);
 
   #history = new History<Network>(HISTORY_LIMIT);
+  #initial: Network;
 
   issues = $derived(validate(this.network, { expectedClasses: this.expectedClasses }));
   errors = $derived(this.issues.filter((issue) => issue.severity === 'error'));
@@ -29,6 +30,11 @@ export class NetworkStore {
   selectedBlock = $derived(
     this.network.blocks.find((block) => block.id === this.selectedBlockId) ?? null
   );
+
+  constructor(initial: Network = createEmptyNetwork()) {
+    this.network = initial;
+    this.#initial = initial;
+  }
 
   select(id: string | null): void {
     this.selectedBlockId = id;
@@ -111,7 +117,7 @@ export class NetworkStore {
   }
 
   reset(): void {
-    this.load(createEmptyNetwork());
+    this.load(this.#initial);
   }
 
   announce(message: string): void {
