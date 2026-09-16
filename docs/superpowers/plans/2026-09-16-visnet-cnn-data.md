@@ -814,6 +814,7 @@ export function imagesToTensors(
 
 - `xs` is `[n, rows, cols, 1]` float32 with each pixel divided by 255; `ys` is one-hot `[n, numClasses]` float32.
 - `indices` selects a subset and defaults to every image, in order.
+- Pixel values come back as **float32**, so an exact comparison against a plain `value / 255` fails on precision. Any test comparing tensor values must round the expected value with `Math.fround`.
 - The caller owns the returned tensors.
 - This lives in `tensors.ts` rather than a new file because that module's job is already "turn our datasets into tensors", and because `data/tensors.ts` is an approved TensorFlow.js import site — a new file would need a sixth allow-list entry.
 
@@ -882,7 +883,7 @@ describe('imagesToTensors', () => {
       [1, 0, 0]
     ]);
     expect(Array.from(xs.dataSync()).slice(0, 4)).toEqual(
-      Array.from(dataset.pixels.slice(8, 12), (value) => value / 255)
+      Array.from(dataset.pixels.slice(8, 12), (value) => Math.fround(value / 255))
     );
   });
 });
