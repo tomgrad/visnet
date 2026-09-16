@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/svelte';
+import { fireEvent, render, screen } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { NetworkStore } from '../editor/networkStore.svelte';
@@ -33,20 +33,22 @@ describe('TrainingPanel', () => {
 
   it('writes a learning rate change through to the network', async () => {
     const { store } = panel();
-    const input = screen.getByTestId('training-learning-rate');
-    await userEvent.clear(input);
-    await userEvent.type(input, '0.25');
-    await userEvent.tab();
+    await fireEvent.change(screen.getByTestId('training-learning-rate'), {
+      target: { value: '0.25' }
+    });
     expect(store.network.training.learningRate).toBe(0.25);
   });
 
   it('writes a batch size change through to the network', async () => {
     const { store } = panel();
-    const input = screen.getByTestId('training-batch-size');
-    await userEvent.clear(input);
-    await userEvent.type(input, '64');
-    await userEvent.tab();
+    await fireEvent.change(screen.getByTestId('training-batch-size'), { target: { value: '64' } });
     expect(store.network.training.batchSize).toBe(64);
+  });
+
+  it('leaves the network alone when a numeric field is cleared', async () => {
+    const { store } = panel();
+    await fireEvent.change(screen.getByTestId('training-batch-size'), { target: { value: '' } });
+    expect(store.network.training.batchSize).toBe(32);
   });
 
   it('describes every setting in plain language', () => {
@@ -56,6 +58,12 @@ describe('TrainingPanel', () => {
     expect(text).toContain('The rule used to update the weights after each batch.');
     expect(text).toContain('How big each learning step is');
     expect(text).toContain('How many examples are used for one weight update.');
+  });
+
+  it('starts training when play is pressed on a valid network', async () => {
+    const { onplay } = panel();
+    await userEvent.click(screen.getByTestId('training-play'));
+    expect(onplay).toHaveBeenCalledTimes(1);
   });
 
   it('calls the control handlers', async () => {
@@ -76,7 +84,9 @@ describe('TrainingPanel', () => {
     expect((screen.getByTestId('training-step') as HTMLButtonElement).disabled).toBe(true);
     expect((screen.getByTestId('training-loss') as HTMLSelectElement).disabled).toBe(true);
     expect((screen.getByTestId('training-learning-rate') as HTMLInputElement).disabled).toBe(true);
-    expect(screen.getByTestId('training-blocked').textContent).toContain('fix');
+    const blocked = screen.getByTestId('training-blocked').textContent ?? '';
+    expect(blocked).toContain('problems');
+    expect(blocked).toContain('training');
   });
 
   it('disables play while already playing', () => {
