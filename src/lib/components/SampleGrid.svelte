@@ -43,6 +43,7 @@
   let overlay: HTMLCanvasElement | null = $state(null);
   let baseLayer: HTMLCanvasElement | null = null;
   let marks: GridPrediction[] | null = $state(null);
+  let failed = $state(false);
 
   function prepare(element: HTMLCanvasElement | null): CanvasRenderingContext2D | null {
     if (!element) return null;
@@ -111,24 +112,30 @@
     if (!context) return;
 
     let predictions: GridPrediction[] | null = null;
+    let problem = false;
     const xs = sampleXs;
     if (model && xs) {
       try {
         const logits = model.predict(xs) as tf.Tensor;
-        const values = logits.arraySync() as number[][];
-        logits.dispose();
-        predictions = predictionsFromLogits(values, data.labels, indices);
+        try {
+          const values = logits.arraySync() as number[][];
+          predictions = predictionsFromLogits(values, data.labels, indices);
+        } finally {
+          logits.dispose();
+        }
       } catch (error) {
         console.error(error);
         onerror?.('The sample predictions could not be updated.');
         predictions = null;
+        problem = true;
       }
     }
 
     marks = predictions;
+    failed = problem;
     context.clearRect(0, 0, width, height);
     context.lineWidth = 2;
-    context.font = '12px var(--font-mono)';
+    context.font = '12px ui-monospace, SFMono-Regular, Menlo, monospace';
     context.textAlign = 'center';
     context.textBaseline = 'middle';
 
@@ -170,7 +177,9 @@
     <canvas bind:this={overlay}></canvas>
   </div>
   <figcaption data-testid="sample-grid-caption">
-    {#if marks}
+    {#if failed}
+      The predictions could not be updated. They will come back once training continues.
+    {:else if marks}
       Each digit shows what the network predicts; a green outline means it is right, a red one
       that it is wrong.
     {:else}
@@ -190,13 +199,13 @@
 
   .stack {
     position: relative;
+    background: var(--color-surface);
+    border-radius: var(--radius-sm);
   }
 
   canvas {
     position: absolute;
     inset: 0;
-    background: var(--color-surface);
-    border-radius: var(--radius-sm);
   }
 
   figcaption {

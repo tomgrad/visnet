@@ -147,6 +147,43 @@ describe('SampleGrid', () => {
     expect(context.fillText).not.toHaveBeenCalled();
   });
 
+  it('draws the images once rather than on every frame', async () => {
+    const view = render(SampleGridHarness, {
+      props: {
+        model: null,
+        dataset: dataset(),
+        indices: Array.from({ length: SIZE }, (_, i) => i),
+        sampleXs: null
+      }
+    });
+    await tick();
+
+    const before = context.drawImage.mock.calls.length;
+    expect(before).toBeGreaterThan(0);
+
+    const harness = view.component as unknown as { bump: () => void };
+    harness.bump();
+    await tick();
+
+    expect(context.drawImage.mock.calls.length).toBe(before);
+  });
+
+  it('does not throw when the canvas has no 2d context', async () => {
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
+
+    expect(() =>
+      render(SampleGridHarness, {
+        props: {
+          model: null,
+          dataset: dataset(),
+          indices: Array.from({ length: SIZE }, (_, i) => i),
+          sampleXs: null
+        }
+      })
+    ).not.toThrow();
+    await tick();
+  });
+
   it('keeps the grid the expected size', async () => {
     render(SampleGridHarness, {
       props: {
