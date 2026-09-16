@@ -1,0 +1,118 @@
+import { describe, expect, it } from 'vitest';
+import { moveBlock } from '../network/chain';
+import { inferShapes } from '../network/inferShapes';
+import type { Network } from '../network/types';
+import { NODE_GAP, NODE_WIDTH, connectionToIntent, shapeLabel, toFlow } from './flow';
+
+function net(): Network {
+  return {
+    version: 1,
+    blocks: [
+      { id: 'in', kind: 'input', shape: [2] },
+      { id: 'a', kind: 'linear', units: 8 },
+      { id: 'b', kind: 'relu' },
+      { id: 'c', kind: 'linear', units: 2 },
+      { id: 'out', kind: 'output', units: 2 }
+    ],
+    training: { loss: 'crossEntropy', optimizer: 'adam', learningRate: 0.01, batchSize: 32 }
+  };
+}
+
+const ids = (network: Network) => network.blocks.map((b) => b.id);
+
+describe('shapeLabel', () => {
+  it('renders a one-dimensional shape', () => {
+    expect(shapeLabel([2])).toBe('[2]');
+  });
+
+  it('renders a multi-dimensional shape', () => {
+    expect(shapeLabel([28, 28, 4])).toBe('[28 × 28 × 4]');
+  });
+
+  it('renders nothing for an unknown shape', () => {
+    expect(shapeLabel(null)).toBeNull();
+  });
+});
+
+describe('toFlow', () => {
+  const network = net();
+  const flow = toFlow(network, inferShapes(network));
+
+  it('creates one node per block, positioned left to right', () => {
+    expect(flow.nodes.map((node) => node.id)).toEqual(ids(network));
+    expect(flow.nodes.map((node) => node.position.x)).toEqual([
+      0,
+      NODE_WIDTH + NODE_GAP,
+      2 * (NODE_WIDTH + NODE_GAP),
+      3 * (NODE_WIDTH + NODE_GAP),
+      4 * (NODE_WIDTH + NODE_GAP)
+    ]);
+    expect(flow.nodes.every((node) => node.position.y === 0)).toBe(true);
+  });
+
+  it('marks only the interior blocks as removable', () => {
+    expect(flow.nodes.map((node) => node.data.removable)).toEqual([false, true, true, true, false]);
+  });
+
+  it('attaches shapes and parameter counts to nodes', () => {
+    expect(flow.nodes[1].data).toMatchObject({
+      kind: 'linear',
+      inShape: [2],
+      outShape: [8],
+      paramCount: 24,
+      index: 1
+    });
+  });
+
+  it('creates one labelled edge per adjacent pair', () => {
+    expect(flow.edges.map((edge) => edge.id)).toEqual([
+      'in->a',
+      'a->b',
+      'b->c',
+      'c->out'
+    ]);
+    expect(flow.edges.map((edge) => edge.label)).toEqual(['[2]', '[8]', '[8]', '[2]']);
+  });
+});
+
+describe('connectionToIntent', () => {
+  it('moves a block later when dropped on a later block', () => {
+    const intent = connectionToIntent({ source: 'a', target: 'c' }, net());
+    expect(intent).toEqual({ type: 'move', from: 1, to: 2 });
+    expect(ids(moveBlock(net(), 1, 2))).toEqual(['in', 'b', 'a', 'c', 'out']);
+  });
+
+  it('moves a block earlier when dropped on an earlier block', () => {
+    const intent = connectionToIntent({ source: 'c', target: 'a' }, net());
+    expect(intent).toEqual({ type: 'move', from: 3, to: 1 });
+    expect(ids(moveBlock(net(), 3, 1))).toEqual(['in', 'c', 'a', 'b', 'out']);
+  });
+
+  it('lets a block be dropped on the output to become the last layer', () => {
+    const intent = connectionToIntent({ source: 'a', target: 'out' }, net());
+    expect(intent).toEqual({ type: 'move', from: 1, to: 3 });
+    expect(ids(moveBlock(net(), 1, 3))).toEqual(['in', 'b', 'c', 'a', 'out']);
+  });
+
+  it('ignores a self connection', () => {
+    expect(connectionToIntent({ source: 'a', target: 'a' }, net())).toBeNull();
+  });
+
+  it('ignores connections from the input or the output', () => {
+    expect(connectionToIntent({ source: 'in', target: 'c' }, net())).toBeNull();
+    expect(connectionToIntent({ source: 'out', target: 'a' }, net())).toBeNull();
+  });
+
+  it('ignores connections into the input', () => {
+    expect(connectionToIntent({ source: 'c', target: 'in' }, net())).toBeNull();
+  });
+
+  it('ignores connections between already adjacent blocks', () => {
+    expect(connectionToIntent({ source: 'a', target: 'b' }, net())).toBeNull();
+  });
+
+  it('ignores unknown ids', () => {
+    expect(connectionToIntent({ source: 'a', target: 'missing' }, net())).toBeNull();
+    expect(connectionToIntent({ source: 'missing', target: 'a' }, net())).toBeNull();
+  });
+});
