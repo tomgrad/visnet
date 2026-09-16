@@ -538,8 +538,9 @@ class Trainer {
     data: { xs: tf.Tensor2D; ys: tf.Tensor2D },
     batchSize: number,
     onStats: (s: TrainStats) => void,
+    onError?: (error: unknown) => void,
   );
-  play(): void;
+  play(): Promise<void>;   // resolves when the loop stops, on every path
   pause(): void;
   step(): Promise<void>;
   dispose(): void;
@@ -557,7 +558,18 @@ class Trainer {
   loss and the training accuracy are computed and emitted, so the UI can show both
   numbers and a learner can see that loss going down is not the same thing as
   accuracy going up.
-- `step()` runs one batch without entering the play loop.
+- `step()` runs one batch without entering the play loop. `LayersModel.trainOnBatch`
+  is asynchronous and returns `Promise<number | number[]>`, so `step()` awaits it and
+  disposes the gathered batch tensors explicitly rather than inside `tf.tidy`, which
+  cannot span an `await`.
+- Batch sizes are sized to what remains in the epoch, so every example is used exactly
+  once per epoch even when the dataset size is not a multiple of the batch size.
+- `epoch` counts completed epochs: mid-epoch steps report the current count, and the
+  step that completes an epoch reports the incremented count with `batch: 0`.
+- A failing step stops the loop, clears `playing`, and reports through `onError`.
+  `play()` therefore resolves rather than rejecting, because the editor calls it
+  without awaiting it and a rejected promise would surface as an unhandled rejection.
+  The embedding page supplies `onError` to show a plain-language banner.
 
 **Why the main thread:** the models are tiny, `tf.nextFrame()` yields to the
 browser so the UI stays responsive, and a worker would require running TF.js in
