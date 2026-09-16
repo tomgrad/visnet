@@ -1,3 +1,4 @@
+import { classifyInputShape } from './descriptions';
 import { inferShapes } from './inferShapes';
 import { BLOCK_KINDS, type Network } from './types';
 
@@ -20,7 +21,6 @@ function shapeText(shape: number[] | null): string {
 }
 
 export function validate(net: Network, options: ValidateOptions = {}): Issue[] {
-  void options;
   const issues: Issue[] = [];
   const { perBlock } = inferShapes(net);
 
@@ -134,6 +134,85 @@ export function validate(net: Network, options: ValidateOptions = {}): Issue[] {
       });
     }
   });
+
+  const softmaxIndex = net.blocks.findIndex((block) => block.kind === 'softmax');
+  const hasSoftmax = softmaxIndex !== -1;
+  const hasConvolution = net.blocks.some((block) => block.kind === 'conv2d');
+
+  if (net.training.loss === 'crossEntropy' && !hasSoftmax) {
+    issues.push({
+      severity: 'warning',
+      title: 'Add a Softmax for probabilities',
+      message:
+        "Cross-entropy works best when the network's outputs are probabilities, but the network currently ends with raw scores. Training will still run, but it may be less stable.",
+      fix: 'Add a Softmax block after the last Linear layer.'
+    });
+  }
+
+  if (net.training.loss === 'mse' && hasSoftmax) {
+    issues.push({
+      severity: 'warning',
+      title: 'Softmax is unusual with mean squared error',
+      message: 'Mean squared error is normally used with raw scores, not probabilities.',
+      fix: 'Switch the loss to cross-entropy, or remove the Softmax block.'
+    });
+  }
+
+  if (hasSoftmax) {
+    let lastRealIndex = -1;
+    net.blocks.forEach((block, index) => {
+      if (block.kind !== 'output') lastRealIndex = index;
+    });
+    if (softmaxIndex !== lastRealIndex) {
+      issues.push({
+        severity: 'warning',
+        title: 'Softmax is not the last layer',
+        message:
+          'This Softmax block is followed by more layers, so the probabilities it produces get transformed again.',
+        fix: 'Move the Softmax block to just before the Output block.',
+        blockId: net.blocks[softmaxIndex].id
+      });
+    }
+  }
+
+  const outputBlock = net.blocks.find((block) => block.kind === 'output');
+  if (
+    options.expectedClasses !== undefined &&
+    outputBlock &&
+    outputBlock.kind === 'output' &&
+    outputBlock.units !== options.expectedClasses
+  ) {
+    issues.push({
+      severity: 'warning',
+      title: 'Output size does not match the data',
+      message: `The Output block says ${outputBlock.units} classes, but the dataset has ${options.expectedClasses}.`,
+      fix: `Set the Output block to ${options.expectedClasses} units.`,
+      blockId: outputBlock.id
+    });
+  }
+
+  const inputBlock = net.blocks.find((block) => block.kind === 'input');
+  if (inputBlock && inputBlock.kind === 'input') {
+    const inputKind = classifyInputShape(inputBlock.shape);
+    if (inputKind === 'image' && !hasConvolution) {
+      issues.push({
+        severity: 'warning',
+        title: 'Image input without a Convolution layer',
+        message: `The Input block is image-shaped ${shapeText(inputBlock.shape)}, but the network has no Convolution layer to look at it.`,
+        fix: 'Add a Convolution layer, or change the Input shape to a flat list.',
+        blockId: inputBlock.id
+      });
+    }
+    if (inputKind === 'flat' && hasConvolution) {
+      issues.push({
+        severity: 'warning',
+        title: 'Convolution layer without image input',
+        message: `The network has a Convolution layer, but the Input block is a flat list ${shapeText(inputBlock.shape)}.`,
+        fix: 'Set the Input shape to 3D such as [28, 28, 1], or remove the Convolution layer.',
+        blockId: inputBlock.id
+      });
+    }
+  }
 
   return issues;
 }

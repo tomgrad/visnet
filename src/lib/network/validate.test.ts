@@ -122,3 +122,95 @@ describe('validate errors', () => {
     }
   });
 });
+
+const warnings = (network: Network, options?: { expectedClasses?: number }): Issue[] =>
+  validate(network, options).filter((issue) => issue.severity === 'warning');
+
+const warningTitles = (network: Network, options?: { expectedClasses?: number }): string[] =>
+  warnings(network, options).map((issue) => issue.title);
+
+describe('validate warnings', () => {
+  it('says nothing about the default network', () => {
+    expect(warnings(createEmptyNetwork())).toEqual([]);
+  });
+
+  it('suggests a softmax for cross-entropy without one', () => {
+    const network = net([
+      INPUT,
+      { id: 'dense', kind: 'linear', units: 2 },
+      OUTPUT
+    ]);
+    expect(warningTitles(network)).toContain('Add a Softmax for probabilities');
+  });
+
+  it('flags softmax with mean squared error', () => {
+    const network = net(
+      [INPUT, { id: 'dense', kind: 'linear', units: 2 }, { id: 'sm', kind: 'softmax' }, OUTPUT],
+      { loss: 'mse' }
+    );
+    expect(warningTitles(network)).toContain('Softmax is unusual with mean squared error');
+  });
+
+  it('flags a softmax that is not the last layer', () => {
+    const network = net([
+      INPUT,
+      { id: 'sm', kind: 'softmax' },
+      { id: 'dense', kind: 'linear', units: 2 },
+      OUTPUT
+    ]);
+    const issue = warnings(network).find((i) => i.title === 'Softmax is not the last layer');
+    expect(issue?.blockId).toBe('sm');
+  });
+
+  it('does not flag a softmax immediately before the output', () => {
+    const network = net([
+      INPUT,
+      { id: 'dense', kind: 'linear', units: 2 },
+      { id: 'sm', kind: 'softmax' },
+      OUTPUT
+    ]);
+    expect(warningTitles(network)).not.toContain('Softmax is not the last layer');
+  });
+
+  it('flags a mismatch between output units and the dataset', () => {
+    const issue = warnings(createEmptyNetwork(), { expectedClasses: 3 }).find(
+      (i) => i.title === 'Output size does not match the data'
+    );
+    expect(issue).toBeDefined();
+    expect(issue?.message).toContain('2');
+    expect(issue?.message).toContain('3');
+  });
+
+  it('does not flag matching output units', () => {
+    expect(warningTitles(createEmptyNetwork(), { expectedClasses: 2 })).toEqual([]);
+  });
+
+  it('flags image input without a convolution layer', () => {
+    const network = net([
+      { id: 'in', kind: 'input', shape: [28, 28, 1] },
+      { id: 'flat', kind: 'flatten' },
+      { id: 'dense', kind: 'linear', units: 2 },
+      { id: 'sm', kind: 'softmax' },
+      OUTPUT
+    ]);
+    const issue = warnings(network).find(
+      (i) => i.title === 'Image input without a Convolution layer'
+    );
+    expect(issue?.blockId).toBe('in');
+  });
+
+  it('flags a convolution layer with flat input', () => {
+    const network = net([
+      { id: 'in', kind: 'input', shape: [784] },
+      { id: 'conv', kind: 'conv2d', filters: 4, kernelSize: 3, stride: 1, padding: 'same' },
+      { id: 'flat', kind: 'flatten' },
+      { id: 'dense', kind: 'linear', units: 2 },
+      { id: 'sm', kind: 'softmax' },
+      OUTPUT
+    ]);
+    const issue = warnings(network).find(
+      (i) => i.title === 'Convolution layer without image input'
+    );
+    expect(issue?.blockId).toBe('in');
+  });
+});
