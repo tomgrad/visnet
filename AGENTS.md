@@ -31,6 +31,7 @@ the rest in Node. See `npm test`.
 
 - `npm run dev` — development server
 - `npm run build` — static build
+- `npm run data:mnist` — download the MNIST subset into `static/mnist/` (gitignored)
 - `npm run preview` — preview the production build locally
 - `npm run check` — svelte-check and TypeScript
 - `npm run lint` — ESLint
@@ -59,5 +60,8 @@ the rest in Node. See `npm test`.
   never changes the network.
 - Every validation issue carries a non-empty `title`, `message`, and `fix`.
 - Do not add code comments unless a non-obvious constraint requires one.
+- `static/mnist/` is gitignored and holds a downloaded subset of MNIST, written by
+  `npm run data:mnist`. Nothing in the repository or the build downloads it, and the
+  CNN example degrades to an instruction when it is absent.
 
 Design reference: `docs/superpowers/specs/2026-09-16-visnet-design.md`.
