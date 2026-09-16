@@ -1,5 +1,7 @@
 <script lang="ts">
+  import { getContext } from 'svelte';
   import { Handle, Position, type NodeProps } from '@xyflow/svelte';
+  import { EDITOR_NODE_ACTIONS, type EditorNodeActions } from '../editor/context';
   import { NODE_WIDTH, shapeLabel } from '../editor/flow';
   import { BLOCK_DESCRIPTIONS } from '../network/descriptions';
   import type { BlockKind } from '../network/types';
@@ -11,10 +13,10 @@
     paramCount: number | null;
     index: number;
     removable: boolean;
-    onremove?: () => void;
   }
 
-  let { data, selected }: NodeProps = $props();
+  let { id, data, selected }: NodeProps = $props();
+  const actions = getContext<EditorNodeActions | undefined>(EDITOR_NODE_ACTIONS);
   const info = $derived(data as unknown as NodeData);
   const inLabel = $derived(shapeLabel(info.inShape) ?? '—');
   const outLabel = $derived(shapeLabel(info.outShape) ?? '—');
@@ -42,7 +44,7 @@
         class="remove"
         aria-label={`Remove ${info.kind}`}
         data-testid="block-remove"
-        onclick={() => info.onremove?.()}
+        onclick={() => actions?.removeBlock(id)}
       >
         ×
       </button>

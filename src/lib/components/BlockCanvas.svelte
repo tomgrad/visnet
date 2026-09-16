@@ -1,6 +1,6 @@
 <script lang="ts">
   import { browser } from '$app/environment';
-  import { onDestroy } from 'svelte';
+  import { onDestroy, setContext } from 'svelte';
   import {
     Background,
     Controls,
@@ -11,6 +11,7 @@
     type NodeTypes
   } from '@xyflow/svelte';
   import '@xyflow/svelte/dist/style.css';
+  import { EDITOR_NODE_ACTIONS, type EditorNodeActions } from '../editor/context';
   import { connectionToIntent, NODE_GAP, NODE_WIDTH, toFlow } from '../editor/flow';
   import type { NetworkStore } from '../editor/networkStore.svelte';
   import { dropIndexFor } from '../editor/placement';
@@ -28,6 +29,10 @@
     ondragover: (kind: BlockKind | null) => void;
   } = $props();
 
+  setContext<EditorNodeActions>(EDITOR_NODE_ACTIONS, {
+    removeBlock: (id) => store.removeBlock(id)
+  });
+
   const nodeTypes: NodeTypes = { block: BlockNode as NodeTypes[string] };
 
   const flow = $derived(toFlow(store.network, store.shapes));
@@ -38,7 +43,7 @@
       type: 'block',
       position: node.position,
       selected: node.id === store.selectedBlockId,
-      data: { ...node.data, onremove: () => store.removeBlock(node.id) }
+      data: node.data
     }))
   );
 
