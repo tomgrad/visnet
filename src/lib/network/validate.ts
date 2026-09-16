@@ -64,7 +64,11 @@ export function validate(net: Network, options: ValidateOptions = {}): Issue[] {
     });
   }
 
-  if (net.blocks.length - 2 < 1) {
+  const learnableCount = net.blocks.filter(
+    (block) => block.kind !== 'input' && block.kind !== 'output'
+  ).length;
+
+  if (learnableCount === 0) {
     issues.push({
       severity: 'error',
       title: 'Nothing to learn',
@@ -92,7 +96,7 @@ export function validate(net: Network, options: ValidateOptions = {}): Issue[] {
       issues.push({
         severity: 'error',
         title: 'Linear layer needs a flat list',
-        message: `This Linear layer receives ${shapeText(info.inShape)}, which is image-shaped. Linear layers need a flat list of numbers.`,
+        message: `This Linear layer receives ${shapeText(info.inShape)}, which is not a flat list of numbers. Linear layers need a flat list.`,
         fix: 'Add a Flatten layer before this Linear layer.',
         blockId: block.id
       });
@@ -135,6 +139,34 @@ export function validate(net: Network, options: ValidateOptions = {}): Issue[] {
     }
   });
 
+  let lastRealIndex = -1;
+  net.blocks.forEach((block, index) => {
+    if (block.kind !== 'output') lastRealIndex = index;
+  });
+
+  const outputBlock = net.blocks.find((block) => block.kind === 'output');
+
+  if (outputBlock && outputBlock.kind === 'output' && lastRealIndex >= 0) {
+    const lastShape = perBlock[lastRealIndex].outShape;
+    if (lastShape && lastShape.length !== 1) {
+      issues.push({
+        severity: 'error',
+        title: 'Output must be a list of scores',
+        message: `The last layer produces ${shapeText(lastShape)}, which is not a list of numbers, so it cannot be compared with the ${outputBlock.units} scores the Output block expects.`,
+        fix: 'End the network with a Linear layer so the output is a list of numbers.',
+        blockId: net.blocks[lastRealIndex].id
+      });
+    } else if (lastShape && lastShape[0] !== outputBlock.units) {
+      issues.push({
+        severity: 'error',
+        title: 'Last layer size does not match the Output block',
+        message: `The last layer produces ${lastShape[0]} numbers, but the Output block says ${outputBlock.units}.`,
+        fix: `Set the last layer to ${outputBlock.units} units, or change the Output block to ${lastShape[0]}.`,
+        blockId: net.blocks[lastRealIndex].id
+      });
+    }
+  }
+
   const softmaxIndex = net.blocks.findIndex((block) => block.kind === 'softmax');
   const hasSoftmax = softmaxIndex !== -1;
   const hasConvolution = net.blocks.some((block) => block.kind === 'conv2d');
@@ -159,10 +191,6 @@ export function validate(net: Network, options: ValidateOptions = {}): Issue[] {
   }
 
   if (hasSoftmax) {
-    let lastRealIndex = -1;
-    net.blocks.forEach((block, index) => {
-      if (block.kind !== 'output') lastRealIndex = index;
-    });
     if (softmaxIndex !== lastRealIndex) {
       issues.push({
         severity: 'warning',
@@ -175,7 +203,6 @@ export function validate(net: Network, options: ValidateOptions = {}): Issue[] {
     }
   }
 
-  const outputBlock = net.blocks.find((block) => block.kind === 'output');
   if (
     options.expectedClasses !== undefined &&
     outputBlock &&
@@ -186,7 +213,7 @@ export function validate(net: Network, options: ValidateOptions = {}): Issue[] {
       severity: 'warning',
       title: 'Output size does not match the data',
       message: `The Output block says ${outputBlock.units} classes, but the dataset has ${options.expectedClasses}.`,
-      fix: `Set the Output block to ${options.expectedClasses} units.`,
+      fix: `Make the last layer produce ${options.expectedClasses} numbers, and set the Output block to ${options.expectedClasses} units.`,
       blockId: outputBlock.id
     });
   }

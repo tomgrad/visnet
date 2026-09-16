@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createEmptyNetwork } from './factory';
 import type { Block, Network } from './types';
-import { validate, type Issue } from './validate';
+import { validate, type Issue, type Severity } from './validate';
 
 function net(blocks: Network['blocks'], training?: Partial<Network['training']>): Network {
   return {
@@ -24,6 +24,25 @@ const titles = (network: Network): string[] => errors(network).map((issue) => is
 
 const INPUT: Block = { id: 'in', kind: 'input', shape: [2] };
 const OUTPUT: Block = { id: 'out', kind: 'output', units: 2 };
+const IMAGE_INPUT: Block = { id: 'img', kind: 'input', shape: [28, 28, 1] };
+const CONV: Block = {
+  id: 'conv',
+  kind: 'conv2d',
+  filters: 4,
+  kernelSize: 3,
+  stride: 1,
+  padding: 'same'
+};
+
+function defaultWithLastLayerUnits(units: number): Network {
+  const base = createEmptyNetwork();
+  return {
+    ...base,
+    blocks: base.blocks.map((block) =>
+      block.kind === 'linear' && block.units === 2 ? { ...block, units } : block
+    )
+  };
+}
 
 describe('validate errors', () => {
   it('accepts the default network', () => {
@@ -56,6 +75,15 @@ describe('validate errors', () => {
     expect(titles(net([INPUT, OUTPUT]))).toContain('Nothing to learn');
   });
 
+  it('reports nothing to learn when two inputs sit directly against the output', () => {
+    const second: Block = { id: 'in2', kind: 'input', shape: [2] };
+    expect(titles(net([INPUT, second, OUTPUT]))).toContain('Nothing to learn');
+  });
+
+  it('does not claim the input connects straight to the output when a layer is present', () => {
+    expect(titles(net([INPUT, { id: 'a', kind: 'relu' }]))).not.toContain('Nothing to learn');
+  });
+
   it('reports a linear layer receiving image-shaped data and names the shape', () => {
     const network = net([
       { id: 'in', kind: 'input', shape: [28, 28, 1] },
@@ -66,6 +94,18 @@ describe('validate errors', () => {
     expect(issue).toBeDefined();
     expect(issue?.blockId).toBe('dense');
     expect(issue?.message).toContain('[28, 28, 1]');
+  });
+
+  it('names a rank-2 Linear input without calling it image-shaped', () => {
+    const network = net([
+      { id: 'in', kind: 'input', shape: [4, 4] },
+      { id: 'dense', kind: 'linear', units: 2 },
+      OUTPUT
+    ]);
+    const issue = errors(network).find((i) => i.title === 'Linear layer needs a flat list');
+    expect(issue).toBeDefined();
+    expect(issue?.message).toContain('[4, 4]');
+    expect(issue?.message).not.toContain('image-shaped');
   });
 
   it('reports a convolution layer receiving flat data', () => {
@@ -103,23 +143,16 @@ describe('validate errors', () => {
     expect(issue?.blockId).toBe('x');
   });
 
-  it('gives every error a title, message, and fix', () => {
-    const networks = [
-      net([{ id: 'a', kind: 'relu' }, OUTPUT]),
-      net([INPUT, OUTPUT]),
-      net([
-        { id: 'in', kind: 'input', shape: [28, 28, 1] },
-        { id: 'dense', kind: 'linear', units: 8 },
-        OUTPUT
-      ])
-    ];
-    for (const network of networks) {
-      for (const issue of errors(network)) {
-        expect(issue.title.length).toBeGreaterThan(0);
-        expect(issue.message.length).toBeGreaterThan(0);
-        expect(issue.fix.length).toBeGreaterThan(0);
-      }
-    }
+  it('reports when the last real layer does not match the Output block', () => {
+    const network = defaultWithLastLayerUnits(3);
+    const issue = errors(network).find(
+      (i) => i.title === 'Last layer size does not match the Output block'
+    );
+    const lastReal = network.blocks.filter((block) => block.kind !== 'output');
+    expect(issue).toBeDefined();
+    expect(issue?.blockId).toBe(lastReal[lastReal.length - 1].id);
+    expect(issue?.message).toContain('3');
+    expect(issue?.message).toContain('2');
   });
 });
 
@@ -212,5 +245,197 @@ describe('validate warnings', () => {
       (i) => i.title === 'Convolution layer without image input'
     );
     expect(issue?.blockId).toBe('in');
+  });
+});
+
+const ERROR_RULE_TITLES = [
+  'Missing Input block',
+  'Missing Output block',
+  'More than one Input block',
+  'More than one Output block',
+  'Nothing to learn',
+  'Unrecognised block',
+  'Linear layer needs a flat list',
+  'Convolution layer needs image data',
+  'Kernel is larger than the image',
+  'Nothing to flatten',
+  'Output must be a list of scores',
+  'Last layer size does not match the Output block'
+];
+
+const WARNING_RULE_TITLES = [
+  'Add a Softmax for probabilities',
+  'Softmax is unusual with mean squared error',
+  'Softmax is not the last layer',
+  'Output size does not match the data',
+  'Image input without a Convolution layer',
+  'Convolution layer without image input'
+];
+
+interface RuleCase {
+  title: string;
+  severity: Severity;
+  network: Network;
+  options?: { expectedClasses?: number };
+}
+
+const RULE_CASES: RuleCase[] = [
+  {
+    title: 'Missing Input block',
+    severity: 'error',
+    network: net([{ id: 'a', kind: 'relu' }, OUTPUT])
+  },
+  {
+    title: 'Missing Output block',
+    severity: 'error',
+    network: net([INPUT, { id: 'a', kind: 'relu' }])
+  },
+  {
+    title: 'More than one Input block',
+    severity: 'error',
+    network: net([INPUT, { id: 'in2', kind: 'input', shape: [2] }, { id: 'a', kind: 'relu' }, OUTPUT])
+  },
+  {
+    title: 'More than one Output block',
+    severity: 'error',
+    network: net([
+      INPUT,
+      { id: 'a', kind: 'relu' },
+      OUTPUT,
+      { id: 'out2', kind: 'output', units: 2 }
+    ])
+  },
+  { title: 'Nothing to learn', severity: 'error', network: net([INPUT, OUTPUT]) },
+  {
+    title: 'Unrecognised block',
+    severity: 'error',
+    network: net([INPUT, { id: 'x', kind: 'dropout' } as unknown as Block, OUTPUT])
+  },
+  {
+    title: 'Linear layer needs a flat list',
+    severity: 'error',
+    network: net([IMAGE_INPUT, { id: 'dense', kind: 'linear', units: 2 }, OUTPUT])
+  },
+  {
+    title: 'Convolution layer needs image data',
+    severity: 'error',
+    network: net([INPUT, CONV, OUTPUT])
+  },
+  {
+    title: 'Kernel is larger than the image',
+    severity: 'error',
+    network: net([
+      { id: 'small', kind: 'input', shape: [2, 2, 1] },
+      { id: 'conv', kind: 'conv2d', filters: 4, kernelSize: 3, stride: 3, padding: 'valid' },
+      OUTPUT
+    ])
+  },
+  {
+    title: 'Nothing to flatten',
+    severity: 'error',
+    network: net([INPUT, { id: 'flat', kind: 'flatten' }, OUTPUT])
+  },
+  {
+    title: 'Output must be a list of scores',
+    severity: 'error',
+    network: net(
+      [
+        { id: 'grid', kind: 'input', shape: [2, 2] },
+        { id: 'act', kind: 'relu' },
+        OUTPUT
+      ],
+      { loss: 'mse' }
+    )
+  },
+  {
+    title: 'Last layer size does not match the Output block',
+    severity: 'error',
+    network: defaultWithLastLayerUnits(3)
+  },
+  {
+    title: 'Add a Softmax for probabilities',
+    severity: 'warning',
+    network: net([INPUT, { id: 'dense', kind: 'linear', units: 2 }, OUTPUT])
+  },
+  {
+    title: 'Softmax is unusual with mean squared error',
+    severity: 'warning',
+    network: net(
+      [INPUT, { id: 'dense', kind: 'linear', units: 2 }, { id: 'sm', kind: 'softmax' }, OUTPUT],
+      { loss: 'mse' }
+    )
+  },
+  {
+    title: 'Softmax is not the last layer',
+    severity: 'warning',
+    network: net([
+      INPUT,
+      { id: 'sm', kind: 'softmax' },
+      { id: 'dense', kind: 'linear', units: 2 },
+      OUTPUT
+    ])
+  },
+  {
+    title: 'Output size does not match the data',
+    severity: 'warning',
+    network: createEmptyNetwork(),
+    options: { expectedClasses: 3 }
+  },
+  {
+    title: 'Image input without a Convolution layer',
+    severity: 'warning',
+    network: net([
+      IMAGE_INPUT,
+      { id: 'flat', kind: 'flatten' },
+      { id: 'dense', kind: 'linear', units: 2 },
+      { id: 'sm', kind: 'softmax' },
+      OUTPUT
+    ])
+  },
+  {
+    title: 'Convolution layer without image input',
+    severity: 'warning',
+    network: net([
+      { id: 'flat', kind: 'input', shape: [784] },
+      CONV,
+      { id: 'flat2', kind: 'flatten' },
+      { id: 'dense', kind: 'linear', units: 2 },
+      { id: 'sm', kind: 'softmax' },
+      OUTPUT
+    ])
+  }
+];
+
+describe('issue message contract', () => {
+  it.each(RULE_CASES)('$title produces issues with a title, message, and fix', ({
+    network,
+    options,
+    title
+  }) => {
+    const issues = validate(network, options);
+    expect(issues.map((issue) => issue.title)).toContain(title);
+    for (const issue of issues) {
+      expect(issue.title.length).toBeGreaterThan(0);
+      expect(issue.message.length).toBeGreaterThan(0);
+      expect(issue.fix.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('has a case for every rule and no case without a rule', () => {
+    const errorCases = RULE_CASES.filter((entry) => entry.severity === 'error').map(
+      (entry) => entry.title
+    );
+    const warningCases = RULE_CASES.filter((entry) => entry.severity === 'warning').map(
+      (entry) => entry.title
+    );
+    expect(new Set(errorCases)).toEqual(new Set(ERROR_RULE_TITLES));
+    expect(new Set(warningCases)).toEqual(new Set(WARNING_RULE_TITLES));
+
+    const produced = new Set(
+      RULE_CASES.flatMap((entry) =>
+        validate(entry.network, entry.options).map((issue) => issue.title)
+      )
+    );
+    expect(produced).toEqual(new Set([...ERROR_RULE_TITLES, ...WARNING_RULE_TITLES]));
   });
 });
