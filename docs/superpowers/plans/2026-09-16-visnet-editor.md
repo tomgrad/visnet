@@ -207,7 +207,10 @@ export function dropIndexFor(flowX: number, blockCount: number, nodeWidth: numbe
 ```
 
 - `insertionIndexFor` returns the index a palette click should insert at: one past the selected block, or just before the output block when nothing is selected or the selection is unknown. The result is always in the interior range `[1, blocks.length - 1]`, which is exactly what `insertAt` accepts, so inserting never lands before the input or after the output.
-- `dropIndexFor` converts a canvas x coordinate into the same interior range. Blocks sit at `x = i * (nodeWidth + gap)` with their centre at `i * (nodeWidth + gap) + nodeWidth / 2`. The result is `1` when the drop is left of the second block's centre, and increases by one each time the drop passes an interior block's centre, clamped to `[1, blockCount - 1]`.
+- `dropIndexFor` converts a canvas x coordinate into the same interior range. Blocks sit at `x = i * (nodeWidth + gap)` with their centre at `i * (nodeWidth + gap) + nodeWidth / 2`. The rule is **nearest gap**: the result is `1` when the drop is left of the second block's centre, and increases by one each time the drop passes an interior block's centre, clamped to `[1, blockCount - 1]`. Interior blocks are indices `1` through `blockCount - 2`, so the input and the output are never drop targets.
+  - Concretely, with `nodeWidth` 200 and `gap` 80 the step is 280 and the interior centres are at 380, 660, 940, …. So for a five-block chain: `x < 380 → 1`, `380 ≤ x < 660 → 2`, `660 ≤ x < 940 → 3`, `x ≥ 940 → 4`.
+  - For a three-block chain `[input, X, output]` there are two interior slots: `x < 380 → 1` and `x ≥ 380 → 2`. A far-right drop must land in the **last** interior slot, not the first.
+  - `blockCount` below 3 leaves a single interior slot, so the result is always `1`.
 - Both are pure and have no Svelte, DOM, TensorFlow.js, or `@xyflow/svelte` imports.
 
 - [ ] **Step 1: Write the failing test**
@@ -271,17 +274,20 @@ describe('dropIndexFor', () => {
   });
 
   it('advances one slot per interior block centre passed', () => {
-    expect(dropIndexFor(300, 5, width, gap)).toBe(2);
-    expect(dropIndexFor(500, 5, width, gap)).toBe(3);
+    expect(dropIndexFor(379, 5, width, gap)).toBe(1);
+    expect(dropIndexFor(380, 5, width, gap)).toBe(2);
+    expect(dropIndexFor(659, 5, width, gap)).toBe(2);
+    expect(dropIndexFor(660, 5, width, gap)).toBe(3);
+    expect(dropIndexFor(940, 5, width, gap)).toBe(4);
   });
 
   it('clamps to the last interior slot when dropped past the end', () => {
     expect(dropIndexFor(5000, 5, width, gap)).toBe(4);
   });
 
-  it('clamps to the only interior slot for a three-block network', () => {
+  it('uses both interior slots for a three-block network', () => {
     expect(dropIndexFor(0, 3, width, gap)).toBe(1);
-    expect(dropIndexFor(9999, 3, width, gap)).toBe(1);
+    expect(dropIndexFor(9999, 3, width, gap)).toBe(2);
   });
 
   it('stays inside the interior range for any coordinate', () => {
@@ -372,13 +378,23 @@ export interface ClampResult {
 }
 
 export function clampBlockPatch(net: Network, id: string, patch: Partial<Block>): ClampResult;
+
+export interface NetworkClampResult {
+  network: Network;
+  announcements: string[];
+}
+
+export function clampNetwork(net: Network): NetworkClampResult;
 ```
 
+- `clampNetwork` is what makes an **upstream** change correct the parameters that depend on it. `clampBlockPatch` only fixes the fields in the patch it is given, so changing the Input block's shape would otherwise leave a downstream convolution with a kernel larger than the new image — a state the app must never sit in silently. `clampNetwork` walks the blocks in order, clamping every `conv2d`'s `kernelSize` and `stride` into the bounds implied by its incoming shape, replacing the block whenever a value changes and collecting the announcements in correction order. Because a clamped convolution can change the shapes downstream of it, it repeats until a pass makes no corrections, bounded by the block count. A network with nothing out of range returns the **same reference** with an empty list, so callers can use reference equality to skip work.
 - `parameterBounds` returns the valid choices for a convolution's kernel size and stride given the incoming shape. It returns `null` unless the incoming shape is rank 3, because only image data has spatial dimensions to slide over. Otherwise both lists are `[1 .. min(height, width)]`.
 - `clampBlockPatch` enforces the app's rule that no automatic correction is ever silent. It:
   - clamps `units` and `filters` to integers of at least 1, announcing `Units changed from {from} to {to}. A layer must produce at least one number.` or the same sentence with `Filters`;
   - clamps `kernelSize` and `stride` into `parameterBounds(inShape)` when bounds exist, announcing `Kernel size changed from {from} to {to} because the incoming data is {height}×{width}.` or the same with `Stride`;
-  - returns the untouched patch and a `null` announcement when nothing needed correcting, and when the block or its incoming shape is unknown.
+  - returns the patch untouched with `announcement: null` when the block id is unknown, and when nothing needed correcting;
+  - when the incoming shape is unknown or is not rank 3, still clamps `units` and `filters` — they do not depend on the shape — but leaves `kernelSize` and `stride` alone, because there are no spatial dimensions to bound them;
+  - when several parameters in one patch are corrected, the **first** correction's announcement is the one returned.
 - The announcement uses `×` (U+00D7) between the dimensions, matching `shapeLabel`'s style.
 - This module is pure and lives under `src/lib/network/`, so it must not import Svelte, TensorFlow.js, or DOM.
 
@@ -388,7 +404,7 @@ export function clampBlockPatch(net: Network, id: string, patch: Partial<Block>)
 
 ```ts
 import { describe, expect, it } from 'vitest';
-import { clampBlockPatch, parameterBounds } from './constraints';
+import { clampBlockPatch, clampNetwork, parameterBounds } from './constraints';
 import type { Network } from './types';
 
 function net(blocks: Network['blocks']): Network {
@@ -500,6 +516,44 @@ describe('clampBlockPatch', () => {
     );
   });
 });
+
+describe('clampNetwork', () => {
+  it('leaves a valid network untouched and returns the same reference', () => {
+    const result = clampNetwork(IMAGE_NETWORK);
+    expect(result.network).toBe(IMAGE_NETWORK);
+    expect(result.announcements).toEqual([]);
+  });
+
+  it('re-clamps a downstream convolution when the input shape shrinks', () => {
+    const shrunk = net([
+      { id: 'in', kind: 'input', shape: [4, 4, 1] },
+      { id: 'conv', kind: 'conv2d', filters: 8, kernelSize: 28, stride: 1, padding: 'same' },
+      { id: 'flat', kind: 'flatten' },
+      { id: 'dense', kind: 'linear', units: 10 },
+      { id: 'out', kind: 'output', units: 10 }
+    ]);
+
+    const result = clampNetwork(shrunk);
+
+    expect(result.network.blocks[1]).toMatchObject({ kernelSize: 4, stride: 1 });
+    expect(result.announcements).toEqual([
+      'Kernel size changed from 28 to 4 because the incoming data is 4×4.'
+    ]);
+  });
+
+  it('leaves convolution parameters alone when the input is flat', () => {
+    const flat = net([
+      { id: 'in', kind: 'input', shape: [2] },
+      { id: 'conv', kind: 'conv2d', filters: 8, kernelSize: 28, stride: 1, padding: 'same' },
+      { id: 'out', kind: 'output', units: 2 }
+    ]);
+
+    const result = clampNetwork(flat);
+
+    expect(result.network).toBe(flat);
+    expect(result.announcements).toEqual([]);
+  });
+});
 ```
 
 - [ ] **Step 2: Run the test to verify it fails**
@@ -512,6 +566,7 @@ Expected: FAIL — `Failed to resolve import "./constraints"`.
 `src/lib/network/constraints.ts`:
 
 ```ts
+import { replaceBlock } from './chain';
 import { inferShapes } from './inferShapes';
 import type { Block, Network } from './types';
 
@@ -597,6 +652,42 @@ export function clampBlockPatch(net: Network, id: string, patch: Partial<Block>)
   }
 
   return { patch: result, announcement };
+}
+
+export interface NetworkClampResult {
+  network: Network;
+  announcements: string[];
+}
+
+export function clampNetwork(net: Network): NetworkClampResult {
+  let current = net;
+  const announcements: string[] = [];
+
+  for (let pass = 0; pass < net.blocks.length; pass++) {
+    let changed = false;
+    const { perBlock } = inferShapes(current);
+
+    current.blocks.forEach((block, index) => {
+      if (block.kind !== 'conv2d') return;
+      const inShape = perBlock[index].inShape;
+      const bounds = parameterBounds(inShape);
+      if (!bounds) return;
+
+      const corrected = clampBlockPatch(current, block.id, {
+        kernelSize: block.kernelSize,
+        stride: block.stride
+      });
+      if (!corrected.announcement) return;
+
+      current = replaceBlock(current, block.id, corrected.patch);
+      announcements.push(corrected.announcement);
+      changed = true;
+    });
+
+    if (!changed) break;
+  }
+
+  return { network: current, announcements };
 }
 ```
 
@@ -784,6 +875,21 @@ describe('updateBlock', () => {
     instance.dismissAnnouncements();
     expect(instance.announcements).toEqual([]);
   });
+
+  it('re-clamps downstream parameters when an upstream shape changes', () => {
+    const instance = store();
+    instance.addBlock('conv2d', 1);
+    instance.updateBlock(instance.network.blocks[0].id, { shape: [28, 28, 1] });
+    instance.updateBlock(instance.network.blocks[1].id, { kernelSize: 7 });
+    instance.dismissAnnouncements();
+
+    instance.updateBlock(instance.network.blocks[0].id, { shape: [4, 4, 1] });
+
+    expect(instance.network.blocks[1]).toMatchObject({ kernelSize: 4 });
+    expect(instance.announcements).toEqual([
+      'Kernel size changed from 7 to 4 because the incoming data is 4×4.'
+    ]);
+  });
 });
 
 describe('updateTraining', () => {
@@ -887,7 +993,7 @@ Expected: FAIL — `Failed to resolve import "./networkStore.svelte"`.
 
 ```ts
 import { insertAt, moveBlock, removeBlock, replaceBlock } from '../network/chain';
-import { clampBlockPatch } from '../network/constraints';
+import { clampBlockPatch, clampNetwork } from '../network/constraints';
 import { createBlock, createEmptyNetwork } from '../network/factory';
 import { inferShapes } from '../network/inferShapes';
 import type { Block, BlockKind, Network, TrainingConfig } from '../network/types';
@@ -948,8 +1054,10 @@ export class NetworkStore {
 
   updateBlock(id: string, patch: Partial<Block>): void {
     const { patch: clamped, announcement } = clampBlockPatch(this.network, id, patch);
-    this.#commit(replaceBlock(this.network, id, clamped));
-    if (announcement) this.announce(announcement);
+    const result = clampNetwork(replaceBlock(this.network, id, clamped));
+    this.#commit(result.network);
+    const messages = announcement ? [announcement, ...result.announcements] : result.announcements;
+    if (messages.length > 0) this.announcements = [...this.announcements, ...messages];
   }
 
   updateTraining(patch: Partial<TrainingConfig>): void {
@@ -1493,6 +1601,8 @@ Control behaviour, which is the app's "automatic input selection" requirement:
 - `flatten`, `relu`, `sigmoid`, `softmax` — no parameters; show the description only.
 - `output` — `units`, a number input, minimum 1.
 
+Every numeric and text field commits on **`change`**, not on each keystroke. Committing per keystroke would push one history entry per character and would let the clamped write-back fight the field's own value — typing `16` into a field bound to `units` becomes `116` once the first keystroke is clamped and written back. `commitNumber` must ignore an empty or non-finite value and leave the network untouched. That is why the tests below commit with `fireEvent.change` rather than `userEvent.type`.
+
 Also renders the selected block's output shape, its parameter count, and two buttons, `Move left` and `Move right`, which call `store.moveSelectedBy(-1)` and `store.moveSelectedBy(1)`. Both are disabled for the input and output blocks, which cannot move.
 
 Element test ids: `inspector`, `inspector-empty`, `param-units`, `param-filters`, `param-kernel-size`, `param-stride`, `param-padding`, `param-shape`, `move-left`, `move-right`, `inspector-incoming`.
@@ -1502,7 +1612,7 @@ Element test ids: `inspector`, `inspector-empty`, `param-units`, `param-filters`
 `src/lib/components/InspectorPanel.test.ts`:
 
 ```ts
-import { render, screen } from '@testing-library/svelte';
+import { fireEvent, render, screen } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { NetworkStore } from '../editor/networkStore.svelte';
@@ -1529,9 +1639,7 @@ describe('InspectorPanel', () => {
   it('edits a linear layer unit count', async () => {
     const store = storeWithSelection(1);
     render(InspectorPanel, { props: { store } });
-    const input = screen.getByTestId('param-units');
-    await userEvent.clear(input);
-    await userEvent.type(input, '16');
+    await fireEvent.change(screen.getByTestId('param-units'), { target: { value: '16' } });
     expect(store.network.blocks[1]).toMatchObject({ units: 16 });
   });
 
@@ -1619,7 +1727,7 @@ Expected: FAIL — `Failed to resolve import "./InspectorPanel.svelte"`.
     bounds && block?.kind === 'conv2d' ? bounds.stride : block?.kind === 'conv2d' ? [block.stride] : []
   );
   const canMove = $derived(block !== null && block.kind !== 'input' && block.kind !== 'output');
-  const shapeError = $state<string | null>(null);
+  let shapeError = $state<string | null>(null);
 
   function patch(next: Partial<Block>): void {
     if (!block) return;
@@ -2099,10 +2207,10 @@ Expected: FAIL — both imports unresolvable.
           class="issue"
           class:error={issue.severity === 'error'}
           class:warning={issue.severity === 'warning'}
-          data-testid="issue"
         >
           <button
             type="button"
+            data-testid="issue"
             onclick={() => issue.blockId && store.select(issue.blockId)}
             disabled={!issue.blockId}
           >
@@ -2531,7 +2639,7 @@ Test ids: `training-panel`, `training-loss`, `training-optimizer`, `training-lea
 `src/lib/components/TrainingPanel.test.ts`:
 
 ```ts
-import { render, screen } from '@testing-library/svelte';
+import { fireEvent, render, screen } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { NetworkStore } from '../editor/networkStore.svelte';
@@ -2566,18 +2674,22 @@ describe('TrainingPanel', () => {
 
   it('writes a learning rate change through to the network', async () => {
     const { store } = panel();
-    const input = screen.getByTestId('training-learning-rate');
-    await userEvent.clear(input);
-    await userEvent.type(input, '0.25');
+    await fireEvent.change(screen.getByTestId('training-learning-rate'), {
+      target: { value: '0.25' }
+    });
     expect(store.network.training.learningRate).toBe(0.25);
   });
 
   it('writes a batch size change through to the network', async () => {
     const { store } = panel();
-    const input = screen.getByTestId('training-batch-size');
-    await userEvent.clear(input);
-    await userEvent.type(input, '64');
+    await fireEvent.change(screen.getByTestId('training-batch-size'), { target: { value: '64' } });
     expect(store.network.training.batchSize).toBe(64);
+  });
+
+  it('leaves the network alone when a numeric field is cleared', async () => {
+    const { store } = panel();
+    await fireEvent.change(screen.getByTestId('training-batch-size'), { target: { value: '' } });
+    expect(store.network.training.batchSize).toBe(32);
   });
 
   it('describes every setting in plain language', () => {
@@ -2605,7 +2717,9 @@ describe('TrainingPanel', () => {
     panel({ disabled: true });
     expect((screen.getByTestId('training-play') as HTMLButtonElement).disabled).toBe(true);
     expect((screen.getByTestId('training-step') as HTMLButtonElement).disabled).toBe(true);
-    expect(screen.getByTestId('training-blocked').textContent).toContain('fix');
+    const blocked = screen.getByTestId('training-blocked').textContent ?? '';
+    expect(blocked).toContain('problems');
+    expect(blocked).toContain('training');
   });
 
   it('disables play while already playing', () => {
@@ -2663,6 +2777,7 @@ Expected: FAIL — `Failed to resolve import "./TrainingPanel.svelte"`.
     <select
       data-testid="training-loss"
       title={PARAM_DESCRIPTIONS.loss}
+      disabled={disabled}
       value={store.network.training.loss}
       onchange={(event) =>
         store.updateTraining({ loss: event.currentTarget.value as 'mse' | 'crossEntropy' })}
@@ -2678,6 +2793,7 @@ Expected: FAIL — `Failed to resolve import "./TrainingPanel.svelte"`.
     <select
       data-testid="training-optimizer"
       title={PARAM_DESCRIPTIONS.optimizer}
+      disabled={disabled}
       value={store.network.training.optimizer}
       onchange={(event) => store.updateTraining({ optimizer: event.currentTarget.value as 'sgd' | 'adam' })}
     >
@@ -2695,6 +2811,7 @@ Expected: FAIL — `Failed to resolve import "./TrainingPanel.svelte"`.
       min="0.0001"
       data-testid="training-learning-rate"
       title={PARAM_DESCRIPTIONS.learningRate}
+      disabled={disabled}
       value={store.network.training.learningRate}
       onchange={(event) => setNumber(event, 'learningRate')}
     />
@@ -2708,6 +2825,7 @@ Expected: FAIL — `Failed to resolve import "./TrainingPanel.svelte"`.
       min="1"
       data-testid="training-batch-size"
       title={PARAM_DESCRIPTIONS.batchSize}
+      disabled={disabled}
       value={store.network.training.batchSize}
       onchange={(event) => setNumber(event, 'batchSize')}
     />
@@ -2729,7 +2847,7 @@ Expected: FAIL — `Failed to resolve import "./TrainingPanel.svelte"`.
 
   {#if disabled}
     <p class="blocked" data-testid="training-blocked">
-      Fix the problems listed below before training. The network cannot be built yet.
+      There are problems to fix below before training. The network cannot be built until they are resolved.
     </p>
   {/if}
 </div>
@@ -2900,25 +3018,32 @@ describe('DecisionBoundary', () => {
     expect(screen.getByTestId('boundary-caption').textContent).toContain('Fix the network');
   });
 
+  async function waitForBoundary(): Promise<void> {
+    await vi.waitFor(() => {
+      expect(screen.getByTestId('decision-boundary').getAttribute('data-ready')).toBe('true');
+    });
+  }
+
   it('turns a click into domain coordinates', async () => {
     const onaddpoint = vi.fn();
     render(DecisionBoundary, {
       props: { model: null, dataset: DATASET, selectedLabel: 1, onaddpoint }
     });
+    await waitForBoundary();
 
-    const canvas = screen.getByTestId('boundary-canvas');
-    fireEvent.click(canvas, { clientX: 100, clientY: 100 });
+    fireEvent.click(screen.getByTestId('boundary-canvas'), { clientX: 100, clientY: 100 });
     expect(onaddpoint).toHaveBeenCalledTimes(1);
     const [x, y] = onaddpoint.mock.calls[0];
     expect(x).toBeCloseTo(0, 5);
     expect(y).toBeCloseTo(0, 5);
   });
 
-  it('maps the top-right corner to the positive x, positive y corner', () => {
+  it('maps the top-right corner to the positive x, positive y corner', async () => {
     const onaddpoint = vi.fn();
     render(DecisionBoundary, {
       props: { model: null, dataset: DATASET, selectedLabel: 0, onaddpoint }
     });
+    await waitForBoundary();
 
     fireEvent.click(screen.getByTestId('boundary-canvas'), { clientX: 200, clientY: 0 });
     const [x, y] = onaddpoint.mock.calls[0];
@@ -2951,7 +3076,6 @@ Expected: FAIL — `Failed to resolve import "./DecisionBoundary.svelte"`.
   import type * as tf from '@tensorflow/tfjs';
   import type { PointDataset } from '../data/points';
   import { BACKGROUND_RGB, CLASS_COLOURS } from '../render/palette';
-  import { GRID_SIZE } from '../render/boundary';
 
   let {
     model,
@@ -2995,7 +3119,11 @@ Expected: FAIL — `Failed to resolve import "./DecisionBoundary.svelte"`.
       offscreen.height = GRID_SIZE;
       const offscreenContext = offscreen.getContext('2d');
       if (offscreenContext) {
-        offscreenContext.putImageData(new ImageData(rgba, GRID_SIZE, GRID_SIZE), 0, 0);
+        offscreenContext.putImageData(
+          new ImageData(new Uint8ClampedArray(rgba), GRID_SIZE, GRID_SIZE),
+          0,
+          0
+        );
         context.imageSmoothingEnabled = true;
         context.clearRect(0, 0, SIZE, SIZE);
         context.drawImage(offscreen, 0, 0, SIZE, SIZE);
@@ -3030,7 +3158,7 @@ Expected: FAIL — `Failed to resolve import "./DecisionBoundary.svelte"`.
   }
 </script>
 
-<figure class="boundary" data-testid="decision-boundary">
+<figure class="boundary" data-testid="decision-boundary" data-ready={boundary ? 'true' : 'false'}>
   <canvas
     bind:this={canvas}
     width={SIZE}
@@ -3692,6 +3820,7 @@ export interface KeyValueStore {
 export interface NetworkStorage {
   saveNetwork(net: Network): void;
   loadNetwork(): Network | null;
+  hasStoredNetwork(): boolean;
   saveDataset(dataset: PointDataset): void;
   loadDataset(): PointDataset | null;
   clear(): void;
@@ -3710,7 +3839,8 @@ export function loadWeightsInto(model: tf.LayersModel): Promise<boolean>;
 
 **Behaviour that matters:**
 - `createStorage` takes an injected `KeyValueStore` so it is testable in Node with an in-memory fake. `createBrowserStorage` returns `null` when `localStorage` is unavailable or throws on write (private browsing, quota), so the page can degrade to in-memory state and tell the user rather than crashing.
-- `loadNetwork` returns `null` for a missing key, corrupt JSON, or an unsupported version, by delegating to `fromJSON`. The caller falls back to `createEmptyNetwork()` and tells the user the saved network could not be read.
+- `loadNetwork` returns `null` for a missing key, corrupt JSON, or an unsupported version, by delegating to `fromJSON`.
+- `hasStoredNetwork()` reports whether a network entry exists at all, **regardless of whether it can be read**. It exists so the page can tell "you have never saved anything" apart from "what you saved cannot be read", which is what the design's notice requirement needs. The caller falls back to `createEmptyNetwork()` and tells the user the saved network could not be read.
 - `saveDataset` and `loadDataset` are defensive in the same way: a dataset that is not an array of `{x, y, label}` points with finite coordinates and labels `0` or `1` is treated as absent.
 - `weightShapes` returns each weight tensor's shape as a plain array, and `shapesMatch` compares two such lists. Together they answer "can these saved weights be loaded into this model?" without touching IndexedDB, which is what makes the decision testable in Node.
 - `saveWeights` writes to IndexedDB through `model.save(WEIGHTS_URL)` and rethrows nothing: it resolves on success and rejects on failure so the caller can show a notice. `loadWeightsInto` returns `false` when no saved weights exist, when the shapes do not match, or when loading fails, and `true` when it has successfully applied them with `model.setWeights`. It must dispose any model it loads for comparison.
@@ -3763,6 +3893,18 @@ describe('network storage', () => {
   it('returns null for an unsupported version', () => {
     backing.setItem(NETWORK_KEY, JSON.stringify({ version: 99, network: createEmptyNetwork() }));
     expect(createStorage(backing).loadNetwork()).toBeNull();
+  });
+
+  it('distinguishes an unreadable saved network from no saved network', () => {
+    const storage = createStorage(backing);
+    expect(storage.hasStoredNetwork()).toBe(false);
+
+    storage.saveNetwork(createEmptyNetwork());
+    expect(storage.hasStoredNetwork()).toBe(true);
+
+    backing.setItem(NETWORK_KEY, '{not json');
+    expect(storage.hasStoredNetwork()).toBe(true);
+    expect(storage.loadNetwork()).toBeNull();
   });
 });
 
@@ -3941,6 +4083,9 @@ export function createStorage(backing: KeyValueStore): NetworkStorage {
     loadNetwork() {
       const raw = backing.getItem(NETWORK_KEY);
       return raw === null ? null : fromJSON(raw);
+    },
+    hasStoredNetwork() {
+      return backing.getItem(NETWORK_KEY) !== null;
     },
     saveDataset(dataset) {
       backing.setItem(DATASET_KEY, JSON.stringify({ points: dataset.points }));
@@ -4136,7 +4281,7 @@ export async function loadRuntime(): Promise<Runtime> {
       model?.dispose();
     },
     createTrainer: (model, data, batchSize, onStats, onError) =>
-      new trainerModule.Trainer(model, data, batchSize, onStats, onError),
+      new trainerModule.Trainer(model, data, batchSize, onStats, undefined, onError),
     saveWeights: (model) => weights.saveWeights(model),
     loadWeightsInto: (model) => weights.loadWeightsInto(model)
   };
@@ -4222,7 +4367,7 @@ Every module that touches TensorFlow.js is loaded **once**, after mount, and the
 
 ```svelte
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onDestroy, onMount } from 'svelte';
   import DecisionBoundary from '$lib/components/DecisionBoundary.svelte';
   import ExampleLayout from '$lib/components/ExampleLayout.svelte';
   import LossChart from '$lib/components/LossChart.svelte';
@@ -4292,9 +4437,22 @@ Every module that touches TensorFlow.js is loaded **once**, after mount, and the
       return;
     }
     const savedNetwork = storage.loadNetwork();
-    if (savedNetwork) store.load(savedNetwork);
+    if (savedNetwork) {
+      store.load(savedNetwork);
+    } else if (storage.hasStoredNetwork()) {
+      banner = 'The saved network could not be read, so a fresh one has been loaded.';
+    }
     const savedDataset = storage.loadDataset();
     if (savedDataset) datasetStore.dataset = savedDataset;
+  });
+
+  onDestroy(() => {
+    releaseTrainer();
+    runtime?.disposeData(data);
+    runtime?.disposeModel(currentModel);
+    data = null;
+    currentModel = null;
+    model = null;
   });
 
   $effect(() => {
@@ -4332,9 +4490,9 @@ Every module that touches TensorFlow.js is loaded **once**, after mount, and the
     if (!api) return;
 
     const next = api.toTensors(dataset);
+    releaseTrainer();
     api.disposeData(data);
     data = next;
-    releaseTrainer();
 
     if (!currentModelRef || !store.isValid || next.xs.shape[0] === 0) return;
     trainer = api.createTrainer(
@@ -4494,9 +4652,11 @@ Every module that touches TensorFlow.js is loaded **once**, after mount, and the
       dataset={datasetStore.dataset}
       selectedLabel={datasetStore.selectedLabel}
       onaddpoint={(x, y) => datasetStore.addPoint(x, y)}
-      caption={store.isValid
-        ? 'Each coloured area is the class the network predicts at that spot. Click to add a point.'
-        : 'Fix the problems listed in the editor before the boundary can be drawn.'}
+      caption={!runtime
+        ? 'Loading the network. The boundary appears in a moment.'
+        : store.isValid
+          ? 'Each coloured area is the class the network predicts at that spot. Click to add a point.'
+          : 'Fix the problems listed in the editor before the boundary can be drawn.'}
     />
 
     <TrainingPanel
@@ -4614,7 +4774,7 @@ Three points about this script that are load-bearing, so do not "simplify" them 
     already supports convolution, flatten, and the shape inference the editor needs; what is missing
     is this page.
   </p>
-  <p><a href="/examples/mlp">Try the 2D points example instead</a></p>
+  <p><a href={resolve('/examples/mlp')}>Try the 2D points example instead</a></p>
 </main>
 
 <style>
@@ -4637,17 +4797,21 @@ Three points about this script that are load-bearing, so do not "simplify" them 
 - [ ] **Step 5: Write `/`**
 
 ```svelte
+<script lang="ts">
+  import { resolve } from '$app/paths';
+</script>
+
 <main>
   <h1>VisNet</h1>
   <p>Build neural networks from visual blocks and watch them learn.</p>
 
   <ul>
     <li>
-      <a href="/examples/mlp">Points in 2D</a>
+      <a href={resolve('/examples/mlp')}>Points in 2D</a>
       <span>Classify coloured points and see the decision boundary.</span>
     </li>
     <li>
-      <a href="/examples/cnn">Handwritten digits</a>
+      <a href={resolve('/examples/cnn')}>Handwritten digits</a>
       <span>Coming next: convolutional networks on digit images.</span>
     </li>
   </ul>
@@ -4705,7 +4869,7 @@ Run: `npm test`
 Expected: all projects green.
 
 Run: `npm run build`
-Expected: build succeeds and all three routes are prerendered. Confirm `build/examples/mlp/index.html` exists.
+Expected: build succeeds and all three routes are prerendered. `adapter-static` uses the default `trailingSlash: 'never'`, so the files are `build/index.html`, `build/examples/mlp.html`, and `build/examples/cnn.html` — not `examples/mlp/index.html`. Confirm all three exist.
 
 Run: `npm run dev`, then open `/examples/mlp` and work through the manual checklist in Task 16.
 
@@ -4820,7 +4984,7 @@ Run: `npm test`
 Expected: both projects green, 0 failures, no warnings in the output.
 
 Run: `npm run build`
-Expected: build succeeds; `build/index.html`, `build/examples/mlp/index.html`, and `build/examples/cnn/index.html` all exist.
+Expected: build succeeds; `build/index.html`, `build/examples/mlp.html`, and `build/examples/cnn.html` all exist.
 
 If any command fails, fix the cause. Do not weaken or delete a test to make it pass.
 

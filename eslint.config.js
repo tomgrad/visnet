@@ -9,6 +9,12 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
   ...svelte.configs['flat/recommended'],
+  {
+    files: ['**/*.svelte', '**/*.svelte.ts', '**/*.svelte.js'],
+    languageOptions: {
+      parserOptions: { parser: tseslint.parser, extraFileExtensions: ['.svelte'] }
+    }
+  },
   prettier,
   {
     languageOptions: { globals: { ...globals.browser, ...globals.node } }

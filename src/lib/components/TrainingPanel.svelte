@@ -1,0 +1,177 @@
+<script lang="ts">
+  import type { NetworkStore } from '../editor/networkStore.svelte';
+  import { PARAM_DESCRIPTIONS } from '../network/descriptions';
+
+  let {
+    store,
+    playing,
+    disabled,
+    onplay,
+    onpause,
+    onstep,
+    onreset
+  }: {
+    store: NetworkStore;
+    playing: boolean;
+    disabled: boolean;
+    onplay: () => void;
+    onpause: () => void;
+    onstep: () => void;
+    onreset: () => void;
+  } = $props();
+
+  function setNumber(event: Event, key: 'learningRate' | 'batchSize'): void {
+    const value = Number((event.currentTarget as HTMLInputElement).value);
+    if (!Number.isFinite(value) || value <= 0) return;
+    store.updateTraining({ [key]: value });
+  }
+</script>
+
+<div class="training" data-testid="training-panel">
+  <h2>Training</h2>
+
+  <label>
+    <span>Loss</span>
+    <select
+      data-testid="training-loss"
+      title={PARAM_DESCRIPTIONS.loss}
+      disabled={disabled}
+      value={store.network.training.loss}
+      onchange={(event) =>
+        store.updateTraining({ loss: event.currentTarget.value as 'mse' | 'crossEntropy' })}
+    >
+      <option value="crossEntropy">cross entropy</option>
+      <option value="mse">mean squared error</option>
+    </select>
+    <small>{PARAM_DESCRIPTIONS.loss}</small>
+  </label>
+
+  <label>
+    <span>Optimizer</span>
+    <select
+      data-testid="training-optimizer"
+      title={PARAM_DESCRIPTIONS.optimizer}
+      disabled={disabled}
+      value={store.network.training.optimizer}
+      onchange={(event) => store.updateTraining({ optimizer: event.currentTarget.value as 'sgd' | 'adam' })}
+    >
+      <option value="adam">Adam</option>
+      <option value="sgd">SGD</option>
+    </select>
+    <small>{PARAM_DESCRIPTIONS.optimizer}</small>
+  </label>
+
+  <label>
+    <span>Learning rate</span>
+    <input
+      type="number"
+      step="0.001"
+      min="0.0001"
+      data-testid="training-learning-rate"
+      title={PARAM_DESCRIPTIONS.learningRate}
+      disabled={disabled}
+      value={store.network.training.learningRate}
+      onchange={(event) => setNumber(event, 'learningRate')}
+    />
+    <small>{PARAM_DESCRIPTIONS.learningRate}</small>
+  </label>
+
+  <label>
+    <span>Batch size</span>
+    <input
+      type="number"
+      min="1"
+      data-testid="training-batch-size"
+      title={PARAM_DESCRIPTIONS.batchSize}
+      disabled={disabled}
+      value={store.network.training.batchSize}
+      onchange={(event) => setNumber(event, 'batchSize')}
+    />
+    <small>{PARAM_DESCRIPTIONS.batchSize}</small>
+  </label>
+
+  <div class="controls">
+    <button type="button" data-testid="training-play" disabled={disabled || playing} onclick={onplay}>
+      Play
+    </button>
+    <button type="button" data-testid="training-pause" disabled={!playing} onclick={onpause}>
+      Pause
+    </button>
+    <button type="button" data-testid="training-step" disabled={disabled} onclick={onstep}>
+      Step one batch
+    </button>
+    <button type="button" data-testid="training-reset" onclick={onreset}>Reset model</button>
+  </div>
+
+  {#if disabled}
+    <p class="blocked" data-testid="training-blocked">
+      There are problems to fix below before training. The network cannot be built until they are
+      resolved.
+    </p>
+  {/if}
+</div>
+
+<style>
+  .training {
+    display: grid;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+  }
+
+  h2 {
+    margin: 0;
+    font-size: var(--text-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-muted);
+  }
+
+  label {
+    display: grid;
+    gap: var(--space-1);
+    font-size: var(--text-sm);
+  }
+
+  select,
+  input {
+    font: inherit;
+    padding: var(--space-1) var(--space-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    color: var(--color-text);
+  }
+
+  small {
+    color: var(--color-text-muted);
+    font-size: var(--text-xs);
+  }
+
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .controls button {
+    padding: var(--space-1) var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    cursor: pointer;
+  }
+
+  .controls button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .blocked {
+    margin: 0;
+    color: var(--color-error);
+    font-size: var(--text-sm);
+  }
+</style>
