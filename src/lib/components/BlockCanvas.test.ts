@@ -1,10 +1,10 @@
-import { render, screen } from '@testing-library/svelte';
+import { fireEvent, render, screen } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
 import { tick } from 'svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NetworkStore } from '../editor/networkStore.svelte';
 import BlockCanvas from './BlockCanvas.svelte';
-import { capturedNodes, resetCapturedNodes } from './__stubs__/flowProbe';
+import { capturedEdges, capturedNodes, resetCaptured } from './__stubs__/flowProbe';
 
 vi.mock('@xyflow/svelte', async () => {
   const FlowStub = (await import('./__stubs__/FlowStub.svelte')).default;
@@ -14,12 +14,22 @@ vi.mock('@xyflow/svelte', async () => {
     Controls: FlowStub,
     Handle: FlowStub,
     MarkerType: { ArrowClosed: 'arrowclosed' },
-    Position: { Left: 'left', Right: 'right' },
+    Position: { Left: 'left', Right: 'right', Top: 'top', Bottom: 'bottom' },
     useSvelteFlow: () => ({
       screenToFlowPosition: (point: { x: number; y: number }) => point
     })
   };
 });
+
+interface CapturedEdge {
+  id: string;
+  animated?: boolean;
+  style?: string;
+}
+
+function highlighted(): CapturedEdge[] {
+  return (capturedEdges() as CapturedEdge[]).filter((edge) => edge.style !== undefined);
+}
 
 function canvas() {
   const store = new NetworkStore();
@@ -27,8 +37,40 @@ function canvas() {
   return store;
 }
 
+function blockDragEvent(
+  type: string,
+  init: { clientY?: number; relatedTarget?: EventTarget | null } = {}
+): Event {
+  const event = new Event(type, { bubbles: true, cancelable: true });
+  Object.assign(event, {
+    clientX: 10,
+    clientY: init.clientY ?? 0,
+    relatedTarget: init.relatedTarget ?? null,
+    dataTransfer: {
+      types: ['application/visnet-block'],
+      getData: () => 'linear'
+    }
+  });
+  return event;
+}
+
+async function dragOver(y: number): Promise<void> {
+  await fireEvent(screen.getByTestId('canvas'), blockDragEvent('dragover', { clientY: y }));
+  await tick();
+}
+
+async function dragLeave(relatedTarget: EventTarget | null): Promise<void> {
+  await fireEvent(screen.getByTestId('canvas'), blockDragEvent('dragleave', { relatedTarget }));
+  await tick();
+}
+
+async function drop(y: number): Promise<void> {
+  await fireEvent(screen.getByTestId('canvas'), blockDragEvent('drop', { clientY: y }));
+  await tick();
+}
+
 beforeEach(() => {
-  resetCapturedNodes();
+  resetCaptured();
 });
 
 afterEach(() => {
@@ -72,7 +114,84 @@ describe('BlockCanvas', () => {
     canvas();
     await tick();
 
-    const removable = screen.getAllByTestId('block-remove').length;
-    expect(removable).toBe(4);
+    expect(screen.getAllByTestId('block-remove')).toHaveLength(4);
+  });
+});
+
+describe('drop indicator', () => {
+  it('highlights nothing before a drag starts', async () => {
+    canvas();
+    await tick();
+    expect(highlighted()).toEqual([]);
+  });
+
+  it('highlights the wire the block will land on', async () => {
+    canvas();
+    await tick();
+    const edges = capturedEdges() as CapturedEdge[];
+
+    await dragOver(400);
+
+    const marked = highlighted();
+    expect(marked).toHaveLength(1);
+    expect(marked[0].animated).toBe(true);
+    expect(marked[0].id).toBe(edges[2].id);
+  });
+
+  it('moves the highlight as the pointer moves down', async () => {
+    canvas();
+    await tick();
+    const edges = capturedEdges() as CapturedEdge[];
+
+    await dragOver(150);
+    expect(highlighted()[0].id).toBe(edges[0].id);
+
+    await dragOver(700);
+    expect(highlighted()[0].id).toBe(edges[3].id);
+  });
+
+  it('clears the highlight when the drag leaves the canvas', async () => {
+    canvas();
+    await tick();
+
+    await dragOver(400);
+    expect(highlighted()).toHaveLength(1);
+
+    await dragLeave(document.body);
+    expect(highlighted()).toEqual([]);
+  });
+
+  it('keeps the highlight when the pointer moves between children', async () => {
+    canvas();
+    await tick();
+
+    await dragOver(400);
+    expect(highlighted()).toHaveLength(1);
+
+    await dragLeave(screen.getAllByTestId('block-node')[0]);
+    expect(highlighted()).toHaveLength(1);
+  });
+
+  it('clears the highlight once the block is dropped', async () => {
+    canvas();
+    await tick();
+
+    await dragOver(400);
+    expect(highlighted()).toHaveLength(1);
+
+    await drop(400);
+    expect(highlighted()).toEqual([]);
+  });
+
+  it('ignores a drag that is not a block', async () => {
+    canvas();
+    await tick();
+
+    const event = new Event('dragover', { bubbles: true, cancelable: true });
+    Object.assign(event, { clientY: 400, dataTransfer: { types: ['text/plain'] } });
+    await fireEvent(screen.getByTestId('canvas'), event);
+    await tick();
+
+    expect(highlighted()).toEqual([]);
   });
 });

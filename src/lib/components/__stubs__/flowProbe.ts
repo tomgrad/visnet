@@ -1,13 +1,23 @@
-let captured: unknown[] = [];
+let latestNodes: unknown[] = [];
+let latestEdges: unknown[] = [];
 
 export function recordNodes(nodes: unknown[]): void {
-  captured = nodes;
+  latestNodes = nodes;
+}
+
+export function recordEdges(edges: unknown[]): void {
+  latestEdges = edges;
 }
 
 export function capturedNodes(): unknown[] {
-  return captured;
+  return latestNodes;
 }
 
-export function resetCapturedNodes(): void {
-  captured = [];
+export function capturedEdges(): unknown[] {
+  return latestEdges;
+}
+
+export function resetCaptured(): void {
+  latestNodes = [];
+  latestEdges = [];
 }

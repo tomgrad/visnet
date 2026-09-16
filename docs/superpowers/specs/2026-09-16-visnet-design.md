@@ -455,6 +455,14 @@ network. A wire is a gesture that reorders an array, not stored state.
   output) or by dragging onto the canvas. A drag-drop is resolved to an index by
   finding the gap between existing blocks whose centre is nearest the drop point;
   drops outside the interior clamp to the first or last interior slot.
+- While a palette block is dragged over the canvas, the **wire it will land on**
+  is highlighted: accent-coloured, thicker, and animated. Inserting at interior
+  index *k* puts the block between the blocks that wire already connects, so the
+  highlighted wire is the edge at `k - 1`. The highlight follows the pointer, is
+  cleared when the pointer leaves the canvas, and is cleared on drop. Dragging
+  over the canvas without a block (any other drag type) highlights nothing.
+  Reordering by dragging a wire is a different gesture and keeps Svelte Flow's own
+  connection line as its feedback.
 - Palette entries and their tooltips use the descriptions from
   `descriptions.ts`, so the user learns what a block does before adding it.
 

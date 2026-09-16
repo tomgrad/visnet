@@ -48,13 +48,17 @@
   );
 
   const edges = $derived<Edge[]>(
-    flow.edges.map((edge) => ({
+    flow.edges.map((edge, index) => ({
       id: edge.id,
       source: edge.source,
       target: edge.target,
       label: edge.label ?? undefined,
       markerEnd: MarkerType.ArrowClosed,
-      animated: false
+      animated: dropIndex !== null && index === dropIndex - 1,
+      style:
+        dropIndex !== null && index === dropIndex - 1
+          ? 'stroke: var(--color-accent); stroke-width: 3px'
+          : undefined
     }))
   );
 
@@ -62,8 +66,32 @@
   let viewport = $state.raw<{
     screenToFlowPosition: (p: { x: number; y: number }) => { x: number; y: number };
   } | null>(null);
+  let dropIndex = $state<number | null>(null);
   let connectionHint = $state<string | null>(null);
   let hintTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const DRAG_TYPE = 'application/visnet-block';
+
+  function flowYFor(event: DragEvent): number {
+    if (!viewport || !wrapper) return 0;
+    return viewport.screenToFlowPosition({ x: event.clientX, y: event.clientY }).y;
+  }
+
+  function isBlockDrag(event: DragEvent): boolean {
+    return Array.from(event.dataTransfer?.types ?? []).includes(DRAG_TYPE);
+  }
+
+  function handleDragOver(event: DragEvent): void {
+    event.preventDefault();
+    if (!isBlockDrag(event)) return;
+    dropIndex = dropIndexFor(flowYFor(event), store.network.blocks.length, NODE_HEIGHT, NODE_GAP);
+  }
+
+  function handleDragLeave(event: DragEvent): void {
+    const related = event.relatedTarget;
+    if (related instanceof Node && wrapper?.contains(related)) return;
+    dropIndex = null;
+  }
 
   function showConnectionHint(): void {
     connectionHint =
@@ -90,15 +118,12 @@
 
   function handleDrop(event: DragEvent): void {
     event.preventDefault();
-    const kind = event.dataTransfer?.getData('application/visnet-block') as BlockKind | undefined;
+    const kind = event.dataTransfer?.getData(DRAG_TYPE) as BlockKind | undefined;
+    const index = dropIndex ?? dropIndexFor(flowYFor(event), store.network.blocks.length, NODE_HEIGHT, NODE_GAP);
+    dropIndex = null;
     ondragover(null);
     if (!kind || !palette.includes(kind)) return;
 
-    const y =
-      viewport && wrapper
-        ? viewport.screenToFlowPosition({ x: event.clientX, y: event.clientY }).y
-        : 0;
-    const index = dropIndexFor(y, store.network.blocks.length, NODE_HEIGHT, NODE_GAP);
     store.addBlock(kind, index);
   }
 </script>
@@ -109,7 +134,8 @@
     role="region"
     aria-label="Network canvas"
     bind:this={wrapper}
-    ondragover={(event) => event.preventDefault()}
+    ondragover={handleDragOver}
+    ondragleave={handleDragLeave}
     ondrop={handleDrop}
     data-testid="canvas"
   >
