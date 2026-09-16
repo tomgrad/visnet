@@ -1,3 +1,4 @@
+import { replaceBlock } from './chain';
 import { inferShapes } from './inferShapes';
 import type { Block, Network } from './types';
 
@@ -9,6 +10,11 @@ export interface ParameterBounds {
 export interface ClampResult {
   patch: Partial<Block>;
   announcement: string | null;
+}
+
+export interface NetworkClampResult {
+  network: Network;
+  announcements: string[];
 }
 
 const MINIMUM_COUNT = 1;
@@ -86,4 +92,34 @@ export function clampBlockPatch(net: Network, id: string, patch: Partial<Block>)
   }
 
   return { patch: result, announcement };
+}
+
+export function clampNetwork(net: Network): NetworkClampResult {
+  let current = net;
+  const announcements: string[] = [];
+
+  for (let pass = 0; pass < net.blocks.length; pass++) {
+    let changed = false;
+    const { perBlock } = inferShapes(current);
+
+    current.blocks.forEach((block, index) => {
+      if (block.kind !== 'conv2d') return;
+      const bounds = parameterBounds(perBlock[index].inShape);
+      if (!bounds) return;
+
+      const corrected = clampBlockPatch(current, block.id, {
+        kernelSize: block.kernelSize,
+        stride: block.stride
+      });
+      if (!corrected.announcement) return;
+
+      current = replaceBlock(current, block.id, corrected.patch);
+      announcements.push(corrected.announcement);
+      changed = true;
+    });
+
+    if (!changed) break;
+  }
+
+  return { network: current, announcements };
 }

@@ -1,5 +1,5 @@
 import { insertAt, moveBlock, removeBlock, replaceBlock } from '../network/chain';
-import { clampBlockPatch } from '../network/constraints';
+import { clampBlockPatch, clampNetwork } from '../network/constraints';
 import { createBlock, createEmptyNetwork } from '../network/factory';
 import { inferShapes } from '../network/inferShapes';
 import type { Block, BlockKind, Network, TrainingConfig } from '../network/types';
@@ -60,8 +60,10 @@ export class NetworkStore {
 
   updateBlock(id: string, patch: Partial<Block>): void {
     const { patch: clamped, announcement } = clampBlockPatch(this.network, id, patch);
-    this.#commit(replaceBlock(this.network, id, clamped));
-    if (announcement) this.announce(announcement);
+    const result = clampNetwork(replaceBlock(this.network, id, clamped));
+    this.#commit(result.network);
+    const messages = announcement ? [announcement, ...result.announcements] : result.announcements;
+    if (messages.length > 0) this.announcements = [...this.announcements, ...messages];
   }
 
   updateTraining(patch: Partial<TrainingConfig>): void {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { clampBlockPatch, parameterBounds } from './constraints';
+import { clampBlockPatch, clampNetwork, parameterBounds } from './constraints';
 import type { Network } from './types';
 
 function net(blocks: Network['blocks']): Network {
@@ -109,5 +109,43 @@ describe('clampBlockPatch', () => {
     expect(result.announcement).toBe(
       'Kernel size changed from 40 to 28 because the incoming data is 28×28.'
     );
+  });
+});
+
+describe('clampNetwork', () => {
+  it('leaves a valid network untouched and returns the same reference', () => {
+    const result = clampNetwork(IMAGE_NETWORK);
+    expect(result.network).toBe(IMAGE_NETWORK);
+    expect(result.announcements).toEqual([]);
+  });
+
+  it('re-clamps a downstream convolution when the input shape shrinks', () => {
+    const shrunk = net([
+      { id: 'in', kind: 'input', shape: [4, 4, 1] },
+      { id: 'conv', kind: 'conv2d', filters: 8, kernelSize: 28, stride: 1, padding: 'same' },
+      { id: 'flat', kind: 'flatten' },
+      { id: 'dense', kind: 'linear', units: 10 },
+      { id: 'out', kind: 'output', units: 10 }
+    ]);
+
+    const result = clampNetwork(shrunk);
+
+    expect(result.network.blocks[1]).toMatchObject({ kernelSize: 4, stride: 1 });
+    expect(result.announcements).toEqual([
+      'Kernel size changed from 28 to 4 because the incoming data is 4×4.'
+    ]);
+  });
+
+  it('leaves convolution parameters alone when the input is flat', () => {
+    const flat = net([
+      { id: 'in', kind: 'input', shape: [2] },
+      { id: 'conv', kind: 'conv2d', filters: 8, kernelSize: 28, stride: 1, padding: 'same' },
+      { id: 'out', kind: 'output', units: 2 }
+    ]);
+
+    const result = clampNetwork(flat);
+
+    expect(result.network).toBe(flat);
+    expect(result.announcements).toEqual([]);
   });
 });

@@ -139,6 +139,21 @@ describe('updateBlock', () => {
     instance.dismissAnnouncements();
     expect(instance.announcements).toEqual([]);
   });
+
+  it('re-clamps downstream parameters when an upstream shape changes', () => {
+    const instance = store();
+    instance.addBlock('conv2d', 1);
+    instance.updateBlock(instance.network.blocks[0].id, { shape: [28, 28, 1] });
+    instance.updateBlock(instance.network.blocks[1].id, { kernelSize: 7 });
+    instance.dismissAnnouncements();
+
+    instance.updateBlock(instance.network.blocks[0].id, { shape: [4, 4, 1] });
+
+    expect(instance.network.blocks[1]).toMatchObject({ kernelSize: 4 });
+    expect(instance.announcements).toEqual([
+      'Kernel size changed from 7 to 4 because the incoming data is 4×4.'
+    ]);
+  });
 });
 
 describe('updateTraining', () => {
