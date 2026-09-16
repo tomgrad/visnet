@@ -10,7 +10,18 @@
       ? 'Loss on the most recent batch. Lower is better.'
       : 'Average loss over the epoch that just finished. Lower is better.'
   );
-  const accuracy = $derived(stats?.epochAccuracy ?? null);
+
+  let lastAccuracy = $state<number | null>(null);
+
+  $effect(() => {
+    if (!stats) {
+      lastAccuracy = null;
+      return;
+    }
+    if (stats.epochAccuracy !== null) lastAccuracy = stats.epochAccuracy;
+  });
+
+  const accuracy = $derived(stats ? (stats.epochAccuracy ?? lastAccuracy) : null);
 </script>
 
 <div class="stats" data-testid="stats-readout">
@@ -35,7 +46,7 @@
         <dd data-testid="stats-accuracy">
           {accuracy === null ? '—' : `${(accuracy * 100).toFixed(1)}%`}
         </dd>
-        <small>Share of points classified correctly.</small>
+        <small>Share of points classified correctly, over the last completed epoch.</small>
       </div>
     </dl>
   {/if}

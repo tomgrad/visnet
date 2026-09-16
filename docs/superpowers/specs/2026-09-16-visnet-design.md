@@ -694,6 +694,12 @@ they are requirements rather than styling preferences:
   `auto-fit`, so the column count and widths cannot change as content changes.
 - Labels and explanations are constant-length, and the number cells use
   `font-variant-numeric: tabular-nums`, so changing digits do not shift the layout.
+- Accuracy is held between epochs. The trainer only knows it on the batch that
+  completes an epoch, so showing the raw value would blank it for most of the run
+  and flash a percentage several times a second. The readout keeps the most recent
+  known accuracy and labels it "over the last completed epoch", so the number is
+  always readable and advances once per epoch. It is forgotten when training
+  resets.
 
 ## 15. Persistence
 
