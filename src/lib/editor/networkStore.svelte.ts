@@ -1,6 +1,6 @@
 import { insertAt, moveBlock, removeBlock, replaceBlock } from '../network/chain';
 import { clampBlockPatch, clampNetwork } from '../network/constraints';
-import { createBlock, createEmptyNetwork } from '../network/factory';
+import { cloneNetwork, createBlock, createEmptyNetwork } from '../network/factory';
 import { inferShapes } from '../network/inferShapes';
 import type { Block, BlockKind, Network, NodePosition, TrainingConfig } from '../network/types';
 import { validate } from '../network/validate';
@@ -19,6 +19,7 @@ export class NetworkStore {
   canRedo = $state(false);
 
   #history = new History<Network>(HISTORY_LIMIT);
+  #initial: Network;
 
   issues = $derived(validate(this.network, { expectedClasses: this.expectedClasses }));
   errors = $derived(this.issues.filter((issue) => issue.severity === 'error'));
@@ -30,6 +31,11 @@ export class NetworkStore {
     this.network.blocks.find((block) => block.id === this.selectedBlockId) ?? null
   );
 
+  constructor(initial: Network = createEmptyNetwork()) {
+    this.network = initial;
+    this.#initial = cloneNetwork(initial);
+  }
+
   select(id: string | null): void {
     this.selectedBlockId = id;
   }
@@ -38,7 +44,7 @@ export class NetworkStore {
     const block = createBlock(kind);
     const target = index ?? insertionIndexFor(this.network, this.selectedBlockId);
     const inserted = insertAt(this.network, target, block);
-    this.#commit(
+    this.#commitClamped(
       position ? { ...inserted, positions: { ...inserted.positions, [block.id]: position } } : inserted
     );
     this.selectedBlockId = block.id;
@@ -53,7 +59,7 @@ export class NetworkStore {
   }
 
   moveBlock(from: number, to: number): void {
-    this.#commit(moveBlock(this.network, from, to));
+    this.#commitClamped(moveBlock(this.network, from, to));
   }
 
   moveSelectedBy(offset: number): void {
@@ -102,15 +108,16 @@ export class NetworkStore {
   }
 
   load(net: Network): void {
+    const result = clampNetwork(net);
     this.#history.clear();
-    this.network = net;
+    this.network = result.network;
     this.selectedBlockId = null;
-    this.announcements = [];
+    this.announcements = [...result.announcements];
     this.#syncHistoryFlags();
   }
 
   reset(): void {
-    this.load(createEmptyNetwork());
+    this.load(this.#initial);
   }
 
   announce(message: string): void {
@@ -126,6 +133,14 @@ export class NetworkStore {
     this.#history.push(this.network);
     this.network = next;
     this.#syncHistoryFlags();
+  }
+
+  #commitClamped(next: Network): void {
+    const result = clampNetwork(next);
+    this.#commit(result.network);
+    if (result.announcements.length > 0) {
+      this.announcements = [...this.announcements, ...result.announcements];
+    }
   }
 
   #syncHistoryFlags(): void {

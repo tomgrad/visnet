@@ -12,6 +12,9 @@ dist/
 # test / coverage
 coverage/
 
+# downloaded MNIST subset (never committed)
+static/mnist/
+
 # env
 .env
 .env.*

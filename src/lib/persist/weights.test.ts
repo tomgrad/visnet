@@ -2,7 +2,7 @@ import * as tf from '@tensorflow/tfjs';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { createEmptyNetwork } from '../network/factory';
 import { buildModel } from '../tf/buildModel';
-import { shapesMatch, weightShapes } from './weights';
+import { shapesMatch, weightShapes, weightsUrl } from './weights';
 
 let models: tf.Sequential[] = [];
 
@@ -55,5 +55,13 @@ describe('shapesMatch', () => {
 
   it('rejects a mismatched dimension inside a tensor', () => {
     expect(shapesMatch([[2, 8]], [[2, 9]])).toBe(false);
+  });
+});
+
+describe('weightsUrl', () => {
+  it('namespaces by example id', () => {
+    expect(weightsUrl('mlp')).toBe('indexeddb://visnet/weights/mlp');
+    expect(weightsUrl('cnn')).toBe('indexeddb://visnet/weights/cnn');
+    expect(weightsUrl('mlp')).not.toBe(weightsUrl('cnn'));
   });
 });

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createEmptyNetwork } from '../network/factory';
+import type { Network } from '../network/types';
 import { NetworkStore } from './networkStore.svelte';
 
 function store(): NetworkStore {
@@ -324,5 +325,102 @@ describe('positions', () => {
     instance.setPosition(id, { x: 5, y: 5 });
     instance.removeBlock(id);
     expect(instance.network.positions).toEqual({});
+  });
+});
+
+describe('initial network', () => {
+  it('defaults to the MLP network', () => {
+    const instance = new NetworkStore();
+    expect(instance.network.blocks.map((block) => block.kind)).toEqual([
+      'input',
+      'linear',
+      'relu',
+      'linear',
+      'softmax',
+      'output'
+    ]);
+  });
+
+  it('resets to the network it was constructed with', () => {
+    const initial: Network = {
+      version: 2,
+      blocks: [
+        { id: 'in', kind: 'input', shape: [4, 4, 1] },
+        { id: 'conv', kind: 'conv2d', filters: 2, kernelSize: 2, stride: 1, padding: 'same' },
+        { id: 'out', kind: 'output', units: 3 }
+      ],
+      training: { loss: 'crossEntropy', optimizer: 'adam', learningRate: 0.01, batchSize: 32 },
+      positions: {}
+    };
+    const instance = new NetworkStore(initial);
+
+    instance.addBlock('relu', 1);
+    expect(instance.network.blocks).toHaveLength(4);
+
+    instance.reset();
+
+    expect(instance.network.blocks.map((block) => block.kind)).toEqual([
+      'input',
+      'conv2d',
+      'output'
+    ]);
+    expect(instance.canUndo).toBe(false);
+  });
+});
+
+describe('clamping on every mutation', () => {
+  it('clamps a convolution added to a small image and announces it', () => {
+    const instance = store();
+    instance.updateBlock(instance.network.blocks[0].id, { shape: [2, 2, 1] });
+    instance.dismissAnnouncements();
+
+    const created = instance.addBlock('conv2d', 1);
+
+    expect(instance.network.blocks[1]).toMatchObject({ id: created, kernelSize: 2 });
+    expect(instance.announcements).toEqual([
+      'Kernel size changed from 3 to 2 because the incoming data is 2×2.'
+    ]);
+  });
+
+  it('clamps a network that is loaded already out of range', () => {
+    const instance = store();
+    instance.load({
+      version: 2,
+      blocks: [
+        { id: 'in', kind: 'input', shape: [2, 2, 1] },
+        { id: 'conv', kind: 'conv2d', filters: 8, kernelSize: 5, stride: 1, padding: 'same' },
+        { id: 'out', kind: 'output', units: 2 }
+      ],
+      training: { loss: 'crossEntropy', optimizer: 'adam', learningRate: 0.01, batchSize: 32 },
+      positions: {}
+    });
+
+    expect(instance.network.blocks[1]).toMatchObject({ kernelSize: 2 });
+    expect(instance.announcements).toEqual([
+      'Kernel size changed from 5 to 2 because the incoming data is 2×2.'
+    ]);
+  });
+
+  it('re-clamps a convolution when a reorder shrinks its input', () => {
+    const instance = store();
+    instance.load({
+      version: 2,
+      blocks: [
+        { id: 'in', kind: 'input', shape: [4, 4, 1] },
+        { id: 'wide', kind: 'conv2d', filters: 4, kernelSize: 4, stride: 1, padding: 'same' },
+        { id: 'shrink', kind: 'conv2d', filters: 4, kernelSize: 4, stride: 4, padding: 'same' },
+        { id: 'out', kind: 'output', units: 2 }
+      ],
+      training: { loss: 'crossEntropy', optimizer: 'adam', learningRate: 0.01, batchSize: 32 },
+      positions: {}
+    });
+    expect(instance.network.blocks[1]).toMatchObject({ id: 'wide', kernelSize: 4 });
+
+    instance.moveBlock(2, 1);
+
+    expect(instance.network.blocks[2]).toMatchObject({ id: 'wide', kernelSize: 1 });
+    expect(instance.announcements).toEqual([
+      'Kernel size changed from 4 to 1 because the incoming data is 1×1.'
+    ]);
   });
 });

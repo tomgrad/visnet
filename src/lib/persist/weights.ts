@@ -1,6 +1,8 @@
 import * as tf from '@tensorflow/tfjs';
 
-export const WEIGHTS_URL = 'indexeddb://visnet/weights/main';
+export function weightsUrl(id: string): string {
+  return `indexeddb://visnet/weights/${id}`;
+}
 
 export function weightShapes(model: tf.LayersModel): number[][] {
   return model.getWeights().map((tensor) => [...tensor.shape]);
@@ -15,14 +17,14 @@ export function shapesMatch(a: number[][], b: number[][]): boolean {
   });
 }
 
-export async function saveWeights(model: tf.LayersModel): Promise<void> {
-  await model.save(WEIGHTS_URL);
+export async function saveWeights(model: tf.LayersModel, id: string): Promise<void> {
+  await model.save(weightsUrl(id));
 }
 
-export async function loadWeightsInto(model: tf.LayersModel): Promise<boolean> {
+export async function loadWeightsInto(model: tf.LayersModel, id: string): Promise<boolean> {
   let saved: tf.LayersModel | null = null;
   try {
-    saved = await tf.loadLayersModel(WEIGHTS_URL);
+    saved = await tf.loadLayersModel(weightsUrl(id));
     if (!shapesMatch(weightShapes(model), weightShapes(saved))) return false;
     model.setWeights(saved.getWeights());
     return true;

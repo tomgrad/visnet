@@ -124,7 +124,14 @@ other's weights.
 `saveWeights(model, id)` and `loadWeightsInto(model, id)` take the example's id,
 and a new exported `weightsUrl(id)` returns `indexeddb://visnet/weights/${id}`.
 `weightsUrl` is pure and unit-tested; the two IndexedDB calls remain
-browser-verified. The MLP page passes `'mlp'`, the CNN page passes `'cnn'`.
+browser-verified. The CNN page passes `'cnn'`.
+
+**The MLP passes `'main'`, not `'mlp'`,** exported as `MLP_WEIGHTS_ID` from its
+example module. That was its address before the ids existed, so keeping it means
+weights a user has already saved still load — the same reasoning that keeps the
+MLP's network storage key unchanged (§6). The name is a historical artefact and is
+documented rather than renamed, because renaming it would silently orphan saved
+weights.
 
 ### 5.3 Kernel bounds with `'same'` padding
 
@@ -393,8 +400,9 @@ network behaviour, the sample grid's rendering, and the example page end to end.
    storage.
 6. **Storage keys are parameterised, and the MLP keeps its existing values.** No
    saved network is orphaned by this phase.
-7. **Weights are namespaced by example id.** The two examples cannot overwrite each
-   other.
+7. **Weights are namespaced by example id, and the MLP keeps its existing address.**
+   The two examples cannot overwrite each other, and no saved weights are orphaned
+   by the change — the same principle applied to the storage keys in §6.
 8. **The kernel bound stays strict under `'same'` padding.** One rule is easier to
    teach than two, and an oversized kernel is not worth supporting.
 9. **`NetworkStore` takes its initial network.** Otherwise the CNN page's Reset

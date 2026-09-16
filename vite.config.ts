@@ -10,7 +10,7 @@ export default defineConfig({
         test: {
           name: 'engine',
           environment: 'node',
-          include: ['src/**/*.test.ts'],
+          include: ['src/**/*.test.ts', 'scripts/**/*.test.ts'],
           exclude: ['src/**/*.svelte.test.ts', 'src/lib/components/**/*.test.ts']
         }
       },

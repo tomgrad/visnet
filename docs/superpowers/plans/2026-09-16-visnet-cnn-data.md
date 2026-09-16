@@ -289,7 +289,7 @@ git commit -m "feat: add the digit asset format parser"
 - Modify: `vite.config.ts` (the engine project also collects `scripts/**/*.test.ts`)
 
 **Interfaces:**
-- Consumes: `parseSplit`, `MAGIC`, `FORMAT_VERSION`, `HEADER_BYTES` from `../src/lib/data/images`.
+- Consumes: nothing at runtime. The script is plain ESM and cannot import the TypeScript module, so it restates the magic bytes, the version, and the header size. **The round-trip test is what keeps that restatement honest** — if `src/lib/data/images.ts` ever changes its format, the test fails.
 - Produces:
   - `parseIdxImages(buffer: ArrayBuffer): { count: number; rows: number; cols: number; pixels: Uint8Array }` — IDX is **big-endian**; magic `0x00000803`.
   - `parseIdxLabels(buffer: ArrayBuffer): Uint8Array` — magic `0x00000801`.
@@ -347,7 +347,9 @@ describe('parseIdxImages', () => {
   });
 
   it('rejects a wrong magic', () => {
-    expect(() => parseIdxImages(idxLabels([1, 2]))).toThrow(/image/i);
+    const buffer = new ArrayBuffer(16);
+    new DataView(buffer).setUint32(0, 0x00000801, false);
+    expect(() => parseIdxImages(buffer)).toThrow(/image/i);
   });
 
   it('rejects a truncated body', () => {
@@ -519,8 +521,6 @@ async function present(path) {
 
 async function main() {
   const args = process.argv.slice(2);
-  const trainCount = flag(args, '--train', 1000);
-  const testCount = flag(args, '--test', 200);
   const force = args.includes('--force');
 
   const trainPath = join(OUT_DIR, 'train.bin');
@@ -530,6 +530,9 @@ async function main() {
     console.log(`Already prepared at ${OUT_DIR}. Pass --force to download again.`);
     return;
   }
+
+  const trainCount = flag(args, '--train', 1000);
+  const testCount = flag(args, '--test', 200);
 
   console.log(`Downloading MNIST from ${SOURCE}`);
   const [trainImages, trainLabels, testImages, testLabels] = await Promise.all([
@@ -542,13 +545,16 @@ async function main() {
   const train = take(trainCount, 'training', trainImages, trainLabels);
   const test = take(testCount, 'test', testImages, testLabels);
 
-  await mkdir(OUT_DIR, { recursive: true });
-  await writeFile(trainPath, new Uint8Array(encodeSplit(train)));
-  await writeFile(testPath, new Uint8Array(encodeSplit(test)));
+  const trainBytes = encodeSplit(train);
+  const testBytes = encodeSplit(test);
 
-  console.log(`Wrote ${train.count} training and ${test.count} test digits, ${train.rows}x${test.cols}.`);
-  console.log(`  ${trainPath}`);
-  console.log(`  ${testPath}`);
+  await mkdir(OUT_DIR, { recursive: true });
+  await writeFile(trainPath, new Uint8Array(trainBytes));
+  await writeFile(testPath, new Uint8Array(testBytes));
+
+  console.log(`Wrote ${train.count} training and ${test.count} test digits, ${train.rows}x${train.cols}.`);
+  console.log(`  ${trainPath} (${trainBytes.byteLength} bytes)`);
+  console.log(`  ${testPath} (${testBytes.byteLength} bytes)`);
   console.log('MNIST is a derivative of the NIST Special Database 19.');
 }
 
@@ -808,6 +814,7 @@ export function imagesToTensors(
 
 - `xs` is `[n, rows, cols, 1]` float32 with each pixel divided by 255; `ys` is one-hot `[n, numClasses]` float32.
 - `indices` selects a subset and defaults to every image, in order.
+- Pixel values come back as **float32**, so an exact comparison against a plain `value / 255` fails on precision. Any test comparing tensor values must round the expected value with `Math.fround`.
 - The caller owns the returned tensors.
 - This lives in `tensors.ts` rather than a new file because that module's job is already "turn our datasets into tensors", and because `data/tensors.ts` is an approved TensorFlow.js import site — a new file would need a sixth allow-list entry.
 
@@ -876,7 +883,7 @@ describe('imagesToTensors', () => {
       [1, 0, 0]
     ]);
     expect(Array.from(xs.dataSync()).slice(0, 4)).toEqual(
-      Array.from(dataset.pixels.slice(8, 12), (value) => value / 255)
+      Array.from(dataset.pixels.slice(8, 12), (value) => Math.fround(value / 255))
     );
   });
 });
