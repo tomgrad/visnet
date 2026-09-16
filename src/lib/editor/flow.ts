@@ -1,5 +1,5 @@
 import type { ShapeResult } from '../network/inferShapes';
-import type { BlockKind, Network } from '../network/types';
+import type { BlockKind, Network, NodePosition } from '../network/types';
 
 export const NODE_WIDTH = 200;
 export const NODE_HEIGHT = 90;
@@ -35,6 +35,19 @@ export function shapeLabel(shape: number[] | null): string | null {
   return shape ? `[${shape.join(' × ')}]` : null;
 }
 
+export function autoPosition(index: number): NodePosition {
+  return { x: 0, y: index * (NODE_HEIGHT + NODE_GAP) };
+}
+
+export function positionFor(net: Network, index: number): NodePosition {
+  const block = net.blocks[index];
+  return net.positions[block.id] ?? autoPosition(index);
+}
+
+export function nodeCentre(position: NodePosition): NodePosition {
+  return { x: position.x + NODE_WIDTH / 2, y: position.y + NODE_HEIGHT / 2 };
+}
+
 export function toFlow(
   net: Network,
   shapes: ShapeResult
@@ -43,7 +56,7 @@ export function toFlow(
     const info = shapes.perBlock[index];
     return {
       id: block.id,
-      position: { x: 0, y: index * (NODE_HEIGHT + NODE_GAP) },
+      position: positionFor(net, index),
       data: {
         kind: block.kind,
         inShape: info.inShape,

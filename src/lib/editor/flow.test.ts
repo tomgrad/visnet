@@ -2,11 +2,21 @@ import { describe, expect, it } from 'vitest';
 import { moveBlock } from '../network/chain';
 import { inferShapes } from '../network/inferShapes';
 import type { Network } from '../network/types';
-import { NODE_GAP, NODE_HEIGHT, connectionToIntent, shapeLabel, toFlow } from './flow';
+import {
+  NODE_GAP,
+  NODE_HEIGHT,
+  NODE_WIDTH,
+  autoPosition,
+  connectionToIntent,
+  nodeCentre,
+  positionFor,
+  shapeLabel,
+  toFlow
+} from './flow';
 
 function net(): Network {
   return {
-    version: 1,
+    version: 2,
     blocks: [
       { id: 'in', kind: 'input', shape: [2] },
       { id: 'a', kind: 'linear', units: 8 },
@@ -14,7 +24,8 @@ function net(): Network {
       { id: 'c', kind: 'linear', units: 2 },
       { id: 'out', kind: 'output', units: 2 }
     ],
-    training: { loss: 'crossEntropy', optimizer: 'adam', learningRate: 0.01, batchSize: 32 }
+    training: { loss: 'crossEntropy', optimizer: 'adam', learningRate: 0.01, batchSize: 32 },
+    positions: {}
   };
 }
 
@@ -114,5 +125,57 @@ describe('connectionToIntent', () => {
   it('ignores unknown ids', () => {
     expect(connectionToIntent({ source: 'a', target: 'missing' }, net())).toBeNull();
     expect(connectionToIntent({ source: 'missing', target: 'a' }, net())).toBeNull();
+  });
+});
+
+describe('stored positions', () => {
+  it('uses the stored position when there is one', () => {
+    const network = net();
+    const moved = { ...network, positions: { [network.blocks[1].id]: { x: 42, y: 99 } } };
+    const flow = toFlow(moved, inferShapes(moved));
+    expect(flow.nodes[1].position).toEqual({ x: 42, y: 99 });
+  });
+
+  it('falls back to the auto layout for blocks with no stored position', () => {
+    const network = net();
+    const moved = { ...network, positions: { [network.blocks[1].id]: { x: 42, y: 99 } } };
+    const flow = toFlow(moved, inferShapes(moved));
+
+    expect(flow.nodes[0].position).toEqual(autoPosition(0));
+    expect(flow.nodes[2].position).toEqual(autoPosition(2));
+    expect(flow.nodes[4].position).toEqual(autoPosition(4));
+  });
+
+  it('ignores a position for a block that is not in the network', () => {
+    const network = net();
+    const moved = { ...network, positions: { ghost: { x: 1, y: 2 } } };
+    const flow = toFlow(moved, inferShapes(moved));
+    expect(flow.nodes.map((node) => node.position)).toEqual([
+      autoPosition(0),
+      autoPosition(1),
+      autoPosition(2),
+      autoPosition(3),
+      autoPosition(4)
+    ]);
+  });
+});
+
+describe('positionFor', () => {
+  it('returns the stored position or the auto slot', () => {
+    const network = net();
+    const id = network.blocks[2].id;
+    const moved = { ...network, positions: { [id]: { x: 7, y: 8 } } };
+    expect(positionFor(moved, 2)).toEqual({ x: 7, y: 8 });
+    expect(positionFor(moved, 1)).toEqual(autoPosition(1));
+  });
+});
+
+describe('nodeCentre', () => {
+  it('offsets by half the node size', () => {
+    expect(nodeCentre({ x: 0, y: 0 })).toEqual({ x: NODE_WIDTH / 2, y: NODE_HEIGHT / 2 });
+    expect(nodeCentre({ x: 10, y: 20 })).toEqual({
+      x: 10 + NODE_WIDTH / 2,
+      y: 20 + NODE_HEIGHT / 2
+    });
   });
 });

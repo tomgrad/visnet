@@ -194,10 +194,16 @@ export interface TrainingConfig {
   batchSize: number;
 }
 
+export interface NodePosition {
+  x: number;
+  y: number;
+}
+
 export interface Network {
-  version: 1;
+  version: 2;
   blocks: Block[];
   training: TrainingConfig;
+  positions: Record<string, NodePosition>; // block id -> where the user put it
 }
 ```
 
@@ -417,13 +423,27 @@ buttons and to `Ctrl/Cmd+Z` and `Ctrl/Cmd+Shift+Z`.
 `src/lib/editor/flow.ts` converts between the domain model and Svelte Flow:
 
 - `toFlow(net, shapes): { nodes: Node[]; edges: Edge[] }` — one node per block,
-  positioned top-to-bottom from the chain index, with one edge between each pair
-  of adjacent blocks. Node and edge data carry the shapes from `inferShapes`.
-  Positions are computed, never stored.
-  - The pipeline runs **down the page**: node *i* sits at `x = 0`,
-    `y = i * (NODE_HEIGHT + NODE_GAP)`, with `NODE_WIDTH` 200, `NODE_HEIGHT` 90,
-    and `NODE_GAP` 80. A block's target handle is on its top edge and its source
-    handle on its bottom edge, so data flows downward from the Input to the Output.
+  with one edge between each pair of adjacent blocks. Node and edge data carry the
+  shapes from `inferShapes`.
+  - **Positions are stored per block and are cosmetic.** `positionFor(net, index)`
+    returns `net.positions[block.id]` when the user has moved that block, and
+    otherwise the auto slot `{ x: 0, y: index * (NODE_HEIGHT + NODE_GAP) }`, with
+    `NODE_WIDTH` 200, `NODE_HEIGHT` 90, and `NODE_GAP` 80. So a network nobody has
+    rearranged reads as a tidy top-to-bottom pipeline, and only blocks the user has
+    deliberately moved sit off it. A block's target handle is on its top edge and
+    its source handle on its bottom edge, so data flows downward from the Input to
+    the Output.
+  - **The chain array, not the drawing, defines the order.** Dragging a node moves
+    it visually and nothing else; reordering remains an explicit gesture (a wire
+    drag, or the inspector's move arrows). A stray drag can therefore never change
+    the network or discard training. A `Tidy up` toolbar action clears every stored
+    position in one undoable step, so a scattered canvas is always recoverable.
+  - Because positions can be scattered, a canvas drop resolves to the **nearest
+    edge midpoint** rather than to a y coordinate: `dropIndexFor(point, centres)`
+    takes the node centres and picks the wire whose midpoint is closest to the drop
+    point, inserting at that edge's index + 1. For a tidy vertical column this is
+    identical to the nearest-block-centre rule it replaces, since the boundary
+    between adjacent midpoints falls exactly on the node centre.
   - `NODE_HEIGHT` is a layout constant, so `BlockNode` sets `min-height` from it.
     That keeps the spacing math and the rendered box from drifting apart, the same
     guarantee the node's width already has.
@@ -833,8 +853,15 @@ Recorded so later readers know these were deliberate.
 3. **Linear chain only.** No DAGs, branching, or multi-input blocks.
 4. **The `output` block is a marker that adds no layer.** Keeps softmax on the last
    real layer and makes the terminal node declarative.
-5. **Auto-layout pipeline.** Node positions derive from chain index and are never
-   stored; wiring gestures reorder the array.
+5. **Auto-layout by default, with stored positions — superseding the original
+   "positions are never stored" decision.** The original choice avoided the "my
+   blocks are scattered" failure mode, but it also meant the canvas could not be
+   arranged at all. Positions are now stored per block, so unmoved blocks still
+   auto-place in a tidy column while moved ones stay where the user put them. The
+   safeguard the original decision was protecting is kept two other ways: the chain
+   array remains the sole source of order, so dragging a node is cosmetic and can
+   never change the network, and a `Tidy up` action restores the column in one
+   undoable step.
 6. **Weights in IndexedDB, architecture in localStorage.** Quota and Float32
    considerations; the UI presents one save/load action.
 7. **Training on the main thread.** Simplicity now, with a documented path to a

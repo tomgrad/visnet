@@ -41,6 +41,15 @@
     Reset network
   </button>
 
+  <button
+    type="button"
+    data-testid="tidy-up"
+    disabled={Object.keys(store.network.positions).length === 0}
+    onclick={() => store.clearPositions()}
+  >
+    Tidy up
+  </button>
+
   {#if onfit}
     <button type="button" data-testid="fit-view" onclick={onfit}>Fit view</button>
   {/if}

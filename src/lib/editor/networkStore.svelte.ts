@@ -2,8 +2,9 @@ import { insertAt, moveBlock, removeBlock, replaceBlock } from '../network/chain
 import { clampBlockPatch, clampNetwork } from '../network/constraints';
 import { createBlock, createEmptyNetwork } from '../network/factory';
 import { inferShapes } from '../network/inferShapes';
-import type { Block, BlockKind, Network, TrainingConfig } from '../network/types';
+import type { Block, BlockKind, Network, NodePosition, TrainingConfig } from '../network/types';
 import { validate } from '../network/validate';
+import { positionFor } from './flow';
 import { History } from './history';
 import { insertionIndexFor } from './placement';
 
@@ -33,10 +34,13 @@ export class NetworkStore {
     this.selectedBlockId = id;
   }
 
-  addBlock(kind: BlockKind, index?: number): string {
+  addBlock(kind: BlockKind, index?: number, position?: NodePosition): string {
     const block = createBlock(kind);
     const target = index ?? insertionIndexFor(this.network, this.selectedBlockId);
-    this.#commit(insertAt(this.network, target, block));
+    const inserted = insertAt(this.network, target, block);
+    this.#commit(
+      position ? { ...inserted, positions: { ...inserted.positions, [block.id]: position } } : inserted
+    );
     this.selectedBlockId = block.id;
     return block.id;
   }
@@ -68,6 +72,19 @@ export class NetworkStore {
 
   updateTraining(patch: Partial<TrainingConfig>): void {
     this.#commit({ ...this.network, training: { ...this.network.training, ...patch } });
+  }
+
+  setPosition(id: string, position: NodePosition): void {
+    const index = this.network.blocks.findIndex((block) => block.id === id);
+    if (index === -1) return;
+    const current = positionFor(this.network, index);
+    if (current.x === position.x && current.y === position.y) return;
+    this.#commit({ ...this.network, positions: { ...this.network.positions, [id]: position } });
+  }
+
+  clearPositions(): void {
+    if (Object.keys(this.network.positions).length === 0) return;
+    this.#commit({ ...this.network, positions: {} });
   }
 
   undo(): void {

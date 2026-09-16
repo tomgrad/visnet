@@ -53,6 +53,9 @@ Component tests run in jsdom; engine tests run in Node. See `npm test`.
   TensorFlow.js, DOM, and `@xyflow/svelte`.
 - No block stores its input dimension; inputs derive from the previous block's
   output.
+- Node positions are stored on the network (`positions`, keyed by block id) and are
+  purely cosmetic: the `blocks` array defines the chain order, so moving a node
+  never changes the network.
 - Every validation issue carries a non-empty `title`, `message`, and `fix`.
 - Do not add code comments unless a non-obvious constraint requires one.
 

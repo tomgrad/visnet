@@ -12,7 +12,7 @@
   } from '@xyflow/svelte';
   import '@xyflow/svelte/dist/style.css';
   import { EDITOR_NODE_ACTIONS, type EditorNodeActions } from '../editor/context';
-  import { connectionToIntent, NODE_GAP, NODE_HEIGHT, toFlow } from '../editor/flow';
+  import { connectionToIntent, nodeCentre, toFlow } from '../editor/flow';
   import type { NetworkStore } from '../editor/networkStore.svelte';
   import { dropIndexFor } from '../editor/placement';
   import type { BlockKind } from '../network/types';
@@ -72,19 +72,21 @@
 
   const DRAG_TYPE = 'application/visnet-block';
 
-  function flowYFor(event: DragEvent): number {
-    if (!viewport || !wrapper) return 0;
-    return viewport.screenToFlowPosition({ x: event.clientX, y: event.clientY }).y;
-  }
-
   function isBlockDrag(event: DragEvent): boolean {
     return Array.from(event.dataTransfer?.types ?? []).includes(DRAG_TYPE);
+  }
+
+  const centres = $derived(flow.nodes.map((node) => nodeCentre(node.position)));
+
+  function dropPoint(event: DragEvent): { x: number; y: number } {
+    if (!viewport || !wrapper) return { x: 0, y: 0 };
+    return viewport.screenToFlowPosition({ x: event.clientX, y: event.clientY });
   }
 
   function handleDragOver(event: DragEvent): void {
     event.preventDefault();
     if (!isBlockDrag(event)) return;
-    dropIndex = dropIndexFor(flowYFor(event), store.network.blocks.length, NODE_HEIGHT, NODE_GAP);
+    dropIndex = dropIndexFor(dropPoint(event), centres);
   }
 
   function handleDragLeave(event: DragEvent): void {
@@ -119,12 +121,13 @@
   function handleDrop(event: DragEvent): void {
     event.preventDefault();
     const kind = event.dataTransfer?.getData(DRAG_TYPE) as BlockKind | undefined;
-    const index = dropIndex ?? dropIndexFor(flowYFor(event), store.network.blocks.length, NODE_HEIGHT, NODE_GAP);
+    const point = dropPoint(event);
+    const index = dropIndex ?? dropIndexFor(point, centres);
     dropIndex = null;
     ondragover(null);
     if (!kind || !palette.includes(kind)) return;
 
-    store.addBlock(kind, index);
+    store.addBlock(kind, index, point);
   }
 </script>
 
@@ -147,9 +150,12 @@
       {edges}
       {nodeTypes}
       fitView
-      nodesDraggable={false}
+      nodesDraggable
       nodesConnectable
       onconnect={handleConnect}
+      onnodedragstop={({ targetNode }) => {
+        if (targetNode) store.setPosition(targetNode.id, targetNode.position);
+      }}
       onnodeclick={({ node }) => store.select(node.id)}
       onpaneclick={() => store.select(null)}
     >

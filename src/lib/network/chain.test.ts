@@ -5,7 +5,7 @@ import type { Network } from './types';
 
 function net(): Network {
   return {
-    version: 1,
+    version: 2,
     blocks: [
       { id: 'in', kind: 'input', shape: [2] },
       { id: 'a', kind: 'linear', units: 8 },
@@ -13,7 +13,8 @@ function net(): Network {
       { id: 'c', kind: 'linear', units: 2 },
       { id: 'out', kind: 'output', units: 2 }
     ],
-    training: { loss: 'crossEntropy', optimizer: 'adam', learningRate: 0.01, batchSize: 32 }
+    training: { loss: 'crossEntropy', optimizer: 'adam', learningRate: 0.01, batchSize: 32 },
+    positions: {}
   };
 }
 

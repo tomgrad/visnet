@@ -25,7 +25,13 @@ export function moveBlock(net: Network, fromIndex: number, toIndex: number): Net
 export function removeBlock(net: Network, id: string): Network {
   const index = net.blocks.findIndex((block) => block.id === id);
   if (index < FIRST_INTERIOR || index > net.blocks.length - 2) return net;
-  return { ...net, blocks: net.blocks.filter((block) => block.id !== id) };
+  const positions = { ...net.positions };
+  delete positions[id];
+  return {
+    ...net,
+    blocks: net.blocks.filter((block) => block.id !== id),
+    positions
+  };
 }
 
 export function replaceBlock(net: Network, id: string, patch: Partial<Block>): Network {

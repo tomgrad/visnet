@@ -4,7 +4,12 @@ import { tick } from 'svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NetworkStore } from '../editor/networkStore.svelte';
 import BlockCanvas from './BlockCanvas.svelte';
-import { capturedEdges, capturedNodes, resetCaptured } from './__stubs__/flowProbe';
+import {
+  capturedEdges,
+  capturedHandler,
+  capturedNodes,
+  resetCaptured
+} from './__stubs__/flowProbe';
 
 vi.mock('@xyflow/svelte', async () => {
   const FlowStub = (await import('./__stubs__/FlowStub.svelte')).default;
@@ -193,5 +198,53 @@ describe('drop indicator', () => {
     await tick();
 
     expect(highlighted()).toEqual([]);
+  });
+});
+
+describe('free positioning', () => {
+  it('enables node dragging and commits the position when a drag stops', async () => {
+    const store = canvas();
+    await tick();
+
+    const handler = capturedHandler('onnodedragstop');
+    expect(handler).toBeDefined();
+
+    const id = store.network.blocks[1].id;
+    handler?.({ targetNode: { id, position: { x: 44, y: 88 } } });
+    await tick();
+
+    expect(store.network.positions[id]).toEqual({ x: 44, y: 88 });
+  });
+
+  it('ignores a drag stop with no target node', async () => {
+    const store = canvas();
+    await tick();
+
+    capturedHandler('onnodedragstop')?.({ targetNode: null, nodes: [], event: null });
+    await tick();
+
+    expect(store.network.positions).toEqual({});
+  });
+
+  it('places a dropped block at the point it was dropped', async () => {
+    const store = canvas();
+    await tick();
+
+    const before = new Set(store.network.blocks.map((block) => block.id));
+    await drop(400);
+
+    const added = store.network.blocks.find((block) => !before.has(block.id));
+    expect(added).toBeDefined();
+    expect(store.network.positions[added!.id]).toEqual({ x: 10, y: 400 });
+  });
+
+  it('leaves a block added by click unpositioned', async () => {
+    const store = canvas();
+    await tick();
+
+    const created = store.addBlock('linear');
+    await tick();
+
+    expect(store.network.positions[created]).toBeUndefined();
   });
 });

@@ -5,7 +5,7 @@ import { validate, type Issue, type Severity } from './validate';
 
 function net(blocks: Network['blocks'], training?: Partial<Network['training']>): Network {
   return {
-    version: 1,
+    version: 2,
     blocks,
     training: {
       loss: 'crossEntropy',
@@ -13,7 +13,8 @@ function net(blocks: Network['blocks'], training?: Partial<Network['training']>)
       learningRate: 0.01,
       batchSize: 32,
       ...training
-    }
+    },
+    positions: {}
   };
 }
 

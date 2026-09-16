@@ -240,3 +240,89 @@ describe('derived state', () => {
     expect(instance.errors.map((issue) => issue.title)).toContain('Linear layer needs a flat list');
   });
 });
+
+describe('positions', () => {
+  it('stores a moved position and undoes it', () => {
+    const instance = store();
+    const id = instance.network.blocks[1].id;
+
+    expect(instance.network.positions).toEqual({});
+    instance.setPosition(id, { x: 40, y: 90 });
+
+    expect(instance.network.positions[id]).toEqual({ x: 40, y: 90 });
+    expect(instance.canUndo).toBe(true);
+
+    instance.undo();
+    expect(instance.network.positions).toEqual({});
+  });
+
+  it('records nothing when the same position is set twice', () => {
+    const instance = store();
+    const id = instance.network.blocks[1].id;
+
+    instance.setPosition(id, { x: 40, y: 90 });
+    expect(instance.canUndo).toBe(true);
+
+    instance.setPosition(id, { x: 40, y: 90 });
+    instance.undo();
+
+    expect(instance.network.positions).toEqual({});
+    expect(instance.canUndo).toBe(false);
+  });
+
+  it('compares against the auto slot, not just stored positions', () => {
+    const instance = store();
+    const id = instance.network.blocks[1].id;
+
+    instance.setPosition(id, { x: 0, y: 170 });
+    expect(instance.canUndo).toBe(false);
+    expect(instance.network.positions).toEqual({});
+  });
+
+  it('ignores an unknown block', () => {
+    const instance = store();
+    instance.setPosition('missing', { x: 1, y: 2 });
+    expect(instance.network.positions).toEqual({});
+    expect(instance.canUndo).toBe(false);
+  });
+
+  it('clears every position in one undoable step', () => {
+    const instance = store();
+    instance.setPosition(instance.network.blocks[1].id, { x: 10, y: 10 });
+    instance.setPosition(instance.network.blocks[2].id, { x: 20, y: 20 });
+    expect(Object.keys(instance.network.positions)).toHaveLength(2);
+
+    instance.clearPositions();
+    expect(instance.network.positions).toEqual({});
+
+    instance.undo();
+    expect(Object.keys(instance.network.positions)).toHaveLength(2);
+  });
+
+  it('records nothing when there is nothing to tidy', () => {
+    const instance = store();
+    instance.clearPositions();
+    expect(instance.canUndo).toBe(false);
+  });
+
+  it('gives a dropped block the position it was dropped at', () => {
+    const instance = store();
+    const created = instance.addBlock('sigmoid', 2, { x: 30, y: 60 });
+    expect(instance.network.positions[created]).toEqual({ x: 30, y: 60 });
+    expect(instance.network.blocks[2].id).toBe(created);
+  });
+
+  it('leaves a clicked block unpositioned so it takes the auto slot', () => {
+    const instance = store();
+    const created = instance.addBlock('sigmoid');
+    expect(instance.network.positions[created]).toBeUndefined();
+  });
+
+  it('drops a removed block position', () => {
+    const instance = store();
+    const id = instance.network.blocks[1].id;
+    instance.setPosition(id, { x: 5, y: 5 });
+    instance.removeBlock(id);
+    expect(instance.network.positions).toEqual({});
+  });
+});

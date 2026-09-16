@@ -35,7 +35,8 @@ describe('newBlockId', () => {
 describe('createEmptyNetwork', () => {
   it('builds the default MLP', () => {
     const net = createEmptyNetwork();
-    expect(net.version).toBe(1);
+    expect(net.version).toBe(2);
+    expect(net.positions).toEqual({});
     expect(net.blocks.map((b) => b.kind)).toEqual([
       'input',
       'linear',

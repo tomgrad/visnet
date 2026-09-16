@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/svelte';
+import { tick } from 'svelte';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { NetworkStore } from '../editor/networkStore.svelte';
@@ -61,5 +62,25 @@ describe('NetworkEditor', () => {
     store.updateBlock(store.network.blocks[1].id, { units: 0 });
     await Promise.resolve();
     expect(screen.getByTestId('announcements').textContent).toContain('Units changed from 0 to 1');
+  });
+
+  it('disables Tidy up until a node has been moved', async () => {
+    const store = editor();
+    expect((screen.getByTestId('tidy-up') as HTMLButtonElement).disabled).toBe(true);
+
+    store.setPosition(store.network.blocks[1].id, { x: 40, y: 90 });
+    await tick();
+
+    expect((screen.getByTestId('tidy-up') as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('tidies moved nodes back to the auto layout', async () => {
+    const store = editor();
+    store.setPosition(store.network.blocks[1].id, { x: 40, y: 90 });
+    await tick();
+
+    await userEvent.click(screen.getByTestId('tidy-up'));
+
+    expect(store.network.positions).toEqual({});
   });
 });

@@ -69,8 +69,14 @@ export interface TrainingConfig {
   batchSize: number;
 }
 
+export interface NodePosition {
+  x: number;
+  y: number;
+}
+
 export interface Network {
-  version: 1;
+  version: 2;
   blocks: Block[];
   training: TrainingConfig;
+  positions: Record<string, NodePosition>;
 }

@@ -20,4 +20,15 @@ export function capturedEdges(): unknown[] {
 export function resetCaptured(): void {
   latestNodes = [];
   latestEdges = [];
+  handlers = {};
+}
+
+let handlers: Record<string, unknown> = {};
+
+export function recordHandlers(next: Record<string, unknown>): void {
+  handlers = next;
+}
+
+export function capturedHandler(name: string): ((argument: unknown) => void) | undefined {
+  return handlers[name] as ((argument: unknown) => void) | undefined;
 }

@@ -44,7 +44,7 @@ describe('buildModel', () => {
 
   it('builds a convolutional chain with flattening', () => {
     const network: Network = {
-      version: 1,
+      version: 2,
       blocks: [
         { id: 'in', kind: 'input', shape: [28, 28, 1] },
         { id: 'conv', kind: 'conv2d', filters: 4, kernelSize: 3, stride: 1, padding: 'same' },
@@ -53,7 +53,8 @@ describe('buildModel', () => {
         { id: 'sm', kind: 'softmax' },
         { id: 'out', kind: 'output', units: 10 }
       ],
-      training: { loss: 'crossEntropy', optimizer: 'adam', learningRate: 0.01, batchSize: 32 }
+      training: { loss: 'crossEntropy', optimizer: 'adam', learningRate: 0.01, batchSize: 32 },
+    positions: {}
     };
     const model = build(network);
     expect(model.inputs[0].shape).toEqual([null, 28, 28, 1]);
@@ -62,13 +63,14 @@ describe('buildModel', () => {
 
   it('refuses to build an invalid network and carries the issues', () => {
     const network: Network = {
-      version: 1,
+      version: 2,
       blocks: [
         { id: 'in', kind: 'input', shape: [28, 28, 1] },
         { id: 'dense', kind: 'linear', units: 8 },
         { id: 'out', kind: 'output', units: 2 }
       ],
-      training: { loss: 'crossEntropy', optimizer: 'adam', learningRate: 0.01, batchSize: 32 }
+      training: { loss: 'crossEntropy', optimizer: 'adam', learningRate: 0.01, batchSize: 32 },
+    positions: {}
     };
 
     expect(() => buildModel(network)).toThrow(NetworkInvalidError);
