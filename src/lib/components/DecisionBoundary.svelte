@@ -74,19 +74,18 @@
   });
 
   function handleClick(event: MouseEvent): void {
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const { x, y } = boundary
-      ? boundary.clientToDomain(event.clientX, event.clientY, rect)
-      : {
-          x: ((event.clientX - rect.left) / rect.width) * 2 - 1,
-          y: 1 - ((event.clientY - rect.top) / rect.height) * 2
-        };
+    const module = boundary;
+    if (!module || !canvas) return;
+    const { x, y } = module.clientToDomain(
+      event.clientX,
+      event.clientY,
+      canvas.getBoundingClientRect()
+    );
     onaddpoint(x, y);
   }
 </script>
 
-<figure class="boundary" data-testid="decision-boundary">
+<figure class="boundary" data-testid="decision-boundary" data-ready={boundary ? 'true' : 'false'}>
   <canvas
     bind:this={canvas}
     width={SIZE}

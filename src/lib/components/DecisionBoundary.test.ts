@@ -27,9 +27,16 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
 });
 
 describe('DecisionBoundary', () => {
+  async function waitForBoundary(): Promise<void> {
+    await vi.waitFor(() => {
+      expect(screen.getByTestId('decision-boundary').getAttribute('data-ready')).toBe('true');
+    });
+  }
+
   it('renders a canvas and a caption', () => {
     render(DecisionBoundary, {
       props: { model: null, dataset: DATASET, selectedLabel: 0, onaddpoint: () => {} }
@@ -56,6 +63,7 @@ describe('DecisionBoundary', () => {
     render(DecisionBoundary, {
       props: { model: null, dataset: DATASET, selectedLabel: 1, onaddpoint }
     });
+    await waitForBoundary();
 
     const canvas = screen.getByTestId('boundary-canvas');
     fireEvent.click(canvas, { clientX: 100, clientY: 100 });
@@ -65,11 +73,12 @@ describe('DecisionBoundary', () => {
     expect(y).toBeCloseTo(0, 5);
   });
 
-  it('maps the top-right corner to the positive x, positive y corner', () => {
+  it('maps the top-right corner to the positive x, positive y corner', async () => {
     const onaddpoint = vi.fn();
     render(DecisionBoundary, {
       props: { model: null, dataset: DATASET, selectedLabel: 0, onaddpoint }
     });
+    await waitForBoundary();
 
     fireEvent.click(screen.getByTestId('boundary-canvas'), { clientX: 200, clientY: 0 });
     const [x, y] = onaddpoint.mock.calls[0];
