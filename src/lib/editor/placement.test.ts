@@ -54,17 +54,20 @@ describe('dropIndexFor', () => {
   });
 
   it('advances one slot per interior block centre passed', () => {
-    expect(dropIndexFor(300, 5, width, gap)).toBe(2);
-    expect(dropIndexFor(500, 5, width, gap)).toBe(3);
+    expect(dropIndexFor(379, 5, width, gap)).toBe(1);
+    expect(dropIndexFor(380, 5, width, gap)).toBe(2);
+    expect(dropIndexFor(659, 5, width, gap)).toBe(2);
+    expect(dropIndexFor(660, 5, width, gap)).toBe(3);
+    expect(dropIndexFor(940, 5, width, gap)).toBe(4);
   });
 
   it('clamps to the last interior slot when dropped past the end', () => {
     expect(dropIndexFor(5000, 5, width, gap)).toBe(4);
   });
 
-  it('clamps to the only interior slot for a three-block network', () => {
+  it('uses both interior slots for a three-block network', () => {
     expect(dropIndexFor(0, 3, width, gap)).toBe(1);
-    expect(dropIndexFor(9999, 3, width, gap)).toBe(1);
+    expect(dropIndexFor(9999, 3, width, gap)).toBe(2);
   });
 
   it('stays inside the interior range for any coordinate', () => {

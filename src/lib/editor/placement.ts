@@ -15,13 +15,14 @@ export function dropIndexFor(
   nodeWidth: number,
   gap: number
 ): number {
-  if (blockCount < 4) return FIRST_INTERIOR;
-
   const last = blockCount - 1;
+  if (last < FIRST_INTERIOR) return FIRST_INTERIOR;
+
   const step = nodeWidth + gap;
   let index = FIRST_INTERIOR;
   for (let i = FIRST_INTERIOR; i < last; i++) {
-    if (flowX > i * step - gap) index = i + 1;
+    const centre = i * step + nodeWidth / 2;
+    if (flowX >= centre) index = i + 1;
   }
   return Math.min(Math.max(index, FIRST_INTERIOR), last);
 }
