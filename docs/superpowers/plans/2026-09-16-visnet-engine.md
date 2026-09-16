@@ -2596,7 +2596,8 @@ describe('buildModel', () => {
   it('gives only the first layer an explicit input shape', () => {
     const model = build(createEmptyNetwork());
     expect(model.layers[0].batchInputShape).toEqual([null, 2]);
-    expect(model.layers[1].batchInputShape).toEqual([null, 8]);
+    expect(model.layers[1].outputShape).toEqual([null, 8]);
+    expect(model.layers[1].batchInputShape).toBeUndefined();
   });
 
   it('builds a convolutional chain with flattening', () => {
