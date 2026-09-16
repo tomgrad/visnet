@@ -1,0 +1,28 @@
+# dependencies
+node_modules/
+
+# build output
+build/
+.svelte-kit/
+dist/
+
+# brainstorming companion sessions
+.superpowers/
+
+# test / coverage
+coverage/
+
+# env
+.env
+.env.*
+!.env.example
+
+# logs
+*.log
+npm-debug.log*
+
+# editor / OS
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
