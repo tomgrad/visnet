@@ -14,6 +14,7 @@ export interface Issue {
 
 export interface ValidateOptions {
   expectedClasses?: number;
+  expectedInputShape?: number[];
 }
 
 function shapeText(shape: number[] | null): string {
@@ -236,6 +237,23 @@ export function validate(net: Network, options: ValidateOptions = {}): Issue[] {
         title: 'Convolution layer without image input',
         message: `The network has a Convolution layer, but the Input block is a flat list ${shapeText(inputBlock.shape)}.`,
         fix: 'Set the Input shape to 3D such as [28, 28, 1], or remove the Convolution layer.',
+        blockId: inputBlock.id
+      });
+    }
+  }
+
+  if (inputBlock && inputBlock.kind === 'input' && options.expectedInputShape) {
+    const expected = options.expectedInputShape;
+    const actual = inputBlock.shape;
+    const matches =
+      actual.length === expected.length && actual.every((size, i) => size === expected[i]);
+
+    if (!matches) {
+      issues.push({
+        severity: 'warning',
+        title: 'Input shape does not match the data',
+        message: `The Input block is ${shapeText(actual)}, but the images are ${shapeText(expected)}.`,
+        fix: `Set the Input block to ${shapeText(expected)}.`,
         blockId: inputBlock.id
       });
     }

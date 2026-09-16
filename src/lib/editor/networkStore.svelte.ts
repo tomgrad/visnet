@@ -14,6 +14,7 @@ export class NetworkStore {
   network = $state<Network>(createEmptyNetwork());
   selectedBlockId = $state<string | null>(null);
   expectedClasses = $state<number | undefined>(undefined);
+  expectedInputShape = $state<number[] | undefined>(undefined);
   announcements = $state<string[]>([]);
   canUndo = $state(false);
   canRedo = $state(false);
@@ -21,7 +22,12 @@ export class NetworkStore {
   #history = new History<Network>(HISTORY_LIMIT);
   #initial: Network;
 
-  issues = $derived(validate(this.network, { expectedClasses: this.expectedClasses }));
+  issues = $derived(
+    validate(this.network, {
+      expectedClasses: this.expectedClasses,
+      expectedInputShape: this.expectedInputShape
+    })
+  );
   errors = $derived(this.issues.filter((issue) => issue.severity === 'error'));
   warnings = $derived(this.issues.filter((issue) => issue.severity === 'warning'));
   shapes = $derived(inferShapes(this.network));

@@ -242,6 +242,26 @@ describe('derived state', () => {
   });
 });
 
+describe('expected input shape', () => {
+  it('surfaces a mismatch as a warning', () => {
+    const instance = store();
+    instance.expectedInputShape = [28, 28, 1];
+
+    expect(instance.warnings.map((issue) => issue.title)).toContain(
+      'Input shape does not match the data'
+    );
+  });
+
+  it('says nothing when the shape matches', () => {
+    const instance = store();
+    instance.expectedInputShape = [2];
+
+    expect(instance.warnings.map((issue) => issue.title)).not.toContain(
+      'Input shape does not match the data'
+    );
+  });
+});
+
 describe('positions', () => {
   it('stores a moved position and undoes it', () => {
     const instance = store();

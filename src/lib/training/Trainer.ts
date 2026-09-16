@@ -24,7 +24,7 @@ export class Trainer {
 
   constructor(
     private readonly model: tf.LayersModel,
-    private readonly data: { xs: tf.Tensor2D; ys: tf.Tensor2D },
+    private readonly data: { xs: tf.Tensor; ys: tf.Tensor2D },
     private readonly batchSize: number,
     private readonly onStats: (stats: TrainStats) => void,
     private readonly yieldFn: YieldFn = nextFrame,

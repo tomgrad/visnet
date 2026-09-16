@@ -44,8 +44,21 @@ Specifics:
 - Undo and redo every edit.
 - Your network and dataset are restored when you reload, and you can load your saved weights
   on demand.
+- Train a small convolutional network on handwritten digits and watch a grid of test
+  digits turn from wrong to right.
 
-The convolutional (MNIST) example is not built yet.
+## Digit data
+
+The handwritten-digit example needs its data prepared once, locally:
+
+```sh
+npm run data:mnist
+```
+
+That downloads a subset of MNIST into `static/mnist/`, which is gitignored — no dataset
+is committed to this repository and nothing downloads it at build or install time. Until
+you run it, the example page explains what to do rather than failing. MNIST is a
+derivative of the NIST Special Database 19.
 
 ## Architecture
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createEmptyNetwork } from './factory';
 import type { Block, Network } from './types';
-import { validate, type Issue, type Severity } from './validate';
+import { validate, type Issue, type Severity, type ValidateOptions } from './validate';
 
 function net(blocks: Network['blocks'], training?: Partial<Network['training']>): Network {
   return {
@@ -157,7 +157,7 @@ describe('validate errors', () => {
   });
 });
 
-const warnings = (network: Network, options?: { expectedClasses?: number }): Issue[] =>
+const warnings = (network: Network, options?: ValidateOptions): Issue[] =>
   validate(network, options).filter((issue) => issue.severity === 'warning');
 
 const warningTitles = (network: Network, options?: { expectedClasses?: number }): string[] =>
@@ -270,14 +270,15 @@ const WARNING_RULE_TITLES = [
   'Softmax is not the last layer',
   'Output size does not match the data',
   'Image input without a Convolution layer',
-  'Convolution layer without image input'
+  'Convolution layer without image input',
+  'Input shape does not match the data'
 ];
 
 interface RuleCase {
   title: string;
   severity: Severity;
   network: Network;
-  options?: { expectedClasses?: number };
+  options?: ValidateOptions;
 }
 
 const RULE_CASES: RuleCase[] = [
@@ -404,6 +405,18 @@ const RULE_CASES: RuleCase[] = [
       { id: 'sm', kind: 'softmax' },
       OUTPUT
     ])
+  },
+  {
+    title: 'Input shape does not match the data',
+    severity: 'warning',
+    options: { expectedInputShape: [28, 28, 1] },
+    network: net([
+      { id: 'in', kind: 'input', shape: [4, 4, 1] },
+      { id: 'flat', kind: 'flatten' },
+      { id: 'dense', kind: 'linear', units: 10 },
+      { id: 'sm', kind: 'softmax' },
+      OUTPUT
+    ])
   }
 ];
 
@@ -438,5 +451,55 @@ describe('issue message contract', () => {
       )
     );
     expect(produced).toEqual(new Set([...ERROR_RULE_TITLES, ...WARNING_RULE_TITLES]));
+  });
+});
+
+describe('expectedInputShape', () => {
+  it('says nothing when the input matches', () => {
+    const network = net([
+      { id: 'in', kind: 'input', shape: [28, 28, 1] },
+      { id: 'flat', kind: 'flatten' },
+      { id: 'dense', kind: 'linear', units: 10 },
+      { id: 'sm', kind: 'softmax' },
+      OUTPUT
+    ]);
+    expect(
+      warnings(network, { expectedInputShape: [28, 28, 1] }).map((i) => i.title)
+    ).not.toContain('Input shape does not match the data');
+  });
+
+  it('warns when the input shape differs', () => {
+    const network = net([
+      { id: 'in', kind: 'input', shape: [4, 4, 1] },
+      { id: 'flat', kind: 'flatten' },
+      { id: 'dense', kind: 'linear', units: 10 },
+      { id: 'sm', kind: 'softmax' },
+      OUTPUT
+    ]);
+    const issue = warnings(network, { expectedInputShape: [28, 28, 1] }).find(
+      (i) => i.title === 'Input shape does not match the data'
+    );
+    expect(issue).toBeDefined();
+    expect(issue?.blockId).toBe('in');
+    expect(issue?.message).toContain('[4, 4, 1]');
+    expect(issue?.message).toContain('[28, 28, 1]');
+    expect(issue?.fix).toContain('[28, 28, 1]');
+  });
+
+  it('warns when the ranks differ', () => {
+    const network = net([
+      { id: 'in', kind: 'input', shape: [784] },
+      { id: 'flat', kind: 'flatten' },
+      { id: 'dense', kind: 'linear', units: 10 },
+      { id: 'sm', kind: 'softmax' },
+      OUTPUT
+    ]);
+    expect(
+      warnings(network, { expectedInputShape: [28, 28, 1] }).map((i) => i.title)
+    ).toContain('Input shape does not match the data');
+  });
+
+  it('says nothing when no shape is expected', () => {
+    expect(warnings(createEmptyNetwork())).toEqual([]);
   });
 });

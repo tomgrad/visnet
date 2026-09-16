@@ -1,20 +1,21 @@
-import type { PointDataset } from '../../data/points';
-import type { Network, TrainingConfig } from '../../network/types';
-import type { TrainStats } from '../../training/Trainer';
+import type { ImageDataset } from '../data/images';
+import type { PointDataset } from '../data/points';
+import type { Network, TrainingConfig } from '../network/types';
+import type { TrainStats } from '../training/Trainer';
 import type * as tf from '@tensorflow/tfjs';
-import { MLP_WEIGHTS_ID } from './example';
 
 export type Model = tf.LayersModel;
 export type ModelData = {
-  xs: tf.Tensor2D;
+  xs: tf.Tensor;
   ys: tf.Tensor2D;
 };
-export type TrainerHandle = import('../../training/Trainer').Trainer;
+export type TrainerHandle = import('../training/Trainer').Trainer;
 
 export interface Runtime {
   buildModel(net: Network): Model;
   compileModel(model: Model, training: TrainingConfig): void;
   toTensors(dataset: PointDataset): ModelData;
+  imagesToTensors(dataset: ImageDataset, indices?: number[]): ModelData;
   disposeData(data: ModelData | null): void;
   disposeModel(model: Model | null): void;
   createTrainer(
@@ -28,18 +29,19 @@ export interface Runtime {
   loadWeightsInto(model: Model): Promise<boolean>;
 }
 
-export async function loadRuntime(): Promise<Runtime> {
+export async function loadRuntime(weightsId: string): Promise<Runtime> {
   const [builder, tensors, trainerModule, weights] = await Promise.all([
-    import('../../tf/buildModel'),
-    import('../../data/tensors'),
-    import('../../training/Trainer'),
-    import('../../persist/weights')
+    import('../tf/buildModel'),
+    import('../data/tensors'),
+    import('../training/Trainer'),
+    import('../persist/weights')
   ]);
 
   return {
     buildModel: (net) => builder.buildModel(net),
     compileModel: (model, training) => builder.compileModel(model, training),
     toTensors: (dataset) => tensors.toTensors(dataset),
+    imagesToTensors: (dataset, indices) => tensors.imagesToTensors(dataset, indices),
     disposeData: (data) => {
       data?.xs.dispose();
       data?.ys.dispose();
@@ -49,7 +51,7 @@ export async function loadRuntime(): Promise<Runtime> {
     },
     createTrainer: (model, data, batchSize, onStats, onError) =>
       new trainerModule.Trainer(model, data, batchSize, onStats, undefined, onError),
-    saveWeights: (model) => weights.saveWeights(model, MLP_WEIGHTS_ID),
-    loadWeightsInto: (model) => weights.loadWeightsInto(model, MLP_WEIGHTS_ID)
+    saveWeights: (model) => weights.saveWeights(model, weightsId),
+    loadWeightsInto: (model) => weights.loadWeightsInto(model, weightsId)
   };
 }

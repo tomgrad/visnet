@@ -13,7 +13,7 @@
     </li>
     <li>
       <a href={resolve('/examples/cnn')}>Handwritten digits</a>
-      <span>Coming next: convolutional networks on digit images.</span>
+      <span>Train a small convolutional network on handwritten digits.</span>
     </li>
   </ul>
 </main>
