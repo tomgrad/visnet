@@ -48,7 +48,7 @@
 - Test: `src/lib/examples/cnn/example.test.ts`
 
 **Interfaces:**
-- Consumes: `createBlock` from `../../network/factory`; `StorageKeys` from `../../persist/storage`; `Block`, `BlockKind`, `InputBlock`, `LinearBlock`, `Network`, `OutputBlock` from `../../network/types`.
+- Consumes: `createBlock` from `../../network/factory`; `StorageKeys` from `../../persist/storage`; `BlockKind`, `InputBlock`, `LinearBlock`, `Network`, `OutputBlock` from `../../network/types`.
 - Produces:
 
 ```ts
