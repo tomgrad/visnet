@@ -211,3 +211,35 @@ describe('Trainer play loop', () => {
     expect(predict).not.toHaveBeenCalled();
   });
 });
+
+describe('a four-dimensional feature batch', () => {
+  it('trains on image-shaped inputs', async () => {
+    const model = tf.sequential();
+    model.add(tf.layers.flatten({ inputShape: [2, 2, 1] }));
+    model.add(tf.layers.dense({ units: 2 }));
+    model.add(tf.layers.softmax());
+    model.compile({ optimizer: 'sgd', loss: 'categoricalCrossentropy' });
+    models.push(model);
+
+    const xs = tf.tensor4d(
+      [0, 1, 1, 0, 1, 0, 0, 1],
+      [2, 2, 2, 1]
+    );
+    const ys = tf.tensor2d(
+      [
+        [1, 0],
+        [0, 1]
+      ],
+      [2, 2]
+    );
+    tensors.push(xs, ys);
+
+    const stats: TrainStats[] = [];
+    const trainer = new Trainer(model, { xs, ys }, 2, (s) => stats.push(s));
+
+    await trainer.step();
+
+    expect(stats).toHaveLength(1);
+    expect(Number.isFinite(stats[0].batchLoss)).toBe(true);
+  });
+});

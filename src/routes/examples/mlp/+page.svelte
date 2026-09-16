@@ -9,14 +9,19 @@
   import { GENERATOR_DESCRIPTIONS, GENERATOR_NAMES } from '$lib/data/points';
   import { NetworkStore } from '$lib/editor/networkStore.svelte';
   import { DatasetStore } from '$lib/examples/mlp/datasetStore.svelte';
-  import { CLASS_LABELS, MLP_PALETTE, MLP_STORAGE_KEYS } from '$lib/examples/mlp/example';
+  import {
+    CLASS_LABELS,
+    MLP_PALETTE,
+    MLP_STORAGE_KEYS,
+    MLP_WEIGHTS_ID
+  } from '$lib/examples/mlp/example';
   import {
     loadRuntime,
     type Model,
     type ModelData,
     type Runtime,
     type TrainerHandle
-  } from '$lib/examples/mlp/runtime';
+  } from '$lib/examples/runtime';
   import { createBrowserStorage, type NetworkStorage } from '$lib/persist/storage';
   import type { TrainStats } from '$lib/training/Trainer';
 
@@ -64,7 +69,7 @@
   }
 
   onMount(async () => {
-    runtime = await loadRuntime();
+    runtime = await loadRuntime(MLP_WEIGHTS_ID);
     storage = createBrowserStorage(MLP_STORAGE_KEYS);
     if (!storage) {
       banner =
