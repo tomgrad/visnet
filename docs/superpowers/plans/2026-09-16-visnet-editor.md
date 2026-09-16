@@ -2617,7 +2617,9 @@ describe('TrainingPanel', () => {
     panel({ disabled: true });
     expect((screen.getByTestId('training-play') as HTMLButtonElement).disabled).toBe(true);
     expect((screen.getByTestId('training-step') as HTMLButtonElement).disabled).toBe(true);
-    expect(screen.getByTestId('training-blocked').textContent).toContain('Fix');
+    const blocked = screen.getByTestId('training-blocked').textContent ?? '';
+    expect(blocked).toContain('problems');
+    expect(blocked).toContain('training');
   });
 
   it('disables play while already playing', () => {
@@ -2745,7 +2747,7 @@ Expected: FAIL — `Failed to resolve import "./TrainingPanel.svelte"`.
 
   {#if disabled}
     <p class="blocked" data-testid="training-blocked">
-      Fix the problems listed below before training. The network cannot be built yet.
+      There are problems to fix below before training. The network cannot be built until they are resolved.
     </p>
   {/if}
 </div>
