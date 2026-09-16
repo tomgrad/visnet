@@ -207,7 +207,10 @@ export function dropIndexFor(flowX: number, blockCount: number, nodeWidth: numbe
 ```
 
 - `insertionIndexFor` returns the index a palette click should insert at: one past the selected block, or just before the output block when nothing is selected or the selection is unknown. The result is always in the interior range `[1, blocks.length - 1]`, which is exactly what `insertAt` accepts, so inserting never lands before the input or after the output.
-- `dropIndexFor` converts a canvas x coordinate into the same interior range. Blocks sit at `x = i * (nodeWidth + gap)` with their centre at `i * (nodeWidth + gap) + nodeWidth / 2`. The result is `1` when the drop is left of the second block's centre, and increases by one each time the drop passes an interior block's centre, clamped to `[1, blockCount - 1]`.
+- `dropIndexFor` converts a canvas x coordinate into the same interior range. Blocks sit at `x = i * (nodeWidth + gap)` with their centre at `i * (nodeWidth + gap) + nodeWidth / 2`. The rule is **nearest gap**: the result is `1` when the drop is left of the second block's centre, and increases by one each time the drop passes an interior block's centre, clamped to `[1, blockCount - 1]`. Interior blocks are indices `1` through `blockCount - 2`, so the input and the output are never drop targets.
+  - Concretely, with `nodeWidth` 200 and `gap` 80 the step is 280 and the interior centres are at 380, 660, 940, …. So for a five-block chain: `x < 380 → 1`, `380 ≤ x < 660 → 2`, `660 ≤ x < 940 → 3`, `x ≥ 940 → 4`.
+  - For a three-block chain `[input, X, output]` there are two interior slots: `x < 380 → 1` and `x ≥ 380 → 2`. A far-right drop must land in the **last** interior slot, not the first.
+  - `blockCount` below 3 leaves a single interior slot, so the result is always `1`.
 - Both are pure and have no Svelte, DOM, TensorFlow.js, or `@xyflow/svelte` imports.
 
 - [ ] **Step 1: Write the failing test**
@@ -271,17 +274,20 @@ describe('dropIndexFor', () => {
   });
 
   it('advances one slot per interior block centre passed', () => {
-    expect(dropIndexFor(300, 5, width, gap)).toBe(2);
-    expect(dropIndexFor(500, 5, width, gap)).toBe(3);
+    expect(dropIndexFor(379, 5, width, gap)).toBe(1);
+    expect(dropIndexFor(380, 5, width, gap)).toBe(2);
+    expect(dropIndexFor(659, 5, width, gap)).toBe(2);
+    expect(dropIndexFor(660, 5, width, gap)).toBe(3);
+    expect(dropIndexFor(940, 5, width, gap)).toBe(4);
   });
 
   it('clamps to the last interior slot when dropped past the end', () => {
     expect(dropIndexFor(5000, 5, width, gap)).toBe(4);
   });
 
-  it('clamps to the only interior slot for a three-block network', () => {
+  it('uses both interior slots for a three-block network', () => {
     expect(dropIndexFor(0, 3, width, gap)).toBe(1);
-    expect(dropIndexFor(9999, 3, width, gap)).toBe(1);
+    expect(dropIndexFor(9999, 3, width, gap)).toBe(2);
   });
 
   it('stays inside the interior range for any coordinate', () => {
