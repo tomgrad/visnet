@@ -4,8 +4,11 @@
   let { stats }: { stats: TrainStats | null } = $props();
 
   const loss = $derived(stats ? (stats.epochMeanLoss ?? stats.batchLoss) : null);
-  const lossLabel = $derived(
-    stats?.epochMeanLoss !== null && stats ? 'Average loss this epoch' : 'Loss on the last batch'
+  const lossLabel = $derived(stats?.epochMeanLoss == null ? 'Last batch' : 'Epoch average');
+  const lossExplanation = $derived(
+    stats?.epochMeanLoss == null
+      ? 'Loss on the most recent batch. Lower is better.'
+      : 'Average loss over the epoch that just finished. Lower is better.'
   );
   const accuracy = $derived(stats?.epochAccuracy ?? null);
 </script>
@@ -22,18 +25,18 @@
         <dd data-testid="stats-epoch">{stats.epoch}</dd>
         <small>One full pass over all the points.</small>
       </div>
-      <div>
+      <div title={lossExplanation}>
         <dt>Loss</dt>
         <dd data-testid="stats-loss">{loss?.toFixed(3) ?? '—'}</dd>
-        <small>{lossLabel}. Lower is better.</small>
+        <small><span data-testid="stats-loss-label">{lossLabel}</span>. Lower is better.</small>
       </div>
-      {#if accuracy !== null}
-        <div>
-          <dt>Accuracy</dt>
-          <dd data-testid="stats-accuracy">{(accuracy * 100).toFixed(1)}%</dd>
-          <small>Share of points the network classifies correctly.</small>
-        </div>
-      {/if}
+      <div>
+        <dt>Accuracy</dt>
+        <dd data-testid="stats-accuracy">
+          {accuracy === null ? '—' : `${(accuracy * 100).toFixed(1)}%`}
+        </dd>
+        <small>Share of points classified correctly.</small>
+      </div>
     </dl>
   {/if}
 </div>
@@ -50,7 +53,7 @@
 
   dl {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: var(--space-3);
     margin: 0;
   }
@@ -60,16 +63,20 @@
     text-transform: uppercase;
     letter-spacing: 0.04em;
     color: var(--color-text-muted);
+    min-height: 1.6em;
   }
 
   dd {
     margin: 0;
     font-family: var(--font-mono);
     font-size: var(--text-lg);
+    font-variant-numeric: tabular-nums;
   }
 
   small {
+    display: block;
     color: var(--color-text-muted);
     font-size: var(--text-xs);
+    min-height: 3.2em;
   }
 </style>

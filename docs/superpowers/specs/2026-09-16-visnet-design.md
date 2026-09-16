@@ -682,6 +682,19 @@ Beside it, a compact stats readout shows epoch, current loss, and training
 accuracy as percentages or decimals, with a one-line explanation of each. Accuracy
 is shown for classification only.
 
+The readout updates on every training batch — up to 60 times a second — so its
+layout must not depend on the values it displays. Three consequences follow, and
+they are requirements rather than styling preferences:
+
+- All three cells are always rendered. `epochAccuracy` is `null` for every batch
+  except the one that completes an epoch, so a conditional accuracy cell would
+  mount and unmount several times a second; before the first epoch completes it
+  shows `—`.
+- The grid has a fixed three columns (`repeat(3, minmax(0, 1fr))`), not
+  `auto-fit`, so the column count and widths cannot change as content changes.
+- Labels and explanations are constant-length, and the number cells use
+  `font-variant-numeric: tabular-nums`, so changing digits do not shift the layout.
+
 ## 15. Persistence
 
 **Architecture** — `localStorage`, key `visnet:network:v1`, storing
