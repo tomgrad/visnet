@@ -1647,7 +1647,7 @@ git commit -m "feat: add the live digit sample grid"
         </p>
       </div>
     {:else}
-      <p class="note">Training on {trainCount} digits, checking against {testData.count}.</p>
+      <p class="note">Training on {trainCount} digits, checking against {testData?.count}.</p>
       <SampleGrid
         {model}
         dataset={testData}
