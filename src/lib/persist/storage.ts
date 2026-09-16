@@ -2,8 +2,10 @@ import type { PointDataset } from '../data/points';
 import type { Network } from '../network/types';
 import { fromJSON, toJSON } from '../network/serialize';
 
-export const NETWORK_KEY = 'visnet:network:v1';
-export const DATASET_KEY = 'visnet:mlp:dataset:v1';
+export interface StorageKeys {
+  network: string;
+  dataset: string;
+}
 
 export interface KeyValueStore {
   getItem(key: string): string | null;
@@ -42,38 +44,38 @@ function parseDataset(raw: string): PointDataset | null {
   }
 }
 
-export function createStorage(backing: KeyValueStore): NetworkStorage {
+export function createStorage(backing: KeyValueStore, keys: StorageKeys): NetworkStorage {
   return {
     saveNetwork(net) {
-      backing.setItem(NETWORK_KEY, toJSON(net));
+      backing.setItem(keys.network, toJSON(net));
     },
     loadNetwork() {
-      const raw = backing.getItem(NETWORK_KEY);
+      const raw = backing.getItem(keys.network);
       return raw === null ? null : fromJSON(raw);
     },
     hasStoredNetwork() {
-      return backing.getItem(NETWORK_KEY) !== null;
+      return backing.getItem(keys.network) !== null;
     },
     saveDataset(dataset) {
-      backing.setItem(DATASET_KEY, JSON.stringify({ points: dataset.points }));
+      backing.setItem(keys.dataset, JSON.stringify({ points: dataset.points }));
     },
     loadDataset() {
-      const raw = backing.getItem(DATASET_KEY);
+      const raw = backing.getItem(keys.dataset);
       return raw === null ? null : parseDataset(raw);
     },
     clear() {
-      backing.removeItem(NETWORK_KEY);
-      backing.removeItem(DATASET_KEY);
+      backing.removeItem(keys.network);
+      backing.removeItem(keys.dataset);
     }
   };
 }
 
-export function createBrowserStorage(): NetworkStorage | null {
+export function createBrowserStorage(keys: StorageKeys): NetworkStorage | null {
   try {
     const probe = '__visnet_probe__';
     window.localStorage.setItem(probe, '1');
     window.localStorage.removeItem(probe);
-    return createStorage(window.localStorage);
+    return createStorage(window.localStorage, keys);
   } catch {
     return null;
   }
