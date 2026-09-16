@@ -1,6 +1,6 @@
 import { insertAt, moveBlock, removeBlock, replaceBlock } from '../network/chain';
 import { clampBlockPatch, clampNetwork } from '../network/constraints';
-import { createBlock, createEmptyNetwork } from '../network/factory';
+import { cloneNetwork, createBlock, createEmptyNetwork } from '../network/factory';
 import { inferShapes } from '../network/inferShapes';
 import type { Block, BlockKind, Network, NodePosition, TrainingConfig } from '../network/types';
 import { validate } from '../network/validate';
@@ -33,7 +33,7 @@ export class NetworkStore {
 
   constructor(initial: Network = createEmptyNetwork()) {
     this.network = initial;
-    this.#initial = initial;
+    this.#initial = cloneNetwork(initial);
   }
 
   select(id: string | null): void {

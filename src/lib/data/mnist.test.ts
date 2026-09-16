@@ -25,7 +25,7 @@ function ok(buffer: ArrayBuffer): Response {
 }
 
 function notFound(): Response {
-  return { ok: false, status: 404, arrayBuffer: async () => new ArrayBuffer(0) } as unknown as Response;
+  return { ok: false, status: 404, arrayBuffer: async () => split(2) } as unknown as Response;
 }
 
 afterEach(() => {

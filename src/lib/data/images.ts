@@ -37,7 +37,6 @@ export function parseSplit(buffer: ArrayBuffer): ImageDataset | null {
   if (reserved !== 0) return null;
 
   const pixelBytes = count * rows * cols;
-  if (!Number.isSafeInteger(pixelBytes)) return null;
   if (buffer.byteLength !== HEADER_BYTES + pixelBytes + count) return null;
 
   const pixels = new Uint8Array(buffer, HEADER_BYTES, pixelBytes).slice();

@@ -61,7 +61,7 @@ the rest in Node. See `npm test`.
 - Every validation issue carries a non-empty `title`, `message`, and `fix`.
 - Do not add code comments unless a non-obvious constraint requires one.
 - `static/mnist/` is gitignored and holds a downloaded subset of MNIST, written by
-  `npm run data:mnist`. Nothing in the repository or the build downloads it, and the
+  `npm run data:mnist`. No build or install step downloads it automatically, and the
   CNN example degrades to an instruction when it is absent.
 
 Design reference: `docs/superpowers/specs/2026-09-16-visnet-design.md`.

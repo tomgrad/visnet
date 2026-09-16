@@ -13,6 +13,8 @@ export const MLP_STORAGE_KEYS: StorageKeys = {
   dataset: 'visnet:mlp:dataset:v1'
 };
 
+export const MLP_WEIGHTS_ID = 'main';
+
 export function defaultDataset(): PointDataset {
   return generate(DEFAULT_GENERATOR, DEFAULT_POINT_COUNT, DEFAULT_SEED);
 }

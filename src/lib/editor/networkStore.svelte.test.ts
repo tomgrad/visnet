@@ -401,21 +401,26 @@ describe('clamping on every mutation', () => {
     ]);
   });
 
-  it('leaves no convolution out of range after a reorder', () => {
+  it('re-clamps a convolution when a reorder shrinks its input', () => {
     const instance = store();
-    instance.updateBlock(instance.network.blocks[0].id, { shape: [2, 2, 1] });
-    instance.addBlock('conv2d', 1);
-    instance.addBlock('conv2d', 2);
-    instance.dismissAnnouncements();
+    instance.load({
+      version: 2,
+      blocks: [
+        { id: 'in', kind: 'input', shape: [4, 4, 1] },
+        { id: 'wide', kind: 'conv2d', filters: 4, kernelSize: 4, stride: 1, padding: 'same' },
+        { id: 'shrink', kind: 'conv2d', filters: 4, kernelSize: 4, stride: 4, padding: 'same' },
+        { id: 'out', kind: 'output', units: 2 }
+      ],
+      training: { loss: 'crossEntropy', optimizer: 'adam', learningRate: 0.01, batchSize: 32 },
+      positions: {}
+    });
+    expect(instance.network.blocks[1]).toMatchObject({ id: 'wide', kernelSize: 4 });
 
     instance.moveBlock(2, 1);
 
-    const kernels = instance.network.blocks
-      .filter((block) => block.kind === 'conv2d')
-      .map((block) => (block.kind === 'conv2d' ? block.kernelSize : 0));
-    expect(kernels.every((size) => size <= 2)).toBe(true);
-    expect(instance.errors.map((issue) => issue.title)).not.toContain(
-      'Kernel is larger than the image'
-    );
+    expect(instance.network.blocks[2]).toMatchObject({ id: 'wide', kernelSize: 1 });
+    expect(instance.announcements).toEqual([
+      'Kernel size changed from 4 to 1 because the incoming data is 1×1.'
+    ]);
   });
 });

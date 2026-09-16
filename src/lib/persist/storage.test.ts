@@ -123,12 +123,17 @@ describe('key namespacing', () => {
   it('clears only its own keys', () => {
     const first = createStorage(backing, { network: 'a:network', dataset: 'a:dataset' });
     const second = createStorage(backing, { network: 'b:network', dataset: 'b:dataset' });
+    const dataset: PointDataset = { points: [{ x: 0, y: 0, label: 0 }], numClasses: 2 };
 
     first.saveNetwork(createEmptyNetwork());
+    first.saveDataset(dataset);
     second.saveNetwork(createEmptyNetwork());
+    second.saveDataset(dataset);
     first.clear();
 
     expect(first.loadNetwork()).toBeNull();
+    expect(first.loadDataset()).toBeNull();
     expect(second.loadNetwork()).not.toBeNull();
+    expect(second.loadDataset()).not.toBeNull();
   });
 });

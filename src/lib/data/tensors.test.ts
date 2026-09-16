@@ -78,6 +78,15 @@ describe('imagesToTensors', () => {
     expect(values[1]).toBeCloseTo(1 / 255, 6);
   });
 
+  it('maps a zero pixel to zero', () => {
+    const dataset = images();
+    dataset.pixels[0] = 0;
+    const { xs } = imagesToTensors(dataset);
+    created.push(xs);
+
+    expect(Array.from(xs.dataSync())[0]).toBe(0);
+  });
+
   it('one-hot encodes the labels', () => {
     const { ys } = imagesToTensors(images());
     created.push(ys);

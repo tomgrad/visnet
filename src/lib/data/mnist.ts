@@ -15,17 +15,15 @@ export class ImageDataUnavailableError extends Error {
 }
 
 async function loadSplit(url: string): Promise<ImageDataset> {
-  let response: Response;
   try {
-    response = await fetch(url);
+    const response = await fetch(url);
+    if (!response.ok) throw new ImageDataUnavailableError();
+    const parsed = parseSplit(await response.arrayBuffer());
+    if (!parsed) throw new ImageDataUnavailableError();
+    return parsed;
   } catch {
     throw new ImageDataUnavailableError();
   }
-  if (!response.ok) throw new ImageDataUnavailableError();
-
-  const parsed = parseSplit(await response.arrayBuffer());
-  if (!parsed) throw new ImageDataUnavailableError();
-  return parsed;
 }
 
 export async function loadMnistData(base = '/mnist'): Promise<MnistData> {

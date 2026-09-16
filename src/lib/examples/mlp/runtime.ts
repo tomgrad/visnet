@@ -2,6 +2,7 @@ import type { PointDataset } from '../../data/points';
 import type { Network, TrainingConfig } from '../../network/types';
 import type { TrainStats } from '../../training/Trainer';
 import type * as tf from '@tensorflow/tfjs';
+import { MLP_WEIGHTS_ID } from './example';
 
 export type Model = tf.LayersModel;
 export type ModelData = {
@@ -48,7 +49,7 @@ export async function loadRuntime(): Promise<Runtime> {
     },
     createTrainer: (model, data, batchSize, onStats, onError) =>
       new trainerModule.Trainer(model, data, batchSize, onStats, undefined, onError),
-    saveWeights: (model) => weights.saveWeights(model, 'mlp'),
-    loadWeightsInto: (model) => weights.loadWeightsInto(model, 'mlp')
+    saveWeights: (model) => weights.saveWeights(model, MLP_WEIGHTS_ID),
+    loadWeightsInto: (model) => weights.loadWeightsInto(model, MLP_WEIGHTS_ID)
   };
 }
