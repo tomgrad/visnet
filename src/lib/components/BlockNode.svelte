@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Handle, Position, type NodeProps } from '@xyflow/svelte';
-  import { shapeLabel } from '../editor/flow';
+  import { NODE_WIDTH, shapeLabel } from '../editor/flow';
   import { BLOCK_DESCRIPTIONS } from '../network/descriptions';
   import type { BlockKind } from '../network/types';
 
@@ -23,7 +23,13 @@
   );
 </script>
 
-<div class="block" class:selected data-testid="block-node" title={tooltip}>
+<div
+  class="block"
+  class:selected
+  style="width: {NODE_WIDTH}px"
+  data-testid="block-node"
+  title={tooltip}
+>
   {#if info.kind !== 'input'}
     <Handle type="target" position={Position.Left} />
   {/if}
@@ -53,7 +59,6 @@
 
 <style>
   .block {
-    width: 160px;
     padding: var(--space-2) var(--space-3);
     background: var(--color-surface);
     border: 1px solid var(--color-border);

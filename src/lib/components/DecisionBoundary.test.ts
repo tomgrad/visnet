@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PointDataset } from '../data/points';
 import DecisionBoundary from './DecisionBoundary.svelte';
+import DecisionBoundaryHarness from './DecisionBoundaryHarness.svelte';
 
 const DATASET: PointDataset = {
   points: [
@@ -39,7 +40,7 @@ describe('DecisionBoundary', () => {
 
   it('renders a canvas and a caption', () => {
     render(DecisionBoundary, {
-      props: { model: null, dataset: DATASET, selectedLabel: 0, onaddpoint: () => {} }
+      props: { model: null, dataset: DATASET, selectedLabel: 0, onaddpoint: () => {}, redrawKey: 0 }
     });
     expect(screen.getByTestId('boundary-canvas')).toBeTruthy();
     expect(screen.getByTestId('boundary-caption').textContent).toBeTruthy();
@@ -52,6 +53,7 @@ describe('DecisionBoundary', () => {
         dataset: DATASET,
         selectedLabel: 0,
         onaddpoint: () => {},
+        redrawKey: 0,
         caption: 'Fix the network to see the boundary.'
       }
     });
@@ -61,7 +63,7 @@ describe('DecisionBoundary', () => {
   it('turns a click into domain coordinates', async () => {
     const onaddpoint = vi.fn();
     render(DecisionBoundary, {
-      props: { model: null, dataset: DATASET, selectedLabel: 1, onaddpoint }
+      props: { model: null, dataset: DATASET, selectedLabel: 1, onaddpoint, redrawKey: 0 }
     });
     await waitForBoundary();
 
@@ -76,7 +78,7 @@ describe('DecisionBoundary', () => {
   it('maps the top-right corner to the positive x, positive y corner', async () => {
     const onaddpoint = vi.fn();
     render(DecisionBoundary, {
-      props: { model: null, dataset: DATASET, selectedLabel: 0, onaddpoint }
+      props: { model: null, dataset: DATASET, selectedLabel: 0, onaddpoint, redrawKey: 0 }
     });
     await waitForBoundary();
 
@@ -89,8 +91,48 @@ describe('DecisionBoundary', () => {
   it('does not crash when the canvas has no 2d context', () => {
     expect(() =>
       render(DecisionBoundary, {
-        props: { model: null, dataset: DATASET, selectedLabel: 0, onaddpoint: () => {} }
+        props: { model: null, dataset: DATASET, selectedLabel: 0, onaddpoint: () => {}, redrawKey: 0 }
       })
     ).not.toThrow();
+  });
+
+  it('redraws when the redraw key changes', async () => {
+    const fillRect = vi.fn();
+    const context = {
+      fillRect,
+      clearRect: vi.fn(),
+      drawImage: vi.fn(),
+      putImageData: vi.fn(),
+      beginPath: vi.fn(),
+      arc: vi.fn(),
+      fill: vi.fn(),
+      stroke: vi.fn(),
+      fillStyle: '',
+      strokeStyle: '',
+      lineWidth: 0,
+      imageSmoothingEnabled: false
+    };
+    HTMLCanvasElement.prototype.getContext = vi.fn(
+      () => context as unknown as CanvasRenderingContext2D
+    ) as unknown as typeof HTMLCanvasElement.prototype.getContext;
+
+    const { component } = render(DecisionBoundaryHarness, {
+      props: {
+        model: null,
+        dataset: DATASET,
+        selectedLabel: 0,
+        onaddpoint: () => {}
+      }
+    });
+    await waitForBoundary();
+
+    const before = fillRect.mock.calls.length;
+    expect(before).toBeGreaterThan(0);
+
+    (component as unknown as { bump: () => void }).bump();
+
+    await vi.waitFor(() => {
+      expect(fillRect.mock.calls.length).toBeGreaterThan(before);
+    });
   });
 });

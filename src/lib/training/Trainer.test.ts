@@ -188,4 +188,26 @@ describe('Trainer play loop', () => {
     expect(trainer.isPlaying).toBe(false);
     expect(yields).toBe(1);
   });
+
+  it('ignores a training result that arrives after dispose', async () => {
+    const model = buildModel(createEmptyNetwork());
+    models.push(model);
+    let resolveTraining: (loss: number) => void = () => {};
+    const pending = new Promise<number>((resolve) => {
+      resolveTraining = resolve;
+    });
+    vi.spyOn(model, 'trainOnBatch').mockImplementation(() => pending);
+    const predict = vi.spyOn(model, 'predict');
+
+    const stats: TrainStats[] = [];
+    const trainer = new Trainer(model, makeData(), 8, (next) => stats.push(next));
+
+    const step = trainer.step();
+    trainer.dispose();
+    resolveTraining(0.5);
+
+    await expect(step).resolves.toBeUndefined();
+    expect(stats).toHaveLength(0);
+    expect(predict).not.toHaveBeenCalled();
+  });
 });

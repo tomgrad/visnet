@@ -9,12 +9,14 @@
     dataset,
     selectedLabel,
     onaddpoint,
+    redrawKey,
     caption = 'Each coloured area is the class the network predicts at that spot. Click to add a point.'
   }: {
     model: tf.LayersModel | null;
     dataset: PointDataset;
     selectedLabel: 0 | 1;
     onaddpoint: (x: number, y: number) => void;
+    redrawKey: number;
     caption?: string;
   } = $props();
 
@@ -30,6 +32,7 @@
   });
 
   $effect(() => {
+    void redrawKey;
     const module = boundary;
     const element = canvas;
     if (!module || !element) return;

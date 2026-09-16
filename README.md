@@ -32,7 +32,7 @@ Available optimizers:
 Specifics:
 - no backend, hosted as a static site
 - uses TensorFlow.js
-- saving models to local storage
+- saving model weights in the browser
 
 ## What works today
 
@@ -42,7 +42,8 @@ Specifics:
 - Train on generated 2D points or points you click onto the canvas, and watch the
   decision boundary change as the loss falls.
 - Undo and redo every edit.
-- Your network, dataset, and saved weights are restored when you reload.
+- Your network and dataset are restored when you reload, and you can load your saved weights
+  on demand.
 
 The convolutional (MNIST) example is not built yet.
 

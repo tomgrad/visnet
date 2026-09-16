@@ -63,6 +63,7 @@ export class Trainer {
     let batchLoss: number;
     try {
       const result = await this.model.trainOnBatch(batchXs, batchYs);
+      if (this.disposed) return;
       batchLoss = Array.isArray(result) ? result[0] : result;
     } finally {
       batchXs.dispose();
@@ -108,6 +109,7 @@ export class Trainer {
         await this.step();
         if (!this.playing || this.disposed) break;
         await this.yieldFn();
+        if (this.disposed) break;
       }
     } catch (error) {
       this.onError(error);

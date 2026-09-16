@@ -1,5 +1,6 @@
 <script lang="ts">
   import { browser } from '$app/environment';
+  import { onDestroy } from 'svelte';
   import {
     Background,
     Controls,
@@ -56,10 +57,29 @@
   let viewport = $state<{
     screenToFlowPosition: (p: { x: number; y: number }) => { x: number; y: number };
   } | null>(null);
+  let connectionHint = $state<string | null>(null);
+  let hintTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function showConnectionHint(): void {
+    connectionHint =
+      'That connection is not allowed. Blocks form a single chain from Input to Output.';
+    if (hintTimer) clearTimeout(hintTimer);
+    hintTimer = setTimeout(() => {
+      connectionHint = null;
+      hintTimer = null;
+    }, 4000);
+  }
+
+  onDestroy(() => {
+    if (hintTimer) clearTimeout(hintTimer);
+  });
 
   function handleConnect(connection: { source: string; target: string }): void {
     const intent = connectionToIntent(connection, store.network);
-    if (!intent) return;
+    if (!intent) {
+      showConnectionHint();
+      return;
+    }
     store.moveBlock(intent.from, intent.to);
   }
 
@@ -88,6 +108,9 @@
     ondrop={handleDrop}
     data-testid="canvas"
   >
+    {#if connectionHint}
+      <p class="connection-hint" role="status" data-testid="connection-hint">{connectionHint}</p>
+    {/if}
     <SvelteFlow
       {nodes}
       {edges}
@@ -108,10 +131,26 @@
 
 <style>
   .canvas {
+    position: relative;
     height: 100%;
     min-height: 320px;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
     background: var(--color-bg);
+  }
+
+  .connection-hint {
+    position: absolute;
+    z-index: 1;
+    top: var(--space-2);
+    left: var(--space-2);
+    right: var(--space-2);
+    margin: 0;
+    padding: var(--space-1) var(--space-2);
+    background: color-mix(in srgb, var(--color-warning) 12%, var(--color-surface));
+    border: 1px solid var(--color-warning);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-xs);
+    pointer-events: none;
   }
 </style>

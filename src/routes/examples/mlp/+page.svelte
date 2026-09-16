@@ -27,6 +27,7 @@
   let runtime = $state.raw<Runtime | null>(null);
   let model = $state.raw<Model | null>(null);
   let playing = $state(false);
+  let redrawKey = $state(0);
   let stats = $state<TrainStats | null>(null);
   let lossPoints = $state<number[]>([]);
   let banner = $state<string | null>(null);
@@ -43,6 +44,7 @@
   const trainingSignature = $derived(JSON.stringify(store.network.training));
 
   function handleStats(next: TrainStats): void {
+    redrawKey += 1;
     stats = next;
     if (next.epochMeanLoss !== null) {
       lossPoints = [...lossPoints, next.epochMeanLoss].slice(-200);
@@ -51,7 +53,8 @@
 
   function handleError(error: unknown): void {
     playing = false;
-    banner = `Training stopped: ${error instanceof Error ? error.message : 'unknown error'}. Try fixing the network or resetting the model.`;
+    console.error(error);
+    banner = 'Training stopped because the model changed. Press Reset model and try again.';
   }
 
   function releaseTrainer(): void {
@@ -102,9 +105,17 @@
     model = null;
 
     if (!store.isValid) return;
-    const built = api.buildModel(store.network);
-    currentModel = built;
-    model = built;
+    try {
+      const built = api.buildModel(store.network);
+      currentModel = built;
+      model = built;
+    } catch (error) {
+      console.error(error);
+      api.disposeModel(currentModel);
+      currentModel = null;
+      model = null;
+      banner = 'This network could not be built. Check the problems listed in the editor.';
+    }
   });
 
   $effect(() => {
@@ -281,6 +292,7 @@
 
     <DecisionBoundary
       {model}
+      {redrawKey}
       dataset={datasetStore.dataset}
       selectedLabel={datasetStore.selectedLabel}
       onaddpoint={(x, y) => datasetStore.addPoint(x, y)}

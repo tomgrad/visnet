@@ -1,6 +1,7 @@
 <script lang="ts">
   import { parameterBounds } from '../network/constraints';
   import { BLOCK_DESCRIPTIONS, PARAM_DESCRIPTIONS } from '../network/descriptions';
+  import { convOutputSize } from '../network/inferShapes';
   import { shapeLabel } from '../editor/flow';
   import type { NetworkStore } from '../editor/networkStore.svelte';
   import type { Block, InputBlock } from '../network/types';
@@ -59,9 +60,7 @@
     const [height, width] = inShape;
     const { kernelSize, stride } = block;
     const compute = (dimension: number): number =>
-      padding === 'same'
-        ? Math.ceil(dimension / stride)
-        : Math.floor((dimension - kernelSize) / stride) + 1;
+      convOutputSize(dimension, kernelSize, stride, padding);
     const result = `${compute(height)}×${compute(width)}`;
     if (padding === 'same' && result === `${height}×${width}`) return `stays ${result}`;
     return `becomes ${result}`;
