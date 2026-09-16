@@ -1557,7 +1557,7 @@ git commit -m "feat: add the live digit sample grid"
   $effect(() => {
     const net = store.network;
     const currentStorage = storage;
-    if (!currentStorage || loadState !== 'ready') return;
+    if (!currentStorage) return;
     const timer = setTimeout(() => {
       try {
         currentStorage.saveNetwork(net);
