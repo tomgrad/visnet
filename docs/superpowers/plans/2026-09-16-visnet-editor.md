@@ -378,8 +378,16 @@ export interface ClampResult {
 }
 
 export function clampBlockPatch(net: Network, id: string, patch: Partial<Block>): ClampResult;
+
+export interface NetworkClampResult {
+  network: Network;
+  announcements: string[];
+}
+
+export function clampNetwork(net: Network): NetworkClampResult;
 ```
 
+- `clampNetwork` is what makes an **upstream** change correct the parameters that depend on it. `clampBlockPatch` only fixes the fields in the patch it is given, so changing the Input block's shape would otherwise leave a downstream convolution with a kernel larger than the new image — a state the app must never sit in silently. `clampNetwork` walks the blocks in order, clamping every `conv2d`'s `kernelSize` and `stride` into the bounds implied by its incoming shape, replacing the block whenever a value changes and collecting the announcements in correction order. Because a clamped convolution can change the shapes downstream of it, it repeats until a pass makes no corrections, bounded by the block count. A network with nothing out of range returns the **same reference** with an empty list, so callers can use reference equality to skip work.
 - `parameterBounds` returns the valid choices for a convolution's kernel size and stride given the incoming shape. It returns `null` unless the incoming shape is rank 3, because only image data has spatial dimensions to slide over. Otherwise both lists are `[1 .. min(height, width)]`.
 - `clampBlockPatch` enforces the app's rule that no automatic correction is ever silent. It:
   - clamps `units` and `filters` to integers of at least 1, announcing `Units changed from {from} to {to}. A layer must produce at least one number.` or the same sentence with `Filters`;
@@ -396,7 +404,7 @@ export function clampBlockPatch(net: Network, id: string, patch: Partial<Block>)
 
 ```ts
 import { describe, expect, it } from 'vitest';
-import { clampBlockPatch, parameterBounds } from './constraints';
+import { clampBlockPatch, clampNetwork, parameterBounds } from './constraints';
 import type { Network } from './types';
 
 function net(blocks: Network['blocks']): Network {
@@ -508,6 +516,44 @@ describe('clampBlockPatch', () => {
     );
   });
 });
+
+describe('clampNetwork', () => {
+  it('leaves a valid network untouched and returns the same reference', () => {
+    const result = clampNetwork(IMAGE_NETWORK);
+    expect(result.network).toBe(IMAGE_NETWORK);
+    expect(result.announcements).toEqual([]);
+  });
+
+  it('re-clamps a downstream convolution when the input shape shrinks', () => {
+    const shrunk = net([
+      { id: 'in', kind: 'input', shape: [4, 4, 1] },
+      { id: 'conv', kind: 'conv2d', filters: 8, kernelSize: 28, stride: 1, padding: 'same' },
+      { id: 'flat', kind: 'flatten' },
+      { id: 'dense', kind: 'linear', units: 10 },
+      { id: 'out', kind: 'output', units: 10 }
+    ]);
+
+    const result = clampNetwork(shrunk);
+
+    expect(result.network.blocks[1]).toMatchObject({ kernelSize: 4, stride: 1 });
+    expect(result.announcements).toEqual([
+      'Kernel size changed from 28 to 4 because the incoming data is 4×4.'
+    ]);
+  });
+
+  it('leaves convolution parameters alone when the input is flat', () => {
+    const flat = net([
+      { id: 'in', kind: 'input', shape: [2] },
+      { id: 'conv', kind: 'conv2d', filters: 8, kernelSize: 28, stride: 1, padding: 'same' },
+      { id: 'out', kind: 'output', units: 2 }
+    ]);
+
+    const result = clampNetwork(flat);
+
+    expect(result.network).toBe(flat);
+    expect(result.announcements).toEqual([]);
+  });
+});
 ```
 
 - [ ] **Step 2: Run the test to verify it fails**
@@ -520,6 +566,7 @@ Expected: FAIL — `Failed to resolve import "./constraints"`.
 `src/lib/network/constraints.ts`:
 
 ```ts
+import { replaceBlock } from './chain';
 import { inferShapes } from './inferShapes';
 import type { Block, Network } from './types';
 
@@ -605,6 +652,44 @@ export function clampBlockPatch(net: Network, id: string, patch: Partial<Block>)
   }
 
   return { patch: result, announcement };
+}
+
+export interface NetworkClampResult {
+  network: Network;
+  announcements: string[];
+}
+
+export function clampNetwork(net: Network): NetworkClampResult {
+  let current = net;
+  const announcements: string[] = [];
+
+  for (let pass = 0; pass < net.blocks.length; pass++) {
+    let changed = false;
+    const { perBlock } = inferShapes(current);
+
+    current.blocks.forEach((block, index) => {
+      if (block.kind !== 'conv2d') return;
+      const inShape = perBlock[index].inShape;
+      const bounds = parameterBounds(inShape);
+      if (!bounds) return;
+
+      const limit = Math.max(...bounds.kernelSize);
+      const corrected = clampBlockPatch(current, block.id, {
+        kernelSize: block.kernelSize,
+        stride: block.stride
+      });
+      if (!corrected.announcement) return;
+
+      void limit;
+      current = replaceBlock(current, block.id, corrected.patch);
+      announcements.push(corrected.announcement);
+      changed = true;
+    });
+
+    if (!changed) break;
+  }
+
+  return { network: current, announcements };
 }
 ```
 
