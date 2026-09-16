@@ -2107,10 +2107,10 @@ Expected: FAIL — both imports unresolvable.
           class="issue"
           class:error={issue.severity === 'error'}
           class:warning={issue.severity === 'warning'}
-          data-testid="issue"
         >
           <button
             type="button"
+            data-testid="issue"
             onclick={() => issue.blockId && store.select(issue.blockId)}
             disabled={!issue.blockId}
           >
