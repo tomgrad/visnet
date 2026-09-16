@@ -20,6 +20,7 @@ export default defineConfig({
         test: {
           name: 'ui',
           environment: 'jsdom',
+          setupFiles: ['@testing-library/svelte/vitest'],
           include: ['src/**/*.svelte.test.ts', 'src/lib/components/**/*.test.ts']
         }
       }
