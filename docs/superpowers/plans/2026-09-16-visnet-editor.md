@@ -1501,6 +1501,8 @@ Control behaviour, which is the app's "automatic input selection" requirement:
 - `flatten`, `relu`, `sigmoid`, `softmax` — no parameters; show the description only.
 - `output` — `units`, a number input, minimum 1.
 
+Every numeric and text field commits on **`change`**, not on each keystroke. Committing per keystroke would push one history entry per character and would let the clamped write-back fight the field's own value — typing `16` into a field bound to `units` becomes `116` once the first keystroke is clamped and written back. `commitNumber` must ignore an empty or non-finite value and leave the network untouched. That is why the tests below commit with `fireEvent.change` rather than `userEvent.type`.
+
 Also renders the selected block's output shape, its parameter count, and two buttons, `Move left` and `Move right`, which call `store.moveSelectedBy(-1)` and `store.moveSelectedBy(1)`. Both are disabled for the input and output blocks, which cannot move.
 
 Element test ids: `inspector`, `inspector-empty`, `param-units`, `param-filters`, `param-kernel-size`, `param-stride`, `param-padding`, `param-shape`, `move-left`, `move-right`, `inspector-incoming`.
@@ -1510,7 +1512,7 @@ Element test ids: `inspector`, `inspector-empty`, `param-units`, `param-filters`
 `src/lib/components/InspectorPanel.test.ts`:
 
 ```ts
-import { render, screen } from '@testing-library/svelte';
+import { fireEvent, render, screen } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { NetworkStore } from '../editor/networkStore.svelte';
@@ -1537,9 +1539,7 @@ describe('InspectorPanel', () => {
   it('edits a linear layer unit count', async () => {
     const store = storeWithSelection(1);
     render(InspectorPanel, { props: { store } });
-    const input = screen.getByTestId('param-units');
-    await userEvent.clear(input);
-    await userEvent.type(input, '16');
+    await fireEvent.change(screen.getByTestId('param-units'), { target: { value: '16' } });
     expect(store.network.blocks[1]).toMatchObject({ units: 16 });
   });
 
@@ -1627,7 +1627,7 @@ Expected: FAIL — `Failed to resolve import "./InspectorPanel.svelte"`.
     bounds && block?.kind === 'conv2d' ? bounds.stride : block?.kind === 'conv2d' ? [block.stride] : []
   );
   const canMove = $derived(block !== null && block.kind !== 'input' && block.kind !== 'output');
-  const shapeError = $state<string | null>(null);
+  let shapeError = $state<string | null>(null);
 
   function patch(next: Partial<Block>): void {
     if (!block) return;
