@@ -104,8 +104,6 @@ async function present(path) {
 
 async function main() {
   const args = process.argv.slice(2);
-  const trainCount = flag(args, '--train', 1000);
-  const testCount = flag(args, '--test', 200);
   const force = args.includes('--force');
 
   const trainPath = join(OUT_DIR, 'train.bin');
@@ -115,6 +113,9 @@ async function main() {
     console.log(`Already prepared at ${OUT_DIR}. Pass --force to download again.`);
     return;
   }
+
+  const trainCount = flag(args, '--train', 1000);
+  const testCount = flag(args, '--test', 200);
 
   console.log(`Downloading MNIST from ${SOURCE}`);
   const [trainImages, trainLabels, testImages, testLabels] = await Promise.all([
@@ -127,15 +128,18 @@ async function main() {
   const train = take(trainCount, 'training', trainImages, trainLabels);
   const test = take(testCount, 'test', testImages, testLabels);
 
+  const trainBytes = encodeSplit(train);
+  const testBytes = encodeSplit(test);
+
   await mkdir(OUT_DIR, { recursive: true });
-  await writeFile(trainPath, new Uint8Array(encodeSplit(train)));
-  await writeFile(testPath, new Uint8Array(encodeSplit(test)));
+  await writeFile(trainPath, new Uint8Array(trainBytes));
+  await writeFile(testPath, new Uint8Array(testBytes));
 
   console.log(
-    `Wrote ${train.count} training and ${test.count} test digits, ${train.rows}x${test.cols}.`
+    `Wrote ${train.count} training and ${test.count} test digits, ${train.rows}x${train.cols}.`
   );
-  console.log(`  ${trainPath}`);
-  console.log(`  ${testPath}`);
+  console.log(`  ${trainPath} (${trainBytes.byteLength} bytes)`);
+  console.log(`  ${testPath} (${testBytes.byteLength} bytes)`);
   console.log('MNIST is a derivative of the NIST Special Database 19.');
 }
 

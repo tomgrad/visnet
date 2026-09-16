@@ -36,7 +36,9 @@ describe('parseIdxImages', () => {
   });
 
   it('rejects a wrong magic', () => {
-    expect(() => parseIdxImages(idxLabels([1, 2]))).toThrow(/image/i);
+    const buffer = new ArrayBuffer(16);
+    new DataView(buffer).setUint32(0, 0x00000801, false);
+    expect(() => parseIdxImages(buffer)).toThrow(/image/i);
   });
 
   it('rejects a truncated body', () => {
