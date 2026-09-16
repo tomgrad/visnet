@@ -38,7 +38,7 @@ export class NetworkStore {
     const block = createBlock(kind);
     const target = index ?? insertionIndexFor(this.network, this.selectedBlockId);
     const inserted = insertAt(this.network, target, block);
-    this.#commit(
+    this.#commitClamped(
       position ? { ...inserted, positions: { ...inserted.positions, [block.id]: position } } : inserted
     );
     this.selectedBlockId = block.id;
@@ -53,7 +53,7 @@ export class NetworkStore {
   }
 
   moveBlock(from: number, to: number): void {
-    this.#commit(moveBlock(this.network, from, to));
+    this.#commitClamped(moveBlock(this.network, from, to));
   }
 
   moveSelectedBy(offset: number): void {
@@ -102,10 +102,11 @@ export class NetworkStore {
   }
 
   load(net: Network): void {
+    const result = clampNetwork(net);
     this.#history.clear();
-    this.network = net;
+    this.network = result.network;
     this.selectedBlockId = null;
-    this.announcements = [];
+    this.announcements = [...result.announcements];
     this.#syncHistoryFlags();
   }
 
@@ -126,6 +127,14 @@ export class NetworkStore {
     this.#history.push(this.network);
     this.network = next;
     this.#syncHistoryFlags();
+  }
+
+  #commitClamped(next: Network): void {
+    const result = clampNetwork(next);
+    this.#commit(result.network);
+    if (result.announcements.length > 0) {
+      this.announcements = [...this.announcements, ...result.announcements];
+    }
   }
 
   #syncHistoryFlags(): void {
