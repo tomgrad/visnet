@@ -54,7 +54,7 @@
   );
 
   let wrapper: HTMLDivElement | null = $state(null);
-  let viewport = $state<{
+  let viewport = $state.raw<{
     screenToFlowPosition: (p: { x: number; y: number }) => { x: number; y: number };
   } | null>(null);
   let connectionHint = $state<string | null>(null);
