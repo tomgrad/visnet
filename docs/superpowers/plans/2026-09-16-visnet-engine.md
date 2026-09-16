@@ -24,39 +24,41 @@
 
 ## File Structure
 
-| Path | Responsibility |
-| --- | --- |
-| `package.json`, `svelte.config.js`, `vite.config.ts`, `tsconfig.json`, `eslint.config.js`, `.prettierrc` | Toolchain configuration |
-| `src/app.html`, `src/app.css`, `src/lib/styles/tokens.css` | HTML shell and design tokens |
-| `src/routes/+layout.ts`, `src/routes/+layout.svelte`, `src/routes/+page.svelte` | Prerender flag, global shell, placeholder landing page |
-| `src/lib/network/types.ts` | `Block`, `BlockKind`, `Network`, `TrainingConfig` |
-| `src/lib/network/factory.ts` | Block and network constructors, defaults, id generation |
-| `src/lib/network/descriptions.ts` | Plain-language text for every block kind and parameter |
-| `src/lib/network/chain.ts` | Immutable chain operations |
-| `src/lib/network/inferShapes.ts` | Per-block input/output shapes, edge shapes, parameter counts |
-| `src/lib/network/validate.ts` | Error and warning rules with plain-language messages |
-| `src/lib/network/serialize.ts` | Versioned JSON round-trip and migration seam |
-| `src/lib/editor/flow.ts` | Pure projection of a network to canvas nodes/edges and connection intents |
-| `src/lib/editor/history.ts` | Pure undo/redo stack |
-| `src/lib/tf/buildModel.ts` | `Network` to `tf.Sequential`, compile, `NetworkInvalidError` |
-| `src/lib/training/Trainer.ts` | Play/pause/step training loop with epoch statistics |
-| `src/lib/data/rng.ts` | Seeded PRNG |
-| `src/lib/data/points.ts` | 2D point dataset and generators (pure) |
-| `src/lib/data/tensors.ts` | Dataset to `tf.Tensor2D` conversion |
-| `src/lib/render/boundary.ts` | Grid sampling, coordinate mapping, RGBA rasterisation |
-| `src/lib/render/palette.ts` | Class colours as hex and RGB triples |
+| Path                                                                                                     | Responsibility                                                            |
+| -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `package.json`, `svelte.config.js`, `vite.config.ts`, `tsconfig.json`, `eslint.config.js`, `.prettierrc` | Toolchain configuration                                                   |
+| `src/app.html`, `src/app.css`, `src/lib/styles/tokens.css`                                               | HTML shell and design tokens                                              |
+| `src/routes/+layout.ts`, `src/routes/+layout.svelte`, `src/routes/+page.svelte`                          | Prerender flag, global shell, placeholder landing page                    |
+| `src/lib/network/types.ts`                                                                               | `Block`, `BlockKind`, `Network`, `TrainingConfig`                         |
+| `src/lib/network/factory.ts`                                                                             | Block and network constructors, defaults, id generation                   |
+| `src/lib/network/descriptions.ts`                                                                        | Plain-language text for every block kind and parameter                    |
+| `src/lib/network/chain.ts`                                                                               | Immutable chain operations                                                |
+| `src/lib/network/inferShapes.ts`                                                                         | Per-block input/output shapes, edge shapes, parameter counts              |
+| `src/lib/network/validate.ts`                                                                            | Error and warning rules with plain-language messages                      |
+| `src/lib/network/serialize.ts`                                                                           | Versioned JSON round-trip and migration seam                              |
+| `src/lib/editor/flow.ts`                                                                                 | Pure projection of a network to canvas nodes/edges and connection intents |
+| `src/lib/editor/history.ts`                                                                              | Pure undo/redo stack                                                      |
+| `src/lib/tf/buildModel.ts`                                                                               | `Network` to `tf.Sequential`, compile, `NetworkInvalidError`              |
+| `src/lib/training/Trainer.ts`                                                                            | Play/pause/step training loop with epoch statistics                       |
+| `src/lib/data/rng.ts`                                                                                    | Seeded PRNG                                                               |
+| `src/lib/data/points.ts`                                                                                 | 2D point dataset and generators (pure)                                    |
+| `src/lib/data/tensors.ts`                                                                                | Dataset to `tf.Tensor2D` conversion                                       |
+| `src/lib/render/boundary.ts`                                                                             | Grid sampling, coordinate mapping, RGBA rasterisation                     |
+| `src/lib/render/palette.ts`                                                                              | Class colours as hex and RGB triples                                      |
 
 ---
 
 ### Task 1: Project scaffold, toolchain, and design tokens
 
 **Files:**
+
 - Create: `package.json`, `svelte.config.js`, `vite.config.ts`, `tsconfig.json`, `eslint.config.js`, `.prettierrc`
 - Create: `src/app.html`, `src/app.css`, `src/lib/styles/tokens.css`
 - Create: `src/routes/+layout.ts`, `src/routes/+layout.svelte`, `src/routes/+page.svelte`
 - Test: `src/lib/styles/tokens.test.ts`
 
 **Interfaces:**
+
 - Consumes: nothing.
 - Produces: a working `npm run dev` / `build` / `check` / `test` toolchain, and the CSS custom properties that every later UI task uses. Token names are fixed here: `--color-bg`, `--color-surface`, `--color-border`, `--color-text`, `--color-text-muted`, `--color-accent`, `--color-error`, `--color-warning`, `--color-success`, `--class-0`, `--class-1`, `--space-1` through `--space-6`, `--radius-sm`, `--radius-md`, `--font-sans`, `--font-mono`, `--text-xs`, `--text-sm`, `--text-base`, `--text-lg`, `--text-xl`.
 
@@ -363,10 +365,12 @@ git commit -m "chore: scaffold SvelteKit project with design tokens and vitest"
 ### Task 2: Domain types
 
 **Files:**
+
 - Create: `src/lib/network/types.ts`
 - Test: `src/lib/network/types.test.ts`
 
 **Interfaces:**
+
 - Consumes: nothing.
 - Produces: `BlockKind`, `BLOCK_KINDS`, `BlockBase`, `InputBlock`, `LinearBlock`, `Conv2dBlock`, `FlattenBlock`, `ActivationBlock`, `OutputBlock`, `Block`, `TrainingConfig`, `Network`. Every later task imports from this module. `BLOCK_KINDS` is the single runtime source of the eight block kinds; Tasks 3, 4, and 7 import it rather than re-declaring the list. The `Network` shape is exactly:
 
@@ -440,14 +444,7 @@ Expected: FAIL — `Failed to resolve import "./types"`.
 
 ```ts
 export type BlockKind =
-  | 'input'
-  | 'linear'
-  | 'conv2d'
-  | 'flatten'
-  | 'relu'
-  | 'sigmoid'
-  | 'softmax'
-  | 'output';
+  'input' | 'linear' | 'conv2d' | 'flatten' | 'relu' | 'sigmoid' | 'softmax' | 'output';
 
 export const BLOCK_KINDS: readonly BlockKind[] = [
   'input',
@@ -496,12 +493,7 @@ export interface OutputBlock extends BlockBase {
 }
 
 export type Block =
-  | InputBlock
-  | LinearBlock
-  | Conv2dBlock
-  | FlattenBlock
-  | ActivationBlock
-  | OutputBlock;
+  InputBlock | LinearBlock | Conv2dBlock | FlattenBlock | ActivationBlock | OutputBlock;
 
 export interface TrainingConfig {
   loss: 'mse' | 'crossEntropy';
@@ -534,10 +526,12 @@ git commit -m "feat: add network domain types"
 ### Task 3: Block and network factory
 
 **Files:**
+
 - Create: `src/lib/network/factory.ts`
 - Test: `src/lib/network/factory.test.ts`
 
 **Interfaces:**
+
 - Consumes: `Block`, `BlockKind`, `Network` from `./types`.
 - Produces:
   - `newBlockId(): string`
@@ -727,10 +721,12 @@ git commit -m "feat: add block and network factory with defaults"
 ### Task 4: Block and parameter descriptions
 
 **Files:**
+
 - Create: `src/lib/network/descriptions.ts`
 - Test: `src/lib/network/descriptions.test.ts`
 
 **Interfaces:**
+
 - Consumes: `BlockKind` from `./types`.
 - Produces:
   - `BLOCK_DESCRIPTIONS: Record<BlockKind, string>`
@@ -744,11 +740,7 @@ git commit -m "feat: add block and network factory with defaults"
 
 ```ts
 import { describe, expect, it } from 'vitest';
-import {
-  BLOCK_DESCRIPTIONS,
-  PARAM_DESCRIPTIONS,
-  classifyInputShape
-} from './descriptions';
+import { BLOCK_DESCRIPTIONS, PARAM_DESCRIPTIONS, classifyInputShape } from './descriptions';
 import { BLOCK_KINDS } from './types';
 
 describe('BLOCK_DESCRIPTIONS', () => {
@@ -863,10 +855,12 @@ git commit -m "feat: add plain-language block and parameter descriptions"
 ### Task 5: Immutable chain operations
 
 **Files:**
+
 - Create: `src/lib/network/chain.ts`
 - Test: `src/lib/network/chain.test.ts`
 
 **Interfaces:**
+
 - Consumes: `Block`, `Network` from `./types`.
 - Produces:
   - `insertAt(net: Network, index: number, block: Block): Network` — index is clamped to `[1, blocks.length - 1]`, so a block can never land before the input or after the output.
@@ -1052,10 +1046,12 @@ git commit -m "feat: add immutable chain operations"
 ### Task 6: Shape inference
 
 **Files:**
+
 - Create: `src/lib/network/inferShapes.ts`
 - Test: `src/lib/network/inferShapes.test.ts`
 
 **Interfaces:**
+
 - Consumes: `Block`, `Network` from `./types`.
 - Produces:
 
@@ -1079,7 +1075,12 @@ export interface ShapeResult {
   totalParamCount: number;
 }
 
-export function convOutputSize(size: number, kernelSize: number, stride: number, padding: 'same' | 'valid'): number;
+export function convOutputSize(
+  size: number,
+  kernelSize: number,
+  stride: number,
+  padding: 'same' | 'valid'
+): number;
 export function inferShapes(net: Network): ShapeResult;
 ```
 
@@ -1126,22 +1127,8 @@ describe('inferShapes on the default MLP', () => {
   });
 
   it('tracks shapes through the pipeline', () => {
-    expect(result.perBlock.map((p) => p.inShape)).toEqual([
-      null,
-      [2],
-      [8],
-      [8],
-      [2],
-      [2]
-    ]);
-    expect(result.perBlock.map((p) => p.outShape)).toEqual([
-      [2],
-      [8],
-      [8],
-      [2],
-      [2],
-      [2]
-    ]);
+    expect(result.perBlock.map((p) => p.inShape)).toEqual([null, [2], [8], [8], [2], [2]]);
+    expect(result.perBlock.map((p) => p.outShape)).toEqual([[2], [8], [8], [2], [2], [2]]);
   });
 
   it('counts parameters', () => {
@@ -1331,10 +1318,7 @@ export function inferShapes(net: Network): ShapeResult {
     current = outShape;
   });
 
-  const totalParamCount = perBlock.reduce(
-    (total, info) => total + (info.paramCount ?? 0),
-    0
-  );
+  const totalParamCount = perBlock.reduce((total, info) => total + (info.paramCount ?? 0), 0);
 
   return { perBlock, edges, totalParamCount };
 }
@@ -1357,10 +1341,12 @@ git commit -m "feat: add shape inference with parameter counts"
 ### Task 7: Validation errors
 
 **Files:**
+
 - Create: `src/lib/network/validate.ts`
 - Test: `src/lib/network/validate.test.ts`
 
 **Interfaces:**
+
 - Consumes: `inferShapes` from `./inferShapes`, `Network`/`Block` from `./types`.
 - Produces:
 
@@ -1501,9 +1487,7 @@ describe('validate errors', () => {
 
   it('reports an unrecognised block kind', () => {
     const bogus = { id: 'x', kind: 'dropout' } as unknown as Block;
-    const issue = errors(net([INPUT, bogus, OUTPUT])).find(
-      (i) => i.title === 'Unrecognised block'
-    );
+    const issue = errors(net([INPUT, bogus, OUTPUT])).find((i) => i.title === 'Unrecognised block');
     expect(issue?.blockId).toBe('x');
   });
 
@@ -1696,10 +1680,12 @@ git commit -m "feat: add validation error rules with plain-language fixes"
 ### Task 8: Validation warnings
 
 **Files:**
+
 - Modify: `src/lib/network/validate.ts` (replace the `void options;` line and append the warning rules before `return issues;`)
 - Test: `src/lib/network/validate.test.ts` (append a new `describe` block)
 
 **Interfaces:**
+
 - Consumes: everything from Task 7, plus `classifyInputShape` from `./descriptions`.
 - Produces: the same `validate(net, options)` signature, now also emitting warnings.
 - Warning rules and their exact `title` values:
@@ -1727,11 +1713,7 @@ describe('validate warnings', () => {
   });
 
   it('suggests a softmax for cross-entropy without one', () => {
-    const network = net([
-      INPUT,
-      { id: 'dense', kind: 'linear', units: 2 },
-      OUTPUT
-    ]);
+    const network = net([INPUT, { id: 'dense', kind: 'linear', units: 2 }, OUTPUT]);
     expect(warningTitles(network)).toContain('Add a Softmax for probabilities');
   });
 
@@ -1828,84 +1810,84 @@ Remove the `void options;` line.
 Immediately before `return issues;`, insert:
 
 ```ts
-  const softmaxIndex = net.blocks.findIndex((block) => block.kind === 'softmax');
-  const hasSoftmax = softmaxIndex !== -1;
-  const hasConvolution = net.blocks.some((block) => block.kind === 'conv2d');
+const softmaxIndex = net.blocks.findIndex((block) => block.kind === 'softmax');
+const hasSoftmax = softmaxIndex !== -1;
+const hasConvolution = net.blocks.some((block) => block.kind === 'conv2d');
 
-  if (net.training.loss === 'crossEntropy' && !hasSoftmax) {
+if (net.training.loss === 'crossEntropy' && !hasSoftmax) {
+  issues.push({
+    severity: 'warning',
+    title: 'Add a Softmax for probabilities',
+    message:
+      "Cross-entropy works best when the network's outputs are probabilities, but the network currently ends with raw scores. Training will still run, but it may be less stable.",
+    fix: 'Add a Softmax block after the last Linear layer.'
+  });
+}
+
+if (net.training.loss === 'mse' && hasSoftmax) {
+  issues.push({
+    severity: 'warning',
+    title: 'Softmax is unusual with mean squared error',
+    message: 'Mean squared error is normally used with raw scores, not probabilities.',
+    fix: 'Switch the loss to cross-entropy, or remove the Softmax block.'
+  });
+}
+
+if (hasSoftmax) {
+  let lastRealIndex = -1;
+  net.blocks.forEach((block, index) => {
+    if (block.kind !== 'output') lastRealIndex = index;
+  });
+  if (softmaxIndex !== lastRealIndex) {
     issues.push({
       severity: 'warning',
-      title: 'Add a Softmax for probabilities',
+      title: 'Softmax is not the last layer',
       message:
-        "Cross-entropy works best when the network's outputs are probabilities, but the network currently ends with raw scores. Training will still run, but it may be less stable.",
-      fix: 'Add a Softmax block after the last Linear layer.'
+        'This Softmax block is followed by more layers, so the probabilities it produces get transformed again.',
+      fix: 'Move the Softmax block to just before the Output block.',
+      blockId: net.blocks[softmaxIndex].id
     });
   }
+}
 
-  if (net.training.loss === 'mse' && hasSoftmax) {
+const outputBlock = net.blocks.find((block) => block.kind === 'output');
+if (
+  options.expectedClasses !== undefined &&
+  outputBlock &&
+  outputBlock.kind === 'output' &&
+  outputBlock.units !== options.expectedClasses
+) {
+  issues.push({
+    severity: 'warning',
+    title: 'Output size does not match the data',
+    message: `The Output block says ${outputBlock.units} classes, but the dataset has ${options.expectedClasses}.`,
+    fix: `Set the Output block to ${options.expectedClasses} units.`,
+    blockId: outputBlock.id
+  });
+}
+
+const inputBlock = net.blocks.find((block) => block.kind === 'input');
+if (inputBlock && inputBlock.kind === 'input') {
+  const inputKind = classifyInputShape(inputBlock.shape);
+  if (inputKind === 'image' && !hasConvolution) {
     issues.push({
       severity: 'warning',
-      title: 'Softmax is unusual with mean squared error',
-      message: 'Mean squared error is normally used with raw scores, not probabilities.',
-      fix: 'Switch the loss to cross-entropy, or remove the Softmax block.'
+      title: 'Image input without a Convolution layer',
+      message: `The Input block is image-shaped ${shapeText(inputBlock.shape)}, but the network has no Convolution layer to look at it.`,
+      fix: 'Add a Convolution layer, or change the Input shape to a flat list.',
+      blockId: inputBlock.id
     });
   }
-
-  if (hasSoftmax) {
-    let lastRealIndex = -1;
-    net.blocks.forEach((block, index) => {
-      if (block.kind !== 'output') lastRealIndex = index;
-    });
-    if (softmaxIndex !== lastRealIndex) {
-      issues.push({
-        severity: 'warning',
-        title: 'Softmax is not the last layer',
-        message:
-          'This Softmax block is followed by more layers, so the probabilities it produces get transformed again.',
-        fix: 'Move the Softmax block to just before the Output block.',
-        blockId: net.blocks[softmaxIndex].id
-      });
-    }
-  }
-
-  const outputBlock = net.blocks.find((block) => block.kind === 'output');
-  if (
-    options.expectedClasses !== undefined &&
-    outputBlock &&
-    outputBlock.kind === 'output' &&
-    outputBlock.units !== options.expectedClasses
-  ) {
+  if (inputKind === 'flat' && hasConvolution) {
     issues.push({
       severity: 'warning',
-      title: 'Output size does not match the data',
-      message: `The Output block says ${outputBlock.units} classes, but the dataset has ${options.expectedClasses}.`,
-      fix: `Set the Output block to ${options.expectedClasses} units.`,
-      blockId: outputBlock.id
+      title: 'Convolution layer without image input',
+      message: `The network has a Convolution layer, but the Input block is a flat list ${shapeText(inputBlock.shape)}.`,
+      fix: 'Set the Input shape to 3D such as [28, 28, 1], or remove the Convolution layer.',
+      blockId: inputBlock.id
     });
   }
-
-  const inputBlock = net.blocks.find((block) => block.kind === 'input');
-  if (inputBlock && inputBlock.kind === 'input') {
-    const inputKind = classifyInputShape(inputBlock.shape);
-    if (inputKind === 'image' && !hasConvolution) {
-      issues.push({
-        severity: 'warning',
-        title: 'Image input without a Convolution layer',
-        message: `The Input block is image-shaped ${shapeText(inputBlock.shape)}, but the network has no Convolution layer to look at it.`,
-        fix: 'Add a Convolution layer, or change the Input shape to a flat list.',
-        blockId: inputBlock.id
-      });
-    }
-    if (inputKind === 'flat' && hasConvolution) {
-      issues.push({
-        severity: 'warning',
-        title: 'Convolution layer without image input',
-        message: `The network has a Convolution layer, but the Input block is a flat list ${shapeText(inputBlock.shape)}.`,
-        fix: 'Set the Input shape to 3D such as [28, 28, 1], or remove the Convolution layer.',
-        blockId: inputBlock.id
-      });
-    }
-  }
+}
 ```
 
 - [ ] **Step 4: Run the test to verify it passes**
@@ -1925,10 +1907,12 @@ git commit -m "feat: add validation warning rules"
 ### Task 9: Network serialization
 
 **Files:**
+
 - Create: `src/lib/network/serialize.ts`
 - Test: `src/lib/network/serialize.test.ts`
 
 **Interfaces:**
+
 - Consumes: `createEmptyNetwork` from `./factory`, `Block`, `Network` from `./types`.
 - Produces:
   - `toJSON(net: Network): string` — returns `JSON.stringify({ version: net.version, network: net })`.
@@ -2083,10 +2067,12 @@ git commit -m "feat: add versioned network serialization"
 ### Task 10: Canvas projection
 
 **Files:**
+
 - Create: `src/lib/editor/flow.ts`
 - Test: `src/lib/editor/flow.test.ts`
 
 **Interfaces:**
+
 - Consumes: `Network`, `BlockKind` from `../network/types`; `ShapeResult` from `../network/inferShapes`; `moveBlock` from `../network/chain`.
 - Produces:
 
@@ -2206,12 +2192,7 @@ describe('toFlow', () => {
   });
 
   it('creates one labelled edge per adjacent pair', () => {
-    expect(flow.edges.map((edge) => edge.id)).toEqual([
-      'in->a',
-      'a->b',
-      'b->c',
-      'c->out'
-    ]);
+    expect(flow.edges.map((edge) => edge.id)).toEqual(['in->a', 'a->b', 'b->c', 'c->out']);
     expect(flow.edges.map((edge) => edge.label)).toEqual(['[2]', '[8]', '[8]', '[2]']);
   });
 });
@@ -2371,10 +2352,12 @@ git commit -m "feat: add pure canvas projection and connection intents"
 ### Task 11: Undo/redo history
 
 **Files:**
+
 - Create: `src/lib/editor/history.ts`
 - Test: `src/lib/editor/history.test.ts`
 
 **Interfaces:**
+
 - Consumes: nothing.
 - Produces:
 
@@ -2390,7 +2373,7 @@ export class History<T> {
 }
 ```
 
-- Semantics: `push` records the state that existed *before* a change and clears the redo stack. `undo(current)` returns the previous state and pushes `current` onto the redo stack, or `null` when there is nothing to undo. `redo(current)` is the mirror image. When the stack exceeds `limit`, the oldest entry is dropped. This class is deliberately plain TypeScript with no runes so it can be unit-tested in Node.
+- Semantics: `push` records the state that existed _before_ a change and clears the redo stack. `undo(current)` returns the previous state and pushes `current` onto the redo stack, or `null` when there is nothing to undo. `redo(current)` is the mirror image. When the stack exceeds `limit`, the oldest entry is dropped. This class is deliberately plain TypeScript with no runes so it can be unit-tested in Node.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -2530,10 +2513,12 @@ git commit -m "feat: add undo/redo history"
 ### Task 12: TensorFlow.js model builder
 
 **Files:**
+
 - Create: `src/lib/tf/buildModel.ts`
 - Test: `src/lib/tf/buildModel.test.ts`
 
 **Interfaces:**
+
 - Consumes: `validate`, `Issue` from `../network/validate`; `Network`, `Block`, `TrainingConfig` from `../network/types`.
 - Produces:
 
@@ -2764,10 +2749,12 @@ git commit -m "feat: add TensorFlow.js model builder and compile helper"
 ### Task 13: Trainer
 
 **Files:**
+
 - Create: `src/lib/training/Trainer.ts`
 - Test: `src/lib/training/Trainer.test.ts`
 
 **Interfaces:**
+
 - Consumes: `buildModel` from `../tf/buildModel` (tests only); `createEmptyNetwork` from `../network/factory` (tests only).
 - Produces:
 
@@ -2832,7 +2819,11 @@ function makeData(count = 8): { xs: tf.Tensor2D; ys: tf.Tensor2D } {
   return { xs: x, ys: y };
 }
 
-function makeTrainer(onStats: (stats: TrainStats) => void, batchSize = 4, yieldFn?: () => Promise<void>) {
+function makeTrainer(
+  onStats: (stats: TrainStats) => void,
+  batchSize = 4,
+  yieldFn?: () => Promise<void>
+) {
   const model = buildModel(createEmptyNetwork());
   models.push(model);
   return new Trainer(model, makeData(), batchSize, onStats, yieldFn);
@@ -2871,7 +2862,12 @@ describe('Trainer bookkeeping', () => {
     const trainer = makeTrainer((s) => stats.push(s));
 
     await trainer.step();
-    expect(stats[0]).toMatchObject({ epoch: 0, batch: 1, epochMeanLoss: null, epochAccuracy: null });
+    expect(stats[0]).toMatchObject({
+      epoch: 0,
+      batch: 1,
+      epochMeanLoss: null,
+      epochAccuracy: null
+    });
 
     await trainer.step();
     expect(stats[1].epoch).toBe(1);
@@ -2902,10 +2898,14 @@ describe('Trainer play loop', () => {
   it('runs steps until paused and resolves', async () => {
     const stats: TrainStats[] = [];
     let yields = 0;
-    const trainer = makeTrainer((s) => stats.push(s), 4, async () => {
-      yields += 1;
-      if (yields >= 3) trainer.pause();
-    });
+    const trainer = makeTrainer(
+      (s) => stats.push(s),
+      4,
+      async () => {
+        yields += 1;
+        if (yields >= 3) trainer.pause();
+      }
+    );
 
     expect(trainer.isPlaying).toBe(false);
     const loop = trainer.play();
@@ -2918,9 +2918,13 @@ describe('Trainer play loop', () => {
 
   it('is a no-op when already playing', async () => {
     const stats: TrainStats[] = [];
-    const trainer = makeTrainer((s) => stats.push(s), 4, async () => {
-      trainer.pause();
-    });
+    const trainer = makeTrainer(
+      (s) => stats.push(s),
+      4,
+      async () => {
+        trainer.pause();
+      }
+    );
 
     const first = trainer.play();
     const second = trainer.play();
@@ -2932,10 +2936,14 @@ describe('Trainer play loop', () => {
   it('stops immediately after dispose', async () => {
     const stats: TrainStats[] = [];
     let yields = 0;
-    const trainer = makeTrainer((s) => stats.push(s), 4, async () => {
-      yields += 1;
-      if (yields >= 2) trainer.dispose();
-    });
+    const trainer = makeTrainer(
+      (s) => stats.push(s),
+      4,
+      async () => {
+        yields += 1;
+        if (yields >= 2) trainer.dispose();
+      }
+    );
 
     await trainer.play();
     const seen = stats.length;
@@ -3029,7 +3037,8 @@ export class Trainer {
     this.batch += 1;
 
     if (this.batch >= this.batchesPerEpochCount) {
-      const mean = this.batchLosses.reduce((total, value) => total + value, 0) / this.batchLosses.length;
+      const mean =
+        this.batchLosses.reduce((total, value) => total + value, 0) / this.batchLosses.length;
       const accuracy = this.accuracy();
       this.epoch += 1;
       this.batch = 0;
@@ -3117,12 +3126,14 @@ git commit -m "feat: add trainer with play, pause, step, and epoch statistics"
 ### Task 14: Seeded random numbers and the 2D point dataset
 
 **Files:**
+
 - Create: `src/lib/data/rng.ts`
 - Create: `src/lib/data/points.ts`
 - Create: `src/lib/data/tensors.ts`
 - Test: `src/lib/data/rng.test.ts`, `src/lib/data/points.test.ts`, `src/lib/data/tensors.test.ts`
 
 **Interfaces:**
+
 - Consumes: nothing (except `@tensorflow/tfjs` in `tensors.ts`).
 - Produces:
 
@@ -3131,8 +3142,15 @@ git commit -m "feat: add trainer with play, pause, step, and epoch statistics"
 export function mulberry32(seed: number): () => number;
 
 // points.ts  (pure, no TensorFlow.js)
-export interface Point { x: number; y: number; label: 0 | 1 }
-export interface PointDataset { points: Point[]; numClasses: 2 }
+export interface Point {
+  x: number;
+  y: number;
+  label: 0 | 1;
+}
+export interface PointDataset {
+  points: Point[];
+  numClasses: 2;
+}
 export type GeneratorName = 'twoGaussians' | 'spirals' | 'xor' | 'circles';
 export const GENERATOR_NAMES: GeneratorName[];
 export const GENERATOR_DESCRIPTIONS: Record<GeneratorName, string>;
@@ -3188,13 +3206,7 @@ describe('mulberry32', () => {
 
 ```ts
 import { describe, expect, it } from 'vitest';
-import {
-  GENERATOR_DESCRIPTIONS,
-  GENERATOR_NAMES,
-  addPoint,
-  clearPoints,
-  generate
-} from './points';
+import { GENERATOR_DESCRIPTIONS, GENERATOR_NAMES, addPoint, clearPoints, generate } from './points';
 
 describe('GENERATOR_DESCRIPTIONS', () => {
   it.each(GENERATOR_NAMES)('describes %s', (name) => {
@@ -3234,7 +3246,7 @@ describe('generate', () => {
 
   it('labels xor quadrants in a checkerboard', () => {
     for (const point of generate('xor', 400, 11).points) {
-      const expected = (point.x > 0) !== (point.y > 0) ? 1 : 0;
+      const expected = point.x > 0 !== point.y > 0 ? 1 : 0;
       expect(point.label).toBe(expected);
     }
   });
@@ -3393,7 +3405,7 @@ function xor(count: number, rng: () => number): Point[] {
   return Array.from({ length: count }, () => {
     const x = rng() * 2 - 1;
     const y = rng() * 2 - 1;
-    return { x, y, label: ((x > 0) !== (y > 0) ? 1 : 0) as 0 | 1 };
+    return { x, y, label: (x > 0 !== y > 0 ? 1 : 0) as 0 | 1 };
   });
 }
 
@@ -3475,23 +3487,33 @@ git commit -m "feat: add seeded rng, 2D point dataset, and tensor conversion"
 ### Task 15: Decision-boundary rendering primitives
 
 **Files:**
+
 - Create: `src/lib/render/palette.ts`
 - Create: `src/lib/render/boundary.ts`
 - Test: `src/lib/render/boundary.test.ts`
 
 **Interfaces:**
+
 - Consumes: `@tensorflow/tfjs` (only in `sampleGrid`).
 - Produces:
 
 ```ts
 // palette.ts
-export interface ClassColour { hex: string; rgb: [number, number, number] }
+export interface ClassColour {
+  hex: string;
+  rgb: [number, number, number];
+}
 export const CLASS_COLOURS: [ClassColour, ClassColour];
 export const BACKGROUND_RGB: [number, number, number];
 
 // boundary.ts
 export const GRID_SIZE = 64;
-export interface Rect { left: number; top: number; width: number; height: number }
+export interface Rect {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
 export function clientToDomain(px: number, py: number, rect: Rect): { x: number; y: number };
 export function cellCentre(gx: number, gy: number, size?: number): { x: number; y: number };
 export function classesToRgba(
@@ -3680,7 +3702,11 @@ export function clientToDomain(px: number, py: number, rect: Rect): { x: number;
   };
 }
 
-export function cellCentre(gx: number, gy: number, size: number = GRID_SIZE): { x: number; y: number } {
+export function cellCentre(
+  gx: number,
+  gy: number,
+  size: number = GRID_SIZE
+): { x: number; y: number } {
   return {
     x: ((gx + 0.5) / size) * 2 - 1,
     y: 1 - ((gy + 0.5) / size) * 2
@@ -3739,10 +3765,12 @@ git commit -m "feat: add decision-boundary rendering primitives"
 ### Task 16: Update project documentation and verify the whole engine
 
 **Files:**
+
 - Modify: `AGENTS.md`
 - Modify: `README.md`
 
 **Interfaces:**
+
 - Consumes: everything built in Tasks 1-15.
 - Produces: documentation that matches the shipped toolchain, and a green full verification run.
 
@@ -3798,6 +3826,7 @@ In the "Available modules" list, add `flatten` and `softmax`:
 
 ```markdown
 Available modules:
+
 - linear
 - convolutional
 - flatten
@@ -3821,11 +3850,11 @@ of the engine itself.
 
 ## Development
 
-npm run dev      # development server
-npm run build    # static build
-npm run check    # type checking
-npm run lint     # linting
-npm test         # unit tests
+npm run dev # development server
+npm run build # static build
+npm run check # type checking
+npm run lint # linting
+npm test # unit tests
 ```
 
 - [ ] **Step 3: Run the full verification suite**
@@ -3862,4 +3891,3 @@ git commit -m "docs: document the shipped engine, stack, and commands"
 **Type consistency.** `Network`/`Block` are defined once in Task 2 and imported everywhere. `ShapeResult`/`ShapeInfo`/`EdgeShape` are defined in Task 6 and consumed by Task 10. `Issue` is defined in Task 7 and consumed by Task 12. `TrainStats` is defined in Task 13 and is what Plan B's UI consumes. `CLASS_COLOURS` is defined in Task 15 and matches the token names created in Task 1. `newBlockId` is exported in Task 3 and used by `createEmptyNetwork` in the same file.
 
 **Known deliberate deviation.** Spec section 11 declares `epochMeanLoss` and `epochAccuracy` as `number`; Task 13 makes them `number | null` so mid-epoch steps are unambiguous. Plan B's UI must treat `null` as "not yet available". The spec should be updated to match.
-

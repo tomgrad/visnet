@@ -100,10 +100,7 @@ export function inferShapes(net: Network): ShapeResult {
     current = outShape;
   });
 
-  const totalParamCount = perBlock.reduce(
-    (total, info) => total + (info.paramCount ?? 0),
-    0
-  );
+  const totalParamCount = perBlock.reduce((total, info) => total + (info.paramCount ?? 0), 0);
 
   return { perBlock, edges, totalParamCount };
 }

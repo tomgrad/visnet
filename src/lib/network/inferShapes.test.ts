@@ -32,22 +32,8 @@ describe('inferShapes on the default MLP', () => {
   });
 
   it('tracks shapes through the pipeline', () => {
-    expect(result.perBlock.map((p) => p.inShape)).toEqual([
-      null,
-      [2],
-      [8],
-      [8],
-      [2],
-      [2]
-    ]);
-    expect(result.perBlock.map((p) => p.outShape)).toEqual([
-      [2],
-      [8],
-      [8],
-      [2],
-      [2],
-      [2]
-    ]);
+    expect(result.perBlock.map((p) => p.inShape)).toEqual([null, [2], [8], [8], [2], [2]]);
+    expect(result.perBlock.map((p) => p.outShape)).toEqual([[2], [8], [8], [2], [2], [2]]);
   });
 
   it('counts parameters', () => {

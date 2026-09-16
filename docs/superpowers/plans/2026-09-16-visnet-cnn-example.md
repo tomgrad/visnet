@@ -26,28 +26,30 @@
 
 ## File Structure
 
-| Path | Responsibility |
-| --- | --- |
-| `src/lib/examples/cnn/example.ts` | The CNN palette, storage keys, weight id, sample-grid geometry, and the default convolutional network |
-| `src/lib/examples/cnn/grid.ts` | Pure: logits to predictions, cell index to pixel rectangle |
-| `src/lib/network/validate.ts` | Modify: a new `expectedInputShape` option and its warning |
-| `src/lib/editor/networkStore.svelte.ts` | Modify: an `expectedInputShape` field passed through to `validate` |
-| `src/lib/training/Trainer.ts` | Modify: accept any `tf.Tensor` for the feature batch, so image batches work |
-| `src/lib/examples/runtime.ts` | Moved from `examples/mlp/runtime.ts`, generalised to take a weight id, and given image conversion |
-| `src/lib/examples/mlp/+page.svelte` | Modify: use the shared runtime with the MLP's weight id |
-| `src/lib/components/SampleGrid.svelte` | One canvas: the sample digits, their predicted label, and a correct/incorrect border |
-| `src/routes/examples/cnn/+page.svelte` | The CNN example page |
-| `README.md`, `AGENTS.md` | Modify: both examples ship |
+| Path                                    | Responsibility                                                                                        |
+| --------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `src/lib/examples/cnn/example.ts`       | The CNN palette, storage keys, weight id, sample-grid geometry, and the default convolutional network |
+| `src/lib/examples/cnn/grid.ts`          | Pure: logits to predictions, cell index to pixel rectangle                                            |
+| `src/lib/network/validate.ts`           | Modify: a new `expectedInputShape` option and its warning                                             |
+| `src/lib/editor/networkStore.svelte.ts` | Modify: an `expectedInputShape` field passed through to `validate`                                    |
+| `src/lib/training/Trainer.ts`           | Modify: accept any `tf.Tensor` for the feature batch, so image batches work                           |
+| `src/lib/examples/runtime.ts`           | Moved from `examples/mlp/runtime.ts`, generalised to take a weight id, and given image conversion     |
+| `src/lib/examples/mlp/+page.svelte`     | Modify: use the shared runtime with the MLP's weight id                                               |
+| `src/lib/components/SampleGrid.svelte`  | One canvas: the sample digits, their predicted label, and a correct/incorrect border                  |
+| `src/routes/examples/cnn/+page.svelte`  | The CNN example page                                                                                  |
+| `README.md`, `AGENTS.md`                | Modify: both examples ship                                                                            |
 
 ---
 
 ### Task 1: CNN example configuration
 
 **Files:**
+
 - Create: `src/lib/examples/cnn/example.ts`
 - Test: `src/lib/examples/cnn/example.test.ts`
 
 **Interfaces:**
+
 - Consumes: `createBlock` from `../../network/factory`; `StorageKeys` from `../../persist/storage`; `BlockKind`, `InputBlock`, `LinearBlock`, `Network`, `OutputBlock` from `../../network/types`.
 - Produces:
 
@@ -90,14 +92,7 @@ import {
 
 describe('CNN_PALETTE', () => {
   it('offers convolution and flatten, and no pinned blocks', () => {
-    expect(CNN_PALETTE).toEqual([
-      'conv2d',
-      'flatten',
-      'linear',
-      'relu',
-      'sigmoid',
-      'softmax'
-    ]);
+    expect(CNN_PALETTE).toEqual(['conv2d', 'flatten', 'linear', 'relu', 'sigmoid', 'softmax']);
     expect(CNN_PALETTE).not.toContain('input');
     expect(CNN_PALETTE).not.toContain('output');
   });
@@ -158,7 +153,14 @@ Expected: FAIL — `Failed to resolve import "./example"`.
 
 ```ts
 import { createBlock } from '../../network/factory';
-import type { Block, BlockKind, InputBlock, LinearBlock, Network, OutputBlock } from '../../network/types';
+import type {
+  Block,
+  BlockKind,
+  InputBlock,
+  LinearBlock,
+  Network,
+  OutputBlock
+} from '../../network/types';
 import type { StorageKeys } from '../../persist/storage';
 
 export const CNN_PALETTE: BlockKind[] = [
@@ -222,10 +224,12 @@ git commit -m "feat: add the CNN example configuration"
 ### Task 2: Grid helpers
 
 **Files:**
+
 - Create: `src/lib/examples/cnn/grid.ts`
 - Test: `src/lib/examples/cnn/grid.test.ts`
 
 **Interfaces:**
+
 - Consumes: nothing.
 - Produces:
 
@@ -396,12 +400,14 @@ git commit -m "feat: add the sample grid helpers"
 ### Task 3: Warn when the Input block disagrees with the data
 
 **Files:**
+
 - Modify: `src/lib/network/validate.ts`
 - Modify: `src/lib/editor/networkStore.svelte.ts`
 - Test: `src/lib/network/validate.test.ts` (extend)
 - Test: `src/lib/editor/networkStore.svelte.test.ts` (extend)
 
 **Interfaces:**
+
 - Consumes: nothing new.
 - Produces: `ValidateOptions` gains `expectedInputShape?: number[]`, and `NetworkStore` gains a settable `expectedInputShape = $state<number[] | undefined>(undefined)` passed through to `validate`.
 
@@ -454,9 +460,9 @@ describe('expectedInputShape', () => {
       { id: 'sm', kind: 'softmax' },
       OUTPUT
     ]);
-    expect(
-      warnings(network, { expectedInputShape: [28, 28, 1] }).map((i) => i.title)
-    ).toContain('Input shape does not match the data');
+    expect(warnings(network, { expectedInputShape: [28, 28, 1] }).map((i) => i.title)).toContain(
+      'Input shape does not match the data'
+    );
   });
 
   it('says nothing when no shape is expected', () => {
@@ -467,7 +473,7 @@ describe('expectedInputShape', () => {
 
 Note: `warnings` is the existing helper in that file, and it currently takes `(network, options?: { expectedClasses?: number })`. Widen its options type to `ValidateOptions` so the new key type-checks.
 
-Note also why the matching case asserts *absence of the new title* rather than `toEqual([])`: a rank-3 input with no convolution already triggers the pre-existing "Image input without a Convolution layer" warning, so an empty-array assertion could never pass. The other new tests can use `toEqual`-style checks on their own titles freely.
+Note also why the matching case asserts _absence of the new title_ rather than `toEqual([])`: a rank-3 input with no convolution already triggers the pre-existing "Image input without a Convolution layer" warning, so an empty-array assertion could never pass. The other new tests can use `toEqual`-style checks on their own titles freely.
 
 Then extend the existing message-contract table in the same file so the new rule is covered by it. That table is the spec's guarantee that every rule produces a non-empty title, message, and fix, so a rule missing from it weakens the guarantee.
 
@@ -513,7 +519,7 @@ And append this case to `RULE_CASES`, immediately before the closing `];`:
   }
 ```
 
-That case's network also produces the pre-existing image-without-convolution warning, which is fine: the table's cross-check compares the *union* of every title produced against the full title set, and that title is already in it. The table's per-case assertion only requires the case's own title to be among the issues produced.
+That case's network also produces the pre-existing image-without-convolution warning, which is fine: the table's cross-check compares the _union_ of every title produced against the full title set, and that title is already in it. The table's per-case assertion only requires the case's own title to be among the issues produced.
 
 Append to `src/lib/editor/networkStore.svelte.test.ts`:
 
@@ -561,39 +567,39 @@ export interface ValidateOptions {
 and add this rule beside the existing `expectedClasses` block, after the input block has been found:
 
 ```ts
-  if (inputBlock && inputBlock.kind === 'input' && options.expectedInputShape) {
-    const expected = options.expectedInputShape;
-    const actual = inputBlock.shape;
-    const matches =
-      actual.length === expected.length && actual.every((size, i) => size === expected[i]);
+if (inputBlock && inputBlock.kind === 'input' && options.expectedInputShape) {
+  const expected = options.expectedInputShape;
+  const actual = inputBlock.shape;
+  const matches =
+    actual.length === expected.length && actual.every((size, i) => size === expected[i]);
 
-    if (!matches) {
-      issues.push({
-        severity: 'warning',
-        title: 'Input shape does not match the data',
-        message: `The Input block is ${shapeText(actual)}, but the images are ${shapeText(expected)}.`,
-        fix: `Set the Input block to ${shapeText(expected)}.`,
-        blockId: inputBlock.id
-      });
-    }
+  if (!matches) {
+    issues.push({
+      severity: 'warning',
+      title: 'Input shape does not match the data',
+      message: `The Input block is ${shapeText(actual)}, but the images are ${shapeText(expected)}.`,
+      fix: `Set the Input block to ${shapeText(expected)}.`,
+      blockId: inputBlock.id
+    });
   }
+}
 ```
 
 In `src/lib/editor/networkStore.svelte.ts`, add the field beside `expectedClasses`:
 
 ```ts
-  expectedInputShape = $state<number[] | undefined>(undefined);
+expectedInputShape = $state<number[] | undefined>(undefined);
 ```
 
 and pass it through:
 
 ```ts
-  issues = $derived(
-    validate(this.network, {
-      expectedClasses: this.expectedClasses,
-      expectedInputShape: this.expectedInputShape
-    })
-  );
+issues = $derived(
+  validate(this.network, {
+    expectedClasses: this.expectedClasses,
+    expectedInputShape: this.expectedInputShape
+  })
+);
 ```
 
 - [ ] **Step 4: Run the tests to verify they pass**
@@ -621,12 +627,14 @@ git commit -m "feat: warn when the input shape disagrees with the data"
 ### Task 4: One runtime facade for both examples
 
 **Files:**
+
 - Move: `src/lib/examples/mlp/runtime.ts` → `src/lib/examples/runtime.ts`
 - Modify: `src/lib/training/Trainer.ts`
 - Modify: `src/routes/examples/mlp/+page.svelte`
 - Test: `src/lib/training/Trainer.test.ts` (extend)
 
 **Interfaces:**
+
 - Consumes: `PointDataset` from `../data/points`; `ImageDataset` from `../data/images`; `Network`, `TrainingConfig` from `../network/types`; `TrainStats` from `../training/Trainer`.
 - Produces:
 
@@ -680,10 +688,7 @@ describe('a four-dimensional feature batch', () => {
     model.compile({ optimizer: 'sgd', loss: 'categoricalCrossentropy' });
     models.push(model);
 
-    const xs = tf.tensor4d(
-      [0, 1, 1, 0, 1, 0, 0, 1],
-      [2, 2, 2, 1]
-    );
+    const xs = tf.tensor4d([0, 1, 1, 0, 1, 0, 0, 1], [2, 2, 2, 1]);
     const ys = tf.tensor2d(
       [
         [1, 0],
@@ -825,11 +830,13 @@ The old path is deliberately absent from that `git add`: `git mv` already staged
 ### Task 5: The sample grid
 
 **Files:**
+
 - Create: `src/lib/components/SampleGrid.svelte`
 - Create: `src/lib/components/__stubs__/SampleGridHarness.svelte` (test-only)
 - Test: `src/lib/components/SampleGrid.test.ts`
 
 **Interfaces:**
+
 - Consumes: `ImageDataset`, `imageAt` from `../data/images`; the grid geometry constants from `../examples/cnn/example`; `gridCellRect`, `predictionsFromLogits`, `GridPrediction` from `../examples/cnn/grid`.
 - Produces: `SampleGrid.svelte` with props:
 
@@ -851,6 +858,7 @@ The old path is deliberately absent from that `git add`: `git mv` already staged
 **Colours are literals.** A canvas context cannot resolve a CSS custom property, so the border colours are hex literals matching the tokens (`#10b981` for `--color-success`, `#dc2626` for `--color-error`, `#cbd5e1` for `--color-border`). This is the same duplication `src/lib/render/palette.ts` already accepts for the class colours.
 
 **Behaviour:**
+
 - The wrapper is `columns * cellWidth + (columns - 1) * gap` wide and `rows * cellHeight + (rows - 1) * gap` tall, where `rows = indices.length / columns`. Both canvases are sized to the device pixel ratio and scaled back down with CSS, so the digits stay crisp.
 - The base layer draws each image at its cell's top-left plus a 4-pixel margin, at the dataset's own `cols × rows` size.
 - The overlay draws, for every cell, a border that is green when the prediction matches the label, red when it does not, and the neutral border colour when there is no prediction; and, when there is a prediction, the predicted digit centred in the strip beneath the image.
@@ -1148,9 +1156,7 @@ Expected: FAIL — `Failed to resolve import "./__stubs__/SampleGridHarness.svel
   const width = $derived(
     SAMPLE_GRID_COLUMNS * SAMPLE_GRID_CELL_WIDTH + (SAMPLE_GRID_COLUMNS - 1) * SAMPLE_GRID_GAP
   );
-  const height = $derived(
-    rows * SAMPLE_GRID_CELL_HEIGHT + (rows - 1) * SAMPLE_GRID_GAP
-  );
+  const height = $derived(rows * SAMPLE_GRID_CELL_HEIGHT + (rows - 1) * SAMPLE_GRID_GAP);
 
   let base: HTMLCanvasElement | null = $state(null);
   let overlay: HTMLCanvasElement | null = $state(null);
@@ -1293,11 +1299,11 @@ Expected: FAIL — `Failed to resolve import "./__stubs__/SampleGridHarness.svel
     {#if failed}
       The predictions could not be updated. They will come back once training continues.
     {:else if marks}
-      Each digit shows what the network predicts; a green outline means it is right, a red one
-      that it is wrong.
+      Each digit shows what the network predicts; a green outline means it is right, a red one that
+      it is wrong.
     {:else}
-      Training has not started. These are test digits the network has never seen; each will show
-      its predicted digit once training begins.
+      Training has not started. These are test digits the network has never seen; each will show its
+      predicted digit once training begins.
     {/if}
   </figcaption>
 </figure>
@@ -1354,9 +1360,11 @@ git commit -m "feat: add the live digit sample grid"
 ### Task 6: The CNN example page
 
 **Files:**
+
 - Modify: `src/routes/examples/cnn/+page.svelte` (replaces the placeholder)
 
 **Interfaces:**
+
 - Consumes: `NetworkStore`; `ImageDataset` from `$lib/data/images`; `loadMnistData`, `ImageDataUnavailableError` from `$lib/data/mnist`; `CNN_PALETTE`, `CNN_STORAGE_KEYS`, `CNN_WEIGHTS_ID`, `createCnnNetwork`, `defaultSampleIndices` from `$lib/examples/cnn/example`; `loadRuntime`, `Model`, `ModelData`, `Runtime`, `TrainerHandle` from `$lib/examples/runtime`; `createBrowserStorage`, `NetworkStorage` from `$lib/persist/storage`; `TrainStats` from `$lib/training/Trainer`; the components `ExampleLayout`, `NetworkEditor`, `TrainingPanel`, `LossChart`, `StatsReadout`, `SampleGrid`.
 - Produces: the working CNN example.
 
@@ -1642,8 +1650,8 @@ git commit -m "feat: add the live digit sample grid"
       <div class="note">
         <h2>The digit images are not prepared</h2>
         <p>
-          Run <code>npm run data:mnist</code> in the project, then reload this page. The images
-          are downloaded locally and are never part of the repository.
+          Run <code>npm run data:mnist</code> in the project, then reload this page. The images are downloaded
+          locally and are never part of the repository.
         </p>
       </div>
     {:else}
@@ -1733,10 +1741,12 @@ git commit -m "feat: add the CNN example page"
 ### Task 7: Document both examples and verify
 
 **Files:**
+
 - Modify: `README.md`
 - Modify: `AGENTS.md`
 
 **Interfaces:**
+
 - Consumes: everything built in Tasks 1-6.
 - Produces: documentation that matches the app, and a green full verification.
 
@@ -1751,7 +1761,7 @@ Replace the line saying the convolutional example is not built with a descriptio
 
 And replace the "not built yet" sentence with:
 
-```markdown
+````markdown
 ## Digit data
 
 The handwritten-digit example needs its data prepared once, locally:
@@ -1759,12 +1769,14 @@ The handwritten-digit example needs its data prepared once, locally:
 ```sh
 npm run data:mnist
 ```
+````
 
 That downloads a subset of MNIST into `static/mnist/`, which is gitignored — no dataset
 is committed to this repository and nothing downloads it at build or install time. Until
 you run it, the example page explains what to do rather than failing. MNIST is a
 derivative of the NIST Special Database 19.
-```
+
+````
 
 - [ ] **Step 2: Update `AGENTS.md`**
 
@@ -1776,7 +1788,7 @@ Add to the architecture rules:
 - The CNN example's data is prepared by `npm run data:mnist` into the gitignored
   `static/mnist/`. No build or install step downloads it; the page degrades to an
   instruction when it is absent.
-```
+````
 
 - [ ] **Step 3: Run the full verification**
 
@@ -1815,4 +1827,3 @@ git commit -m "docs: document both examples and the digit data step"
 **Placeholder scan.** No "TBD", "TODO", "similar to Task N", or steps that describe work without showing it. Every code step carries complete code, and every command has an expected result.
 
 **Type consistency.** `Runtime` is defined once in Task 4 and consumed by Task 6. `ModelData`'s `xs` is `tf.Tensor` after Task 4, which is what lets both a `Tensor2D` point batch and a `Tensor4D` image batch flow through it. `GridPrediction` and `gridCellRect` are defined in Task 2 and consumed by Task 5. The grid geometry constants are defined in Task 1 and consumed by Tasks 2's tests and 5. `CNN_STORAGE_KEYS`, `CNN_WEIGHTS_ID` and `createCnnNetwork` are defined in Task 1 and consumed by Task 6. `expectedInputShape` is defined in Task 3 and set by Task 6. The `Network` fixtures in Task 3's tests match the version 2 model, including `positions`.
-

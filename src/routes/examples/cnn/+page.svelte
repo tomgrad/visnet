@@ -269,8 +269,8 @@
       <div class="note">
         <h2>The digit images are not prepared</h2>
         <p>
-          Run <code>npm run data:mnist</code> in the project, then reload this page. The images
-          are downloaded locally and are never part of the repository.
+          Run <code>npm run data:mnist</code> in the project, then reload this page. The images are downloaded
+          locally and are never part of the repository.
         </p>
       </div>
     {:else}

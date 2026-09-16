@@ -62,9 +62,9 @@ describe('InspectorPanel', () => {
     store.addBlock('conv2d', 1);
     render(InspectorPanel, { props: { store } });
 
-    const labels = Array.from(
-      screen.getByTestId('param-padding').querySelectorAll('option')
-    ).map((option) => option.textContent ?? '');
+    const labels = Array.from(screen.getByTestId('param-padding').querySelectorAll('option')).map(
+      (option) => option.textContent ?? ''
+    );
     expect(labels.some((label) => label.includes('28×28'))).toBe(true);
     expect(labels.some((label) => label.includes('26×26'))).toBe(true);
   });

@@ -28,44 +28,46 @@
 
 ## File Structure
 
-| Path | Responsibility |
-| --- | --- |
-| `vite.config.ts` | Add `test.projects`: a `node` project for engine tests, a `ui` project (jsdom) for component tests |
-| `src/lib/editor/placement.ts` | Pure index math: where a palette click or a canvas drop inserts a block |
-| `src/lib/network/constraints.ts` | Pure parameter bounds and clamping derived from the incoming shape, with announcement text |
-| `src/lib/editor/networkStore.svelte.ts` | Runes store: the network, selection, derived issues/shapes, mutators, history, announcements |
-| `src/lib/components/BlockNode.svelte` | Custom Svelte Flow node: kind, key parameter, in→out shape badge, delete |
-| `src/lib/components/BlockPalette.svelte` | The blocks this example permits, each with its plain-language description |
-| `src/lib/components/BlockCanvas.svelte` | Svelte Flow wrapper: the only component that imports `@xyflow/svelte` |
-| `src/lib/components/EditorToolbar.svelte` | Undo/redo, reset, fit view, save/load model |
-| `src/lib/components/InspectorPanel.svelte` | Selected block's parameters, constrained and explained, plus incoming shape |
-| `src/lib/components/ShapeTable.svelte` | The whole pipeline: position, block, in shape, out shape, parameters |
-| `src/lib/components/IssuesPanel.svelte` | Errors and warnings with their fixes |
-| `src/lib/components/NetworkEditor.svelte` | The embeddable unit: composes toolbar, palette, canvas, inspector, shape table, issues |
-| `src/lib/components/LossChart.svelte` | Hand-rolled SVG loss curve |
-| `src/lib/components/StatsReadout.svelte` | Epoch, loss, accuracy with one-line explanations |
-| `src/lib/components/TrainingPanel.svelte` | Loss, optimizer, learning rate, batch size, play/pause/step/reset |
-| `src/lib/components/DecisionBoundary.svelte` | The 2D canvas: boundary, points, click-to-add |
-| `src/lib/components/ExampleLayout.svelte` | Page shell: editor on one side, experiment on the other |
-| `src/lib/examples/mlp/datasetStore.svelte.ts` | The MLP dataset state, generators, click-to-add, tensor lifecycle |
-| `src/lib/examples/mlp/example.ts` | Pure example configuration: allowed palette, generator labels, defaults |
-| `src/lib/persist/storage.ts` | Injectable `Storage` wrapper for the network and the dataset, with versioning |
-| `src/lib/persist/weights.ts` | IndexedDB weight save/load through TensorFlow.js IO, plus pure shape comparison |
-| `src/routes/+page.svelte` | Landing page |
-| `src/routes/examples/mlp/+page.svelte` | The MLP example |
-| `src/routes/examples/cnn/+page.svelte` | CNN placeholder |
+| Path                                          | Responsibility                                                                                     |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `vite.config.ts`                              | Add `test.projects`: a `node` project for engine tests, a `ui` project (jsdom) for component tests |
+| `src/lib/editor/placement.ts`                 | Pure index math: where a palette click or a canvas drop inserts a block                            |
+| `src/lib/network/constraints.ts`              | Pure parameter bounds and clamping derived from the incoming shape, with announcement text         |
+| `src/lib/editor/networkStore.svelte.ts`       | Runes store: the network, selection, derived issues/shapes, mutators, history, announcements       |
+| `src/lib/components/BlockNode.svelte`         | Custom Svelte Flow node: kind, key parameter, in→out shape badge, delete                           |
+| `src/lib/components/BlockPalette.svelte`      | The blocks this example permits, each with its plain-language description                          |
+| `src/lib/components/BlockCanvas.svelte`       | Svelte Flow wrapper: the only component that imports `@xyflow/svelte`                              |
+| `src/lib/components/EditorToolbar.svelte`     | Undo/redo, reset, fit view, save/load model                                                        |
+| `src/lib/components/InspectorPanel.svelte`    | Selected block's parameters, constrained and explained, plus incoming shape                        |
+| `src/lib/components/ShapeTable.svelte`        | The whole pipeline: position, block, in shape, out shape, parameters                               |
+| `src/lib/components/IssuesPanel.svelte`       | Errors and warnings with their fixes                                                               |
+| `src/lib/components/NetworkEditor.svelte`     | The embeddable unit: composes toolbar, palette, canvas, inspector, shape table, issues             |
+| `src/lib/components/LossChart.svelte`         | Hand-rolled SVG loss curve                                                                         |
+| `src/lib/components/StatsReadout.svelte`      | Epoch, loss, accuracy with one-line explanations                                                   |
+| `src/lib/components/TrainingPanel.svelte`     | Loss, optimizer, learning rate, batch size, play/pause/step/reset                                  |
+| `src/lib/components/DecisionBoundary.svelte`  | The 2D canvas: boundary, points, click-to-add                                                      |
+| `src/lib/components/ExampleLayout.svelte`     | Page shell: editor on one side, experiment on the other                                            |
+| `src/lib/examples/mlp/datasetStore.svelte.ts` | The MLP dataset state, generators, click-to-add, tensor lifecycle                                  |
+| `src/lib/examples/mlp/example.ts`             | Pure example configuration: allowed palette, generator labels, defaults                            |
+| `src/lib/persist/storage.ts`                  | Injectable `Storage` wrapper for the network and the dataset, with versioning                      |
+| `src/lib/persist/weights.ts`                  | IndexedDB weight save/load through TensorFlow.js IO, plus pure shape comparison                    |
+| `src/routes/+page.svelte`                     | Landing page                                                                                       |
+| `src/routes/examples/mlp/+page.svelte`        | The MLP example                                                                                    |
+| `src/routes/examples/cnn/+page.svelte`        | CNN placeholder                                                                                    |
 
 ---
 
 ### Task 1: Component-test harness
 
 **Files:**
+
 - Modify: `package.json` (devDependencies)
 - Modify: `vite.config.ts`
 - Create: `src/lib/components/TestHarness.svelte` (temporary, deleted in this task)
 - Test: `src/lib/components/TestHarness.test.ts` (temporary, deleted in this task)
 
 **Interfaces:**
+
 - Consumes: nothing.
 - Produces: a Vitest setup in which `src/lib/components/**/*.test.ts` runs in jsdom with Svelte 5 components renderable, and every other `src/**/*.test.ts` keeps running in Node exactly as it does today. Later tasks rely on `render` from `@testing-library/svelte` working.
 
@@ -194,16 +196,23 @@ git commit -m "test: add a jsdom project for component tests"
 ### Task 2: Block placement index math
 
 **Files:**
+
 - Create: `src/lib/editor/placement.ts`
 - Test: `src/lib/editor/placement.test.ts`
 
 **Interfaces:**
+
 - Consumes: `Network` from `../network/types`.
 - Produces:
 
 ```ts
 export function insertionIndexFor(net: Network, selectedBlockId: string | null): number;
-export function dropIndexFor(flowX: number, blockCount: number, nodeWidth: number, gap: number): number;
+export function dropIndexFor(
+  flowX: number,
+  blockCount: number,
+  nodeWidth: number,
+  gap: number
+): number;
 ```
 
 - `insertionIndexFor` returns the index a palette click should insert at: one past the selected block, or just before the output block when nothing is selected or the selection is unknown. The result is always in the interior range `[1, blocks.length - 1]`, which is exactly what `insertAt` accepts, so inserting never lands before the input or after the output.
@@ -357,10 +366,12 @@ git commit -m "feat: add block placement index math"
 ### Task 3: Parameter bounds and clamping
 
 **Files:**
+
 - Create: `src/lib/network/constraints.ts`
 - Test: `src/lib/network/constraints.test.ts`
 
 **Interfaces:**
+
 - Consumes: `Network`, `Block` from `./types`; `inferShapes` from `./inferShapes`.
 - Produces:
 
@@ -590,11 +601,10 @@ export function parameterBounds(inShape: number[] | null): ParameterBounds | nul
   return { kernelSize: choices, stride: choices };
 }
 
-function clampCount(
-  value: number,
-  label: string
-): { value: number; announcement: string | null } {
-  const rounded = Number.isFinite(value) ? Math.max(MINIMUM_COUNT, Math.floor(value)) : MINIMUM_COUNT;
+function clampCount(value: number, label: string): { value: number; announcement: string | null } {
+  const rounded = Number.isFinite(value)
+    ? Math.max(MINIMUM_COUNT, Math.floor(value))
+    : MINIMUM_COUNT;
   if (rounded === value) return { value, announcement: null };
   return {
     value: rounded,
@@ -710,10 +720,12 @@ git commit -m "feat: add parameter bounds and announced clamping"
 ### Task 4: Editor store
 
 **Files:**
+
 - Create: `src/lib/editor/networkStore.svelte.ts`
 - Test: `src/lib/editor/networkStore.svelte.test.ts`
 
 **Interfaces:**
+
 - Consumes: `createBlock`, `createEmptyNetwork` from `../network/factory`; `insertAt`, `moveBlock`, `removeBlock`, `replaceBlock` from `../network/chain`; `clampBlockPatch` from `../network/constraints`; `inferShapes` from `../network/inferShapes`; `validate` from `../network/validate`; `History` from `./history`; `insertionIndexFor` from `./placement`; `Block`, `BlockKind`, `Network`, `TrainingConfig` from `../network/types`.
 - Produces: `class NetworkStore` with
   - state: `network`, `selectedBlockId`, `expectedClasses`, `announcements`, `canUndo`, `canRedo`
@@ -721,6 +733,7 @@ git commit -m "feat: add parameter bounds and announced clamping"
   - methods: `select(id)`, `addBlock(kind, index?)`, `removeBlock(id)`, `moveBlock(from, to)`, `moveSelectedBy(offset)`, `updateBlock(id, patch)`, `updateTraining(patch)`, `undo()`, `redo()`, `load(net)`, `reset()`, `announce(message)`, `dismissAnnouncements()`
 
 **Behaviour that matters:**
+
 - Every mutation goes through one private `#commit` that pushes the previous network onto the history stack and then replaces it. A mutation that returns the same `Network` reference (a refused delete, a no-op move) records nothing, which is why the engine's refusal paths return the same reference.
 - `addBlock` selects the newly created block, so the inspector immediately shows it.
 - `updateBlock` runs the patch through `clampBlockPatch` and pushes any announcement into `announcements`, so an automatic correction is never silent.
@@ -973,9 +986,7 @@ describe('derived state', () => {
     const instance = store();
     instance.updateBlock(instance.network.blocks[0].id, { shape: [28, 28, 1] });
     expect(instance.isValid).toBe(false);
-    expect(instance.errors.map((issue) => issue.title)).toContain(
-      'Linear layer needs a flat list'
-    );
+    expect(instance.errors.map((issue) => issue.title)).toContain('Linear layer needs a flat list');
   });
 });
 ```
@@ -1129,11 +1140,13 @@ git commit -m "feat: add the reactive editor store"
 ### Task 5: Block node and palette
 
 **Files:**
+
 - Create: `src/lib/components/BlockNode.svelte`
 - Create: `src/lib/components/BlockPalette.svelte`
 - Test: `src/lib/components/BlockPalette.test.ts`
 
 **Interfaces:**
+
 - Consumes: `BLOCK_DESCRIPTIONS` from `../network/descriptions`; `shapeLabel`, `FlowNode` from `../editor/flow`; `BlockKind` from `../network/types`; `Handle`, `Position`, `NodeProps` from `@xyflow/svelte`.
 - Produces:
   - `BlockNode.svelte` — a Svelte Flow custom node. Its `data` is `FlowNode['data']` plus `onremove: () => void`, which `BlockCanvas` injects. It renders the block kind, its `in → out` shape badge, its parameter count, a delete button when `removable`, a `title` tooltip containing the block's plain-language description, a target handle on the left unless the block is the input, and a source handle on the right unless the block is the output.
@@ -1167,9 +1180,7 @@ describe('BlockPalette', () => {
   it('shows the plain-language description for each block', () => {
     render(BlockPalette, { props: { palette: PALETTE, onadd: () => {} } });
     for (const kind of PALETTE) {
-      expect(screen.getByTestId(`palette-${kind}`).textContent).toContain(
-        BLOCK_DESCRIPTIONS[kind]
-      );
+      expect(screen.getByTestId(`palette-${kind}`).textContent).toContain(BLOCK_DESCRIPTIONS[kind]);
     }
   });
 
@@ -1400,9 +1411,11 @@ git commit -m "feat: add the block palette and canvas node"
 ### Task 6: Canvas
 
 **Files:**
+
 - Create: `src/lib/components/BlockCanvas.svelte`
 
 **Interfaces:**
+
 - Consumes: `SvelteFlow`, `Background`, `Controls`, `useSvelteFlow`, `MarkerType`, types `Node`, `Edge`, `NodeTypes` from `@xyflow/svelte`; `NODE_WIDTH`, `NODE_GAP`, `toFlow`, `connectionToIntent` from `../editor/flow`; `dropIndexFor` from `../editor/placement`; `NetworkStore` from `../editor/networkStore.svelte`; `BlockNode.svelte`; `browser` from `$app/environment`.
 - Produces: `BlockCanvas.svelte` with props `{ store: NetworkStore; palette: BlockKind[]; ondragover: (kind: BlockKind | null) => void }`. It renders the network as a left-to-right pipeline of `BlockNode`s with shape labels on every wire, and turns the two user gestures into store calls:
   - drawing a wire from one block's source handle to another block's target handle runs `connectionToIntent` and applies the result with `store.moveBlock`;
@@ -1481,7 +1494,9 @@ Two API details confirmed against the installed 1.6.6 types, so use them exactly
   );
 
   let wrapper: HTMLDivElement | null = $state(null);
-  let viewport = $state<{ screenToFlowPosition: (p: { x: number; y: number }) => { x: number; y: number } } | null>(null);
+  let viewport = $state<{
+    screenToFlowPosition: (p: { x: number; y: number }) => { x: number; y: number };
+  } | null>(null);
 
   function handleConnect(connection: { source: string; target: string }): void {
     const intent = connectionToIntent(connection, store.network);
@@ -1495,9 +1510,10 @@ Two API details confirmed against the installed 1.6.6 types, so use them exactly
     ondragover(null);
     if (!kind || !palette.includes(kind)) return;
 
-    const x = viewport && wrapper
-      ? viewport.screenToFlowPosition({ x: event.clientX, y: event.clientY }).x
-      : 0;
+    const x =
+      viewport && wrapper
+        ? viewport.screenToFlowPosition({ x: event.clientX, y: event.clientY }).x
+        : 0;
     const index = dropIndexFor(x, store.network.blocks.length, NODE_WIDTH, NODE_GAP);
     store.addBlock(kind, index);
   }
@@ -1551,7 +1567,9 @@ Two API details confirmed against the installed 1.6.6 types, so use them exactly
   let {
     viewport = $bindable()
   }: {
-    viewport: { screenToFlowPosition: (point: { x: number; y: number }) => { x: number; y: number } } | null;
+    viewport: {
+      screenToFlowPosition: (point: { x: number; y: number }) => { x: number; y: number };
+    } | null;
   } = $props();
 
   const flow = useSvelteFlow();
@@ -1587,14 +1605,17 @@ git commit -m "feat: add the Svelte Flow canvas"
 ### Task 7: Inspector panel
 
 **Files:**
+
 - Create: `src/lib/components/InspectorPanel.svelte`
 - Test: `src/lib/components/InspectorPanel.test.ts`
 
 **Interfaces:**
+
 - Consumes: `NetworkStore` from `../editor/networkStore.svelte`; `PARAM_DESCRIPTIONS`, `BLOCK_DESCRIPTIONS` from `../network/descriptions`; `parameterBounds` from `../network/constraints`; `shapeLabel` from `../editor/flow`.
 - Produces: `InspectorPanel.svelte` with props `{ store: NetworkStore }`. It shows the selected block's plain-language description, its incoming shape as read-only context labelled with the block it came from, and controls for exactly the parameters that block kind has. Every control has a `title` and a visible description from `PARAM_DESCRIPTIONS`.
 
 Control behaviour, which is the app's "automatic input selection" requirement:
+
 - `input` — a text field of comma-separated numbers; on change it parses, drops non-numbers, and requires at least one positive number, otherwise it leaves the shape untouched and shows an inline message.
 - `linear` — `units`, a number input, minimum 1.
 - `conv2d` — `filters` (number, minimum 1); `kernelSize` and `stride` as `<select>`s limited to `parameterBounds(inShape)` when bounds exist, falling back to the stored value as the only option when they do not; `padding` as a two-option `<select>` where each option's label states the resulting output size, e.g. `same — stays 28×28`, `valid — becomes 26×26`.
@@ -1669,9 +1690,9 @@ describe('InspectorPanel', () => {
     store.addBlock('conv2d', 1);
     render(InspectorPanel, { props: { store } });
 
-    const labels = Array.from(
-      screen.getByTestId('param-padding').querySelectorAll('option')
-    ).map((option) => option.textContent ?? '');
+    const labels = Array.from(screen.getByTestId('param-padding').querySelectorAll('option')).map(
+      (option) => option.textContent ?? ''
+    );
     expect(labels.some((label) => label.includes('28×28'))).toBe(true);
     expect(labels.some((label) => label.includes('26×26'))).toBe(true);
   });
@@ -1721,10 +1742,18 @@ Expected: FAIL — `Failed to resolve import "./InspectorPanel.svelte"`.
   const inShape = $derived(info?.inShape ?? null);
   const bounds = $derived(parameterBounds(inShape));
   const kernelChoices = $derived(
-    bounds && block?.kind === 'conv2d' ? bounds.kernelSize : block?.kind === 'conv2d' ? [block.kernelSize] : []
+    bounds && block?.kind === 'conv2d'
+      ? bounds.kernelSize
+      : block?.kind === 'conv2d'
+        ? [block.kernelSize]
+        : []
   );
   const strideChoices = $derived(
-    bounds && block?.kind === 'conv2d' ? bounds.stride : block?.kind === 'conv2d' ? [block.stride] : []
+    bounds && block?.kind === 'conv2d'
+      ? bounds.stride
+      : block?.kind === 'conv2d'
+        ? [block.stride]
+        : []
   );
   const canMove = $derived(block !== null && block.kind !== 'input' && block.kind !== 'output');
   let shapeError = $state<string | null>(null);
@@ -1836,7 +1865,8 @@ Expected: FAIL — `Failed to resolve import "./InspectorPanel.svelte"`.
           data-testid="param-kernel-size"
           title={PARAM_DESCRIPTIONS.kernelSize}
           value={String(block.kernelSize)}
-          onchange={(event) => patch({ kernelSize: Number(event.currentTarget.value) } as Partial<Block>)}
+          onchange={(event) =>
+            patch({ kernelSize: Number(event.currentTarget.value) } as Partial<Block>)}
         >
           {#each kernelChoices as choice (choice)}
             <option value={String(choice)}>{choice}×{choice}</option>
@@ -1851,7 +1881,8 @@ Expected: FAIL — `Failed to resolve import "./InspectorPanel.svelte"`.
           data-testid="param-stride"
           title={PARAM_DESCRIPTIONS.stride}
           value={String(block.stride)}
-          onchange={(event) => patch({ stride: Number(event.currentTarget.value) } as Partial<Block>)}
+          onchange={(event) =>
+            patch({ stride: Number(event.currentTarget.value) } as Partial<Block>)}
         >
           {#each strideChoices as choice (choice)}
             <option value={String(choice)}>{choice}</option>
@@ -1866,7 +1897,8 @@ Expected: FAIL — `Failed to resolve import "./InspectorPanel.svelte"`.
           data-testid="param-padding"
           title={PARAM_DESCRIPTIONS.padding}
           value={block.padding}
-          onchange={(event) => patch({ padding: event.currentTarget.value as 'same' | 'valid' } as Partial<Block>)}
+          onchange={(event) =>
+            patch({ padding: event.currentTarget.value as 'same' | 'valid' } as Partial<Block>)}
         >
           <option value="same">same — {outputSizeFor('same')}</option>
           <option value="valid">valid — {outputSizeFor('valid')}</option>
@@ -2007,12 +2039,14 @@ git commit -m "feat: add the block inspector with constrained parameters"
 ### Task 8: Shape table and issues panel
 
 **Files:**
+
 - Create: `src/lib/components/ShapeTable.svelte`
 - Create: `src/lib/components/IssuesPanel.svelte`
 - Test: `src/lib/components/ShapeTable.test.ts`
 - Test: `src/lib/components/IssuesPanel.test.ts`
 
 **Interfaces:**
+
 - Consumes: `NetworkStore`; `shapeLabel` from `../editor/flow`; `Issue` from `../network/validate`.
 - Produces:
   - `ShapeTable.svelte`, props `{ store: NetworkStore }`. A table with one row per block: position, block kind, input shape, output shape, parameter count, plus a final row with the network's total parameter count. Unknown shapes render `—`. This is the "see the shape of the data at any point in the pipeline" view. Test ids: `shape-table`, `shape-row`.
@@ -2088,9 +2122,9 @@ describe('IssuesPanel', () => {
     render(IssuesPanel, { props: { store } });
 
     const issues = screen.getAllByTestId('issue');
-    expect(issues.some((issue) => issue.textContent?.includes('Linear layer needs a flat list'))).toBe(
-      true
-    );
+    expect(
+      issues.some((issue) => issue.textContent?.includes('Linear layer needs a flat list'))
+    ).toBe(true);
 
     await userEvent.click(issues[0]);
     expect(store.selectedBlockId).not.toBeNull();
@@ -2214,7 +2248,9 @@ Expected: FAIL — both imports unresolvable.
             onclick={() => issue.blockId && store.select(issue.blockId)}
             disabled={!issue.blockId}
           >
-            <span class="severity">{issue.severity === 'error' ? 'Blocks training' : 'Heads up'}</span>
+            <span class="severity"
+              >{issue.severity === 'error' ? 'Blocks training' : 'Heads up'}</span
+            >
             <span class="title">{issue.title}</span>
             <span class="message">{issue.message}</span>
             <span class="fix" data-testid="issue-fix">{issue.fix}</span>
@@ -2324,12 +2360,14 @@ git commit -m "feat: add the shape table and issues panel"
 ### Task 9: Loss chart and stats readout
 
 **Files:**
+
 - Create: `src/lib/components/LossChart.svelte`
 - Create: `src/lib/components/StatsReadout.svelte`
 - Test: `src/lib/components/LossChart.test.ts`
 - Test: `src/lib/components/StatsReadout.test.ts`
 
 **Interfaces:**
+
 - Consumes: `TrainStats` from `../training/Trainer`.
 - Produces:
   - `LossChart.svelte`, props `{ points: number[]; width?: number; height?: number }` (defaults 320 and 120). Renders an SVG polyline of the per-epoch mean loss over the most recent 200 values, with the minimum and maximum labelled and the latest value shown. With fewer than two points it renders an explanatory placeholder instead of a line. Test ids: `loss-chart`, `loss-chart-empty`, `loss-chart-path`, `loss-chart-latest`.
@@ -2431,8 +2469,11 @@ Expected: FAIL — both imports unresolvable.
 
 ```svelte
 <script lang="ts">
-  let { points, width = 320, height = 120 }: { points: number[]; width?: number; height?: number } =
-    $props();
+  let {
+    points,
+    width = 320,
+    height = 120
+  }: { points: number[]; width?: number; height?: number } = $props();
 
   const WINDOW = 200;
   const view = $derived(points.slice(-WINDOW));
@@ -2525,7 +2566,9 @@ Expected: FAIL — both imports unresolvable.
   let { stats }: { stats: TrainStats | null } = $props();
 
   const loss = $derived(stats ? (stats.epochMeanLoss ?? stats.batchLoss) : null);
-  const lossLabel = $derived(stats?.epochMeanLoss !== null && stats ? 'Average loss this epoch' : 'Loss on the last batch');
+  const lossLabel = $derived(
+    stats?.epochMeanLoss !== null && stats ? 'Average loss this epoch' : 'Loss on the last batch'
+  );
   const accuracy = $derived(stats?.epochAccuracy ?? null);
 </script>
 
@@ -2611,10 +2654,12 @@ git commit -m "feat: add the loss chart and stats readout"
 ### Task 10: Training panel
 
 **Files:**
+
 - Create: `src/lib/components/TrainingPanel.svelte`
 - Test: `src/lib/components/TrainingPanel.test.ts`
 
 **Interfaces:**
+
 - Consumes: `NetworkStore`; `PARAM_DESCRIPTIONS` from `../network/descriptions`.
 - Produces: `TrainingPanel.svelte`, props:
 
@@ -2777,7 +2822,7 @@ Expected: FAIL — `Failed to resolve import "./TrainingPanel.svelte"`.
     <select
       data-testid="training-loss"
       title={PARAM_DESCRIPTIONS.loss}
-      disabled={disabled}
+      {disabled}
       value={store.network.training.loss}
       onchange={(event) =>
         store.updateTraining({ loss: event.currentTarget.value as 'mse' | 'crossEntropy' })}
@@ -2793,9 +2838,10 @@ Expected: FAIL — `Failed to resolve import "./TrainingPanel.svelte"`.
     <select
       data-testid="training-optimizer"
       title={PARAM_DESCRIPTIONS.optimizer}
-      disabled={disabled}
+      {disabled}
       value={store.network.training.optimizer}
-      onchange={(event) => store.updateTraining({ optimizer: event.currentTarget.value as 'sgd' | 'adam' })}
+      onchange={(event) =>
+        store.updateTraining({ optimizer: event.currentTarget.value as 'sgd' | 'adam' })}
     >
       <option value="adam">Adam</option>
       <option value="sgd">SGD</option>
@@ -2811,7 +2857,7 @@ Expected: FAIL — `Failed to resolve import "./TrainingPanel.svelte"`.
       min="0.0001"
       data-testid="training-learning-rate"
       title={PARAM_DESCRIPTIONS.learningRate}
-      disabled={disabled}
+      {disabled}
       value={store.network.training.learningRate}
       onchange={(event) => setNumber(event, 'learningRate')}
     />
@@ -2825,7 +2871,7 @@ Expected: FAIL — `Failed to resolve import "./TrainingPanel.svelte"`.
       min="1"
       data-testid="training-batch-size"
       title={PARAM_DESCRIPTIONS.batchSize}
-      disabled={disabled}
+      {disabled}
       value={store.network.training.batchSize}
       onchange={(event) => setNumber(event, 'batchSize')}
     />
@@ -2833,13 +2879,18 @@ Expected: FAIL — `Failed to resolve import "./TrainingPanel.svelte"`.
   </label>
 
   <div class="controls">
-    <button type="button" data-testid="training-play" disabled={disabled || playing} onclick={onplay}>
+    <button
+      type="button"
+      data-testid="training-play"
+      disabled={disabled || playing}
+      onclick={onplay}
+    >
       Play
     </button>
     <button type="button" data-testid="training-pause" disabled={!playing} onclick={onpause}>
       Pause
     </button>
-    <button type="button" data-testid="training-step" disabled={disabled} onclick={onstep}>
+    <button type="button" data-testid="training-step" {disabled} onclick={onstep}>
       Step one batch
     </button>
     <button type="button" data-testid="training-reset" onclick={onreset}>Reset model</button>
@@ -2847,7 +2898,8 @@ Expected: FAIL — `Failed to resolve import "./TrainingPanel.svelte"`.
 
   {#if disabled}
     <p class="blocked" data-testid="training-blocked">
-      There are problems to fix below before training. The network cannot be built until they are resolved.
+      There are problems to fix below before training. The network cannot be built until they are
+      resolved.
     </p>
   {/if}
 </div>
@@ -2935,10 +2987,12 @@ git commit -m "feat: add the training panel"
 ### Task 11: Decision boundary canvas
 
 **Files:**
+
 - Create: `src/lib/components/DecisionBoundary.svelte`
 - Test: `src/lib/components/DecisionBoundary.test.ts`
 
 **Interfaces:**
+
 - Consumes: `PointDataset`, `Point` from `../data/points`; `CLASS_COLOURS`, `BACKGROUND_RGB` from `../render/palette`; `GRID_SIZE`, `clientToDomain`, `classesToRgba`, `sampleGrid` from `../render/boundary`; `Rect` from `../render/boundary`.
 - Produces: `DecisionBoundary.svelte`, props:
 
@@ -3226,11 +3280,13 @@ git commit -m "feat: add the decision boundary canvas"
 ### Task 12: MLP example configuration and dataset store
 
 **Files:**
+
 - Create: `src/lib/examples/mlp/example.ts`
 - Create: `src/lib/examples/mlp/datasetStore.svelte.ts`
 - Test: `src/lib/examples/mlp/datasetStore.svelte.test.ts`
 
 **Interfaces:**
+
 - Consumes: `generate`, `addPoint`, `clearPoints`, `GENERATOR_NAMES`, `GENERATOR_DESCRIPTIONS`, types `PointDataset`, `GeneratorName` from `../../data/points`; `BlockKind` from `../../network/types`.
 - Produces:
 
@@ -3379,13 +3435,14 @@ export function defaultDataset(): PointDataset {
 - [ ] **Step 4: Write `datasetStore.svelte.ts`**
 
 ```ts
-import { addPoint, clearPoints, generate, type GeneratorName, type PointDataset } from '../../data/points';
 import {
-  DEFAULT_GENERATOR,
-  DEFAULT_POINT_COUNT,
-  DEFAULT_SEED,
-  defaultDataset
-} from './example';
+  addPoint,
+  clearPoints,
+  generate,
+  type GeneratorName,
+  type PointDataset
+} from '../../data/points';
+import { DEFAULT_GENERATOR, DEFAULT_POINT_COUNT, DEFAULT_SEED, defaultDataset } from './example';
 
 export class DatasetStore {
   dataset = $state<PointDataset>(defaultDataset());
@@ -3435,11 +3492,13 @@ git commit -m "feat: add the MLP example configuration and dataset store"
 ### Task 13: Editor toolbar and the embeddable editor
 
 **Files:**
+
 - Create: `src/lib/components/EditorToolbar.svelte`
 - Create: `src/lib/components/NetworkEditor.svelte`
 - Test: `src/lib/components/NetworkEditor.test.ts`
 
 **Interfaces:**
+
 - Consumes: `NetworkStore`; `BlockPalette`, `BlockCanvas`, `InspectorPanel`, `ShapeTable`, `IssuesPanel`, `EditorToolbar`; `BlockKind` from `../network/types`; `BLOCK_DESCRIPTIONS` from `../network/descriptions`.
 - Produces:
   - `EditorToolbar.svelte`, props `{ store: NetworkStore; onfit?: () => void; onsave?: () => void; onload?: () => void; saving?: boolean }`. Renders `Undo` (disabled when `store.canUndo` is false), `Redo` (disabled when `store.canRedo` is false), `Reset network`, and, when the page supplies them, `Save model` and `Load model`. It also wires the keyboard shortcuts `Ctrl/Cmd+Z` for undo and `Ctrl/Cmd+Shift+Z` for redo on the window while the component is mounted. Test ids: `undo`, `redo`, `reset-network`, `save-model`, `load-model`.
@@ -3797,12 +3856,14 @@ git commit -m "feat: add the editor toolbar and the embeddable network editor"
 ### Task 14: Persistence
 
 **Files:**
+
 - Create: `src/lib/persist/storage.ts`
 - Create: `src/lib/persist/weights.ts`
 - Test: `src/lib/persist/storage.test.ts`
 - Test: `src/lib/persist/weights.test.ts`
 
 **Interfaces:**
+
 - Consumes: `toJSON`, `fromJSON` from `../network/serialize`; `createEmptyNetwork` from `../network/factory`; `Network`, `TrainingConfig` from `../network/types`; `PointDataset` from `../data/points`; `@tensorflow/tfjs`.
 - Produces:
 
@@ -3838,6 +3899,7 @@ export function loadWeightsInto(model: tf.LayersModel): Promise<boolean>;
 ```
 
 **Behaviour that matters:**
+
 - `createStorage` takes an injected `KeyValueStore` so it is testable in Node with an in-memory fake. `createBrowserStorage` returns `null` when `localStorage` is unavailable or throws on write (private browsing, quota), so the page can degrade to in-memory state and tell the user rather than crashing.
 - `loadNetwork` returns `null` for a missing key, corrupt JSON, or an unsupported version, by delegating to `fromJSON`.
 - `hasStoredNetwork()` reports whether a network entry exists at all, **regardless of whether it can be read**. It exists so the page can tell "you have never saved anything" apart from "what you saved cannot be read", which is what the design's notice requirement needs. The caller falls back to `createEmptyNetwork()` and tells the user the saved network could not be read.
@@ -3992,12 +4054,7 @@ afterEach(() => {
 
 describe('weightShapes', () => {
   it('reports every weight tensor shape', () => {
-    expect(weightShapes(model())).toEqual([
-      [2, 8],
-      [8],
-      [8, 2],
-      [2]
-    ]);
+    expect(weightShapes(model())).toEqual([[2, 8], [8], [8, 2], [2]]);
   });
 
   it('changes when the architecture changes', () => {
@@ -4175,6 +4232,7 @@ git commit -m "feat: add browser persistence for the network, dataset, and weigh
 ### Task 15: Example page and routes
 
 **Files:**
+
 - Create: `src/lib/examples/mlp/runtime.ts`
 - Create: `src/lib/components/ExampleLayout.svelte`
 - Create: `src/routes/examples/mlp/+page.svelte`
@@ -4182,6 +4240,7 @@ git commit -m "feat: add browser persistence for the network, dataset, and weigh
 - Modify: `src/routes/+page.svelte`
 
 **Interfaces:**
+
 - Consumes: `NetworkStore`, `DatasetStore`, `NetworkEditor`, `TrainingPanel`, `LossChart`, `StatsReadout`, `DecisionBoundary`, `createBrowserStorage`, `TrainStats`, `GENERATOR_NAMES`, `GENERATOR_DESCRIPTIONS`, `CLASS_LABELS`, `MLP_PALETTE`.
 - Produces:
   - `runtime.ts` — a prerender-safe facade that loads TensorFlow.js and the engine's TensorFlow.js modules with dynamic `import()`, exactly once, after mount. All types come from `import type`, which is erased. Exports:
@@ -4213,12 +4272,13 @@ export async function loadRuntime(): Promise<Runtime>;
 
 The facade's methods are **synchronous** (except the two weight calls, which touch IndexedDB). That is the point: it lets the page's effects be plain synchronous functions, which is what makes the lifecycle correct.
 
-  - `ExampleLayout.svelte` — props `{ title: string; intro: string; editor: Snippet; experiment: Snippet }`, rendering a two-column shell (editor on the left, experiment on the right) that collapses to one column on narrow screens.
-  - `/examples/mlp` — the complete experience.
-  - `/examples/cnn` — a placeholder naming what is coming.
-  - `/` — a landing page listing the examples.
+- `ExampleLayout.svelte` — props `{ title: string; intro: string; editor: Snippet; experiment: Snippet }`, rendering a two-column shell (editor on the left, experiment on the right) that collapses to one column on narrow screens.
+- `/examples/mlp` — the complete experience.
+- `/examples/cnn` — a placeholder naming what is coming.
+- `/` — a landing page listing the examples.
 
 **The MLP page's model and trainer lifecycle** is the heart of this task:
+
 - The page must not import TensorFlow.js or `render/boundary` statically; go through `runtime.ts` and `DecisionBoundary`.
 - An `$effect` rebuilds the model whenever the **architecture** changes. Detect architecture change with a signature: `JSON.stringify(store.network.blocks)`. On rebuild, dispose the previous model and the previous trainer, reset the loss points and stats, and clear `playing`.
 - A second `$effect` recompiles, without rebuilding, whenever only the **training** configuration changes: `JSON.stringify(store.network.training)`. This preserves the learned weights.
@@ -4885,10 +4945,12 @@ git commit -m "feat: add the MLP example page and the example routes"
 ### Task 16: Documentation and final verification
 
 **Files:**
+
 - Modify: `AGENTS.md`
 - Modify: `README.md`
 
 **Interfaces:**
+
 - Consumes: everything built in Tasks 1-15.
 - Produces: documentation that matches the shipped app, and a full green verification run including the manual checklist.
 
@@ -4965,11 +5027,11 @@ draws the network and turns gestures back into operations on it.
 
 ## Development
 
-npm run dev         # development server
-npm run build       # static build
-npm run check       # type checking
-npm run lint        # linting
-npm test            # unit and component tests
+npm run dev # development server
+npm run build # static build
+npm run check # type checking
+npm run lint # linting
+npm test # unit and component tests
 ```
 
 - [ ] **Step 3: Run the full verification suite**
@@ -5028,4 +5090,3 @@ git commit -m "docs: document the editor, the example, and persistence"
 
 1. `BlockCanvas` and `DecisionBoundary` have no automated tests. Both depend on APIs jsdom does not implement (Svelte Flow's layout and pointer handling, and the canvas 2D context). Their pure logic is tested where it lives — `toFlow` and `connectionToIntent` in the engine, `dropIndexFor` in Task 2, `clientToDomain` and `classesToRgba` in the engine — and the components themselves are covered by `npm run check`, `npm run build`, and the Task 16 checklist. `DecisionBoundary`'s click path is tested with a stubbed canvas context.
 2. `src/lib/persist/weights.ts` becomes a fifth approved TensorFlow.js import site, because it is the serialization boundary for weights. `AGENTS.md` is updated in Task 16 to say so.
-

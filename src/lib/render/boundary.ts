@@ -16,7 +16,11 @@ export function clientToDomain(px: number, py: number, rect: Rect): { x: number;
   };
 }
 
-export function cellCentre(gx: number, gy: number, size: number = GRID_SIZE): { x: number; y: number } {
+export function cellCentre(
+  gx: number,
+  gy: number,
+  size: number = GRID_SIZE
+): { x: number; y: number } {
   return {
     x: ((gx + 0.5) / size) * 2 - 1,
     y: 1 - ((gy + 0.5) / size) * 2

@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  BLOCK_DESCRIPTIONS,
-  PARAM_DESCRIPTIONS,
-  classifyInputShape
-} from './descriptions';
+import { BLOCK_DESCRIPTIONS, PARAM_DESCRIPTIONS, classifyInputShape } from './descriptions';
 import { BLOCK_KINDS } from './types';
 
 describe('BLOCK_DESCRIPTIONS', () => {

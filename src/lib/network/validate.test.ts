@@ -138,9 +138,7 @@ describe('validate errors', () => {
 
   it('reports an unrecognised block kind', () => {
     const bogus = { id: 'x', kind: 'dropout' } as unknown as Block;
-    const issue = errors(net([INPUT, bogus, OUTPUT])).find(
-      (i) => i.title === 'Unrecognised block'
-    );
+    const issue = errors(net([INPUT, bogus, OUTPUT])).find((i) => i.title === 'Unrecognised block');
     expect(issue?.blockId).toBe('x');
   });
 
@@ -169,11 +167,7 @@ describe('validate warnings', () => {
   });
 
   it('suggests a softmax for cross-entropy without one', () => {
-    const network = net([
-      INPUT,
-      { id: 'dense', kind: 'linear', units: 2 },
-      OUTPUT
-    ]);
+    const network = net([INPUT, { id: 'dense', kind: 'linear', units: 2 }, OUTPUT]);
     expect(warningTitles(network)).toContain('Add a Softmax for probabilities');
   });
 
@@ -295,7 +289,12 @@ const RULE_CASES: RuleCase[] = [
   {
     title: 'More than one Input block',
     severity: 'error',
-    network: net([INPUT, { id: 'in2', kind: 'input', shape: [2] }, { id: 'a', kind: 'relu' }, OUTPUT])
+    network: net([
+      INPUT,
+      { id: 'in2', kind: 'input', shape: [2] },
+      { id: 'a', kind: 'relu' },
+      OUTPUT
+    ])
   },
   {
     title: 'More than one Output block',
@@ -341,11 +340,7 @@ const RULE_CASES: RuleCase[] = [
     title: 'Output must be a list of scores',
     severity: 'error',
     network: net(
-      [
-        { id: 'grid', kind: 'input', shape: [2, 2] },
-        { id: 'act', kind: 'relu' },
-        OUTPUT
-      ],
+      [{ id: 'grid', kind: 'input', shape: [2, 2] }, { id: 'act', kind: 'relu' }, OUTPUT],
       { loss: 'mse' }
     )
   },
@@ -421,19 +416,18 @@ const RULE_CASES: RuleCase[] = [
 ];
 
 describe('issue message contract', () => {
-  it.each(RULE_CASES)('$title produces issues with a title, message, and fix', ({
-    network,
-    options,
-    title
-  }) => {
-    const issues = validate(network, options);
-    expect(issues.map((issue) => issue.title)).toContain(title);
-    for (const issue of issues) {
-      expect(issue.title.length).toBeGreaterThan(0);
-      expect(issue.message.length).toBeGreaterThan(0);
-      expect(issue.fix.length).toBeGreaterThan(0);
+  it.each(RULE_CASES)(
+    '$title produces issues with a title, message, and fix',
+    ({ network, options, title }) => {
+      const issues = validate(network, options);
+      expect(issues.map((issue) => issue.title)).toContain(title);
+      for (const issue of issues) {
+        expect(issue.title.length).toBeGreaterThan(0);
+        expect(issue.message.length).toBeGreaterThan(0);
+        expect(issue.fix.length).toBeGreaterThan(0);
+      }
     }
-  });
+  );
 
   it('has a case for every rule and no case without a rule', () => {
     const errorCases = RULE_CASES.filter((entry) => entry.severity === 'error').map(
@@ -494,9 +488,9 @@ describe('expectedInputShape', () => {
       { id: 'sm', kind: 'softmax' },
       OUTPUT
     ]);
-    expect(
-      warnings(network, { expectedInputShape: [28, 28, 1] }).map((i) => i.title)
-    ).toContain('Input shape does not match the data');
+    expect(warnings(network, { expectedInputShape: [28, 28, 1] }).map((i) => i.title)).toContain(
+      'Input shape does not match the data'
+    );
   });
 
   it('says nothing when no shape is expected', () => {

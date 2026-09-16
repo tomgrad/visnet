@@ -21,7 +21,11 @@ function makeData(count = 8): { xs: tf.Tensor2D; ys: tf.Tensor2D } {
   return { xs: x, ys: y };
 }
 
-function makeTrainer(onStats: (stats: TrainStats) => void, batchSize = 4, yieldFn?: () => Promise<void>) {
+function makeTrainer(
+  onStats: (stats: TrainStats) => void,
+  batchSize = 4,
+  yieldFn?: () => Promise<void>
+) {
   const model = buildModel(createEmptyNetwork());
   models.push(model);
   return new Trainer(model, makeData(), batchSize, onStats, yieldFn);
@@ -74,7 +78,12 @@ describe('Trainer bookkeeping', () => {
     const trainer = makeTrainer((s) => stats.push(s));
 
     await trainer.step();
-    expect(stats[0]).toMatchObject({ epoch: 0, batch: 1, epochMeanLoss: null, epochAccuracy: null });
+    expect(stats[0]).toMatchObject({
+      epoch: 0,
+      batch: 1,
+      epochMeanLoss: null,
+      epochAccuracy: null
+    });
 
     await trainer.step();
     expect(stats[1].epoch).toBe(1);
@@ -113,10 +122,14 @@ describe('Trainer play loop', () => {
   it('runs steps until paused and resolves', async () => {
     const stats: TrainStats[] = [];
     let yields = 0;
-    const trainer = makeTrainer((s) => stats.push(s), 4, async () => {
-      yields += 1;
-      if (yields >= 3) trainer.pause();
-    });
+    const trainer = makeTrainer(
+      (s) => stats.push(s),
+      4,
+      async () => {
+        yields += 1;
+        if (yields >= 3) trainer.pause();
+      }
+    );
 
     expect(trainer.isPlaying).toBe(false);
     const loop = trainer.play();
@@ -129,9 +142,13 @@ describe('Trainer play loop', () => {
 
   it('is a no-op when already playing', async () => {
     const stats: TrainStats[] = [];
-    const trainer = makeTrainer((s) => stats.push(s), 4, async () => {
-      trainer.pause();
-    });
+    const trainer = makeTrainer(
+      (s) => stats.push(s),
+      4,
+      async () => {
+        trainer.pause();
+      }
+    );
 
     const first = trainer.play();
     const second = trainer.play();
@@ -143,10 +160,14 @@ describe('Trainer play loop', () => {
   it('stops immediately after dispose', async () => {
     const stats: TrainStats[] = [];
     let yields = 0;
-    const trainer = makeTrainer((s) => stats.push(s), 4, async () => {
-      yields += 1;
-      if (yields >= 2) trainer.dispose();
-    });
+    const trainer = makeTrainer(
+      (s) => stats.push(s),
+      4,
+      async () => {
+        yields += 1;
+        if (yields >= 2) trainer.dispose();
+      }
+    );
 
     await trainer.play();
     const seen = stats.length;
@@ -221,10 +242,7 @@ describe('a four-dimensional feature batch', () => {
     model.compile({ optimizer: 'sgd', loss: 'categoricalCrossentropy' });
     models.push(model);
 
-    const xs = tf.tensor4d(
-      [0, 1, 1, 0, 1, 0, 0, 1],
-      [2, 2, 2, 1]
-    );
+    const xs = tf.tensor4d([0, 1, 1, 0, 1, 0, 0, 1], [2, 2, 2, 1]);
     const ys = tf.tensor2d(
       [
         [1, 0],

@@ -1,11 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  GENERATOR_DESCRIPTIONS,
-  GENERATOR_NAMES,
-  addPoint,
-  clearPoints,
-  generate
-} from './points';
+import { GENERATOR_DESCRIPTIONS, GENERATOR_NAMES, addPoint, clearPoints, generate } from './points';
 
 describe('GENERATOR_DESCRIPTIONS', () => {
   it.each(GENERATOR_NAMES)('describes %s', (name) => {
@@ -45,7 +39,7 @@ describe('generate', () => {
 
   it('labels xor quadrants in a checkerboard', () => {
     for (const point of generate('xor', 400, 11).points) {
-      const expected = (point.x > 0) !== (point.y > 0) ? 1 : 0;
+      const expected = point.x > 0 !== point.y > 0 ? 1 : 0;
       expect(point.label).toBe(expected);
     }
   });

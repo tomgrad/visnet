@@ -1,6 +1,9 @@
 <script lang="ts">
-  let { points, width = 320, height = 120 }: { points: number[]; width?: number; height?: number } =
-    $props();
+  let {
+    points,
+    width = 320,
+    height = 120
+  }: { points: number[]; width?: number; height?: number } = $props();
 
   const WINDOW = 200;
   const view = $derived(points.slice(-WINDOW));

@@ -27,11 +27,10 @@ export function parameterBounds(inShape: number[] | null): ParameterBounds | nul
   return { kernelSize: choices, stride: choices };
 }
 
-function clampCount(
-  value: number,
-  label: string
-): { value: number; announcement: string | null } {
-  const rounded = Number.isFinite(value) ? Math.max(MINIMUM_COUNT, Math.floor(value)) : MINIMUM_COUNT;
+function clampCount(value: number, label: string): { value: number; announcement: string | null } {
+  const rounded = Number.isFinite(value)
+    ? Math.max(MINIMUM_COUNT, Math.floor(value))
+    : MINIMUM_COUNT;
   if (rounded === value) return { value, announcement: null };
   return {
     value: rounded,

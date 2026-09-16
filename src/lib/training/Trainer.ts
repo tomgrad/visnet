@@ -74,7 +74,8 @@ export class Trainer {
     this.batch += 1;
 
     if (this.batch >= this.batchesPerEpochCount) {
-      const mean = this.batchLosses.reduce((total, value) => total + value, 0) / this.batchLosses.length;
+      const mean =
+        this.batchLosses.reduce((total, value) => total + value, 0) / this.batchLosses.length;
       const accuracy = this.accuracy();
       this.epoch += 1;
       this.batch = 0;

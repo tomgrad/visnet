@@ -17,10 +17,18 @@
   const inShape = $derived(info?.inShape ?? null);
   const bounds = $derived(parameterBounds(inShape));
   const kernelChoices = $derived(
-    bounds && block?.kind === 'conv2d' ? bounds.kernelSize : block?.kind === 'conv2d' ? [block.kernelSize] : []
+    bounds && block?.kind === 'conv2d'
+      ? bounds.kernelSize
+      : block?.kind === 'conv2d'
+        ? [block.kernelSize]
+        : []
   );
   const strideChoices = $derived(
-    bounds && block?.kind === 'conv2d' ? bounds.stride : block?.kind === 'conv2d' ? [block.stride] : []
+    bounds && block?.kind === 'conv2d'
+      ? bounds.stride
+      : block?.kind === 'conv2d'
+        ? [block.stride]
+        : []
   );
   const canMove = $derived(block !== null && block.kind !== 'input' && block.kind !== 'output');
   let shapeError = $state<string | null>(null);
@@ -132,7 +140,8 @@
           data-testid="param-kernel-size"
           title={PARAM_DESCRIPTIONS.kernelSize}
           value={String(block.kernelSize)}
-          onchange={(event) => patch({ kernelSize: Number(event.currentTarget.value) } as Partial<Block>)}
+          onchange={(event) =>
+            patch({ kernelSize: Number(event.currentTarget.value) } as Partial<Block>)}
         >
           {#each kernelChoices as choice (choice)}
             <option value={String(choice)}>{choice}×{choice}</option>
@@ -147,7 +156,8 @@
           data-testid="param-stride"
           title={PARAM_DESCRIPTIONS.stride}
           value={String(block.stride)}
-          onchange={(event) => patch({ stride: Number(event.currentTarget.value) } as Partial<Block>)}
+          onchange={(event) =>
+            patch({ stride: Number(event.currentTarget.value) } as Partial<Block>)}
         >
           {#each strideChoices as choice (choice)}
             <option value={String(choice)}>{choice}</option>
@@ -162,7 +172,8 @@
           data-testid="param-padding"
           title={PARAM_DESCRIPTIONS.padding}
           value={block.padding}
-          onchange={(event) => patch({ padding: event.currentTarget.value as 'same' | 'valid' } as Partial<Block>)}
+          onchange={(event) =>
+            patch({ padding: event.currentTarget.value as 'same' | 'valid' } as Partial<Block>)}
         >
           <option value="same">same — {outputSizeFor('same')}</option>
           <option value="valid">valid — {outputSizeFor('valid')}</option>

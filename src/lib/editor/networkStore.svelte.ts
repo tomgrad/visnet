@@ -51,7 +51,9 @@ export class NetworkStore {
     const target = index ?? insertionIndexFor(this.network, this.selectedBlockId);
     const inserted = insertAt(this.network, target, block);
     this.#commitClamped(
-      position ? { ...inserted, positions: { ...inserted.positions, [block.id]: position } } : inserted
+      position
+        ? { ...inserted, positions: { ...inserted.positions, [block.id]: position } }
+        : inserted
     );
     this.selectedBlockId = block.id;
     return block.id;

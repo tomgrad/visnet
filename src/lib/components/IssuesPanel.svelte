@@ -23,7 +23,9 @@
             disabled={!issue.blockId}
             data-testid="issue"
           >
-            <span class="severity">{issue.severity === 'error' ? 'Blocks training' : 'Heads up'}</span>
+            <span class="severity"
+              >{issue.severity === 'error' ? 'Blocks training' : 'Heads up'}</span
+            >
             <span class="title">{issue.title}</span>
             <span class="message">{issue.message}</span>
             <span class="fix" data-testid="issue-fix">{issue.fix}</span>

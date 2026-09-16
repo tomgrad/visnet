@@ -60,6 +60,7 @@ dependencies: it uses global `fetch`, `node:zlib`, and `node:fs`.
 Flags: `--train=N` (default 1000), `--test=M` (default 200), `--force`.
 
 Behaviour:
+
 - **Idempotent.** If both output files exist and `--force` was not passed, it prints
   that the data is already prepared and exits without touching the network.
 - Creates `static/mnist/` if needed.
@@ -80,17 +81,17 @@ locally rather than redistributed.
 One file per split, little-endian, so a single fetch serves a split and the parser
 is trivial.
 
-| Offset | Bytes | Field |
-| --- | --- | --- |
-| 0 | 4 | magic, ASCII `VSNT` |
-| 4 | 1 | format version, `1` |
-| 5 | 1 | rows |
-| 6 | 1 | cols |
-| 7 | 1 | numClasses |
-| 8 | 4 | count, `uint32` |
-| 12 | 4 | reserved, `0` |
-| 16 | `count × rows × cols` | grayscale pixels, row-major, `0..255` |
-| 16 + pixels | `count` | labels, one byte each |
+| Offset      | Bytes                 | Field                                 |
+| ----------- | --------------------- | ------------------------------------- |
+| 0           | 4                     | magic, ASCII `VSNT`                   |
+| 4           | 1                     | format version, `1`                   |
+| 5           | 1                     | rows                                  |
+| 6           | 1                     | cols                                  |
+| 7           | 1                     | numClasses                            |
+| 8           | 4                     | count, `uint32`                       |
+| 12          | 4                     | reserved, `0`                         |
+| 16          | `count × rows × cols` | grayscale pixels, row-major, `0..255` |
+| 16 + pixels | `count`               | labels, one byte each                 |
 
 Total length is exactly `16 + count × rows × cols + count`. For the defaults
 (1,000 train and 200 test images of 28×28, 10 classes) that is about 785 KB and
@@ -229,7 +230,7 @@ defaults to every image. The caller owns the tensors.
 - **Palette**: `['conv2d', 'flatten', 'linear', 'relu', 'sigmoid', 'softmax']`.
   Convolution and flatten are now reachable, which is why §5.1 is a prerequisite.
 - **Default network**: `input [28, 28, 1] → conv2d(filters 8, kernel 3, stride 1,
-  same) → relu → flatten → linear(10) → softmax → output(10)`, with
+same) → relu → flatten → linear(10) → softmax → output(10)`, with
   `expectedClasses = 10`. This lives in `src/lib/examples/cnn/example.ts` as
   `createCnnNetwork()`, next to `CNN_PALETTE` and `SAMPLE_GRID_SIZE`.
 - **`NetworkStore` gains an initial network.** It currently constructs

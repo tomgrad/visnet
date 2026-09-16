@@ -35,9 +35,7 @@
   const width = $derived(
     SAMPLE_GRID_COLUMNS * SAMPLE_GRID_CELL_WIDTH + (SAMPLE_GRID_COLUMNS - 1) * SAMPLE_GRID_GAP
   );
-  const height = $derived(
-    rows * SAMPLE_GRID_CELL_HEIGHT + (rows - 1) * SAMPLE_GRID_GAP
-  );
+  const height = $derived(rows * SAMPLE_GRID_CELL_HEIGHT + (rows - 1) * SAMPLE_GRID_GAP);
 
   let base: HTMLCanvasElement | null = $state(null);
   let overlay: HTMLCanvasElement | null = $state(null);
@@ -180,11 +178,11 @@
     {#if failed}
       The predictions could not be updated. They will come back once training continues.
     {:else if marks}
-      Each digit shows what the network predicts; a green outline means it is right, a red one
-      that it is wrong.
+      Each digit shows what the network predicts; a green outline means it is right, a red one that
+      it is wrong.
     {:else}
-      Training has not started. These are test digits the network has not trained on; the
-      predicted labels appear once it does.
+      Training has not started. These are test digits the network has not trained on; the predicted
+      labels appear once it does.
     {/if}
   </figcaption>
 </figure>

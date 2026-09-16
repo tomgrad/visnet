@@ -10,10 +10,12 @@ Drag and drop mechanics.
 Modular. Network editor can be embedded in subpages with examples.
 
 Examples:
+
 - classification with MLP (points in 2D space)
 - classification with CNN (MNIST images)
 
 Available modules:
+
 - linear
 - convolutional
 - flatten
@@ -22,14 +24,17 @@ Available modules:
 - Softmax
 
 Available loss functions:
+
 - mean squared error
 - cross entropy
 
 Available optimizers:
+
 - stochastic gradient descent
 - Adam
 
 Specifics:
+
 - no backend, hosted as a static site
 - uses TensorFlow.js
 - saving model weights in the browser

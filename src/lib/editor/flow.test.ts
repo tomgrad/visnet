@@ -76,12 +76,7 @@ describe('toFlow', () => {
   });
 
   it('creates one labelled edge per adjacent pair', () => {
-    expect(flow.edges.map((edge) => edge.id)).toEqual([
-      'in->a',
-      'a->b',
-      'b->c',
-      'c->out'
-    ]);
+    expect(flow.edges.map((edge) => edge.id)).toEqual(['in->a', 'a->b', 'b->c', 'c->out']);
     expect(flow.edges.map((edge) => edge.label)).toEqual(['[2]', '[8]', '[8]', '[2]']);
   });
 });

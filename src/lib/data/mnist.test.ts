@@ -55,14 +55,20 @@ describe('loadMnistData', () => {
   });
 
   it('reports a missing asset with the prep command', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => notFound()));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => notFound())
+    );
 
     await expect(loadMnistData()).rejects.toThrow(ImageDataUnavailableError);
     await expect(loadMnistData()).rejects.toThrow(/npm run data:mnist/);
   });
 
   it('reports a corrupt asset', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => ok(new ArrayBuffer(4))));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ok(new ArrayBuffer(4)))
+    );
 
     await expect(loadMnistData()).rejects.toThrow(ImageDataUnavailableError);
   });

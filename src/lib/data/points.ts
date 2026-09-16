@@ -47,7 +47,7 @@ function xor(count: number, rng: () => number): Point[] {
   return Array.from({ length: count }, () => {
     const x = rng() * 2 - 1;
     const y = rng() * 2 - 1;
-    return { x, y, label: ((x > 0) !== (y > 0) ? 1 : 0) as 0 | 1 };
+    return { x, y, label: (x > 0 !== y > 0 ? 1 : 0) as 0 | 1 };
   });
 }
 

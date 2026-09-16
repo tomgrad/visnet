@@ -27,9 +27,9 @@ describe('IssuesPanel', () => {
     render(IssuesPanel, { props: { store } });
 
     const issues = screen.getAllByTestId('issue');
-    expect(issues.some((issue) => issue.textContent?.includes('Linear layer needs a flat list'))).toBe(
-      true
-    );
+    expect(
+      issues.some((issue) => issue.textContent?.includes('Linear layer needs a flat list'))
+    ).toBe(true);
 
     await userEvent.click(issues[0]);
     expect(store.selectedBlockId).not.toBeNull();

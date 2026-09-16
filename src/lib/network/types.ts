@@ -1,12 +1,5 @@
 export type BlockKind =
-  | 'input'
-  | 'linear'
-  | 'conv2d'
-  | 'flatten'
-  | 'relu'
-  | 'sigmoid'
-  | 'softmax'
-  | 'output';
+  'input' | 'linear' | 'conv2d' | 'flatten' | 'relu' | 'sigmoid' | 'softmax' | 'output';
 
 export const BLOCK_KINDS: readonly BlockKind[] = [
   'input',
@@ -55,12 +48,7 @@ export interface OutputBlock extends BlockBase {
 }
 
 export type Block =
-  | InputBlock
-  | LinearBlock
-  | Conv2dBlock
-  | FlattenBlock
-  | ActivationBlock
-  | OutputBlock;
+  InputBlock | LinearBlock | Conv2dBlock | FlattenBlock | ActivationBlock | OutputBlock;
 
 export interface TrainingConfig {
   loss: 'mse' | 'crossEntropy';

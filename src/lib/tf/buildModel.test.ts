@@ -54,7 +54,7 @@ describe('buildModel', () => {
         { id: 'out', kind: 'output', units: 10 }
       ],
       training: { loss: 'crossEntropy', optimizer: 'adam', learningRate: 0.01, batchSize: 32 },
-    positions: {}
+      positions: {}
     };
     const model = build(network);
     expect(model.inputs[0].shape).toEqual([null, 28, 28, 1]);
@@ -70,7 +70,7 @@ describe('buildModel', () => {
         { id: 'out', kind: 'output', units: 2 }
       ],
       training: { loss: 'crossEntropy', optimizer: 'adam', learningRate: 0.01, batchSize: 32 },
-    positions: {}
+      positions: {}
     };
 
     expect(() => buildModel(network)).toThrow(NetworkInvalidError);

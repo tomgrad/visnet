@@ -35,7 +35,7 @@
     <select
       data-testid="training-loss"
       title={PARAM_DESCRIPTIONS.loss}
-      disabled={disabled}
+      {disabled}
       value={store.network.training.loss}
       onchange={(event) =>
         store.updateTraining({ loss: event.currentTarget.value as 'mse' | 'crossEntropy' })}
@@ -51,9 +51,10 @@
     <select
       data-testid="training-optimizer"
       title={PARAM_DESCRIPTIONS.optimizer}
-      disabled={disabled}
+      {disabled}
       value={store.network.training.optimizer}
-      onchange={(event) => store.updateTraining({ optimizer: event.currentTarget.value as 'sgd' | 'adam' })}
+      onchange={(event) =>
+        store.updateTraining({ optimizer: event.currentTarget.value as 'sgd' | 'adam' })}
     >
       <option value="adam">Adam</option>
       <option value="sgd">SGD</option>
@@ -69,7 +70,7 @@
       min="0.0001"
       data-testid="training-learning-rate"
       title={PARAM_DESCRIPTIONS.learningRate}
-      disabled={disabled}
+      {disabled}
       value={store.network.training.learningRate}
       onchange={(event) => setNumber(event, 'learningRate')}
     />
@@ -83,7 +84,7 @@
       min="1"
       data-testid="training-batch-size"
       title={PARAM_DESCRIPTIONS.batchSize}
-      disabled={disabled}
+      {disabled}
       value={store.network.training.batchSize}
       onchange={(event) => setNumber(event, 'batchSize')}
     />
@@ -91,13 +92,18 @@
   </label>
 
   <div class="controls">
-    <button type="button" data-testid="training-play" disabled={disabled || playing} onclick={onplay}>
+    <button
+      type="button"
+      data-testid="training-play"
+      disabled={disabled || playing}
+      onclick={onplay}
+    >
       Play
     </button>
     <button type="button" data-testid="training-pause" disabled={!playing} onclick={onpause}>
       Pause
     </button>
-    <button type="button" data-testid="training-step" disabled={disabled} onclick={onstep}>
+    <button type="button" data-testid="training-step" {disabled} onclick={onstep}>
       Step one batch
     </button>
     <button type="button" data-testid="training-reset" onclick={onreset}>Reset model</button>

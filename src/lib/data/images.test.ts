@@ -5,17 +5,19 @@ const ROWS = 2;
 const COLS = 3;
 const CLASSES = 3;
 
-function build(options: {
-  count?: number;
-  rows?: number;
-  cols?: number;
-  numClasses?: number;
-  magic?: string;
-  version?: number;
-  reserved?: number;
-  extraBytes?: number;
-  labels?: number[];
-} = {}): ArrayBuffer {
+function build(
+  options: {
+    count?: number;
+    rows?: number;
+    cols?: number;
+    numClasses?: number;
+    magic?: string;
+    version?: number;
+    reserved?: number;
+    extraBytes?: number;
+    labels?: number[];
+  } = {}
+): ArrayBuffer {
   const count = options.count ?? 2;
   const rows = options.rows ?? ROWS;
   const cols = options.cols ?? COLS;

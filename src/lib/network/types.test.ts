@@ -37,7 +37,7 @@ describe('domain types', () => {
       version: 2,
       blocks,
       training: { loss: 'crossEntropy', optimizer: 'adam', learningRate: 0.01, batchSize: 32 },
-    positions: {}
+      positions: {}
     };
 
     expect(new Set(network.blocks.map((block) => block.kind))).toEqual(new Set(BLOCK_KINDS));

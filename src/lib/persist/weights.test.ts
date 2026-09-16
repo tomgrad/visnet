@@ -27,12 +27,7 @@ afterEach(() => {
 
 describe('weightShapes', () => {
   it('reports every weight tensor shape', () => {
-    expect(weightShapes(model())).toEqual([
-      [2, 8],
-      [8],
-      [8, 2],
-      [2]
-    ]);
+    expect(weightShapes(model())).toEqual([[2, 8], [8], [8, 2], [2]]);
   });
 
   it('changes when the architecture changes', () => {

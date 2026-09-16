@@ -25,33 +25,35 @@
 
 ## File Structure
 
-| Path | Responsibility |
-| --- | --- |
-| `src/lib/data/images.ts` | Pure: the `ImageDataset` type, the binary parser, single-image access, format constants |
-| `src/lib/data/mnist.ts` | Fetching both splits and turning a missing or corrupt asset into `ImageDataUnavailableError` |
-| `src/lib/data/tensors.ts` | Modify: gains `imagesToTensors` beside the existing point conversion |
-| `scripts/prepare-mnist.mjs` | Download MNIST, parse IDX, write the two split files; exports its pure parts |
-| `scripts/prepare-mnist.test.ts` | IDX parsing, the format round trip against the real parser |
-| `src/lib/editor/networkStore.svelte.ts` | Modify: `clampNetwork` on every mutation, an initial network for `reset` |
-| `src/lib/persist/weights.ts` | Modify: weights addressed by an explicit example id |
-| `src/lib/persist/storage.ts` | Modify: storage keys passed in rather than hardcoded |
-| `src/lib/examples/mlp/example.ts` | Modify: exports the MLP's storage keys |
-| `src/lib/examples/mlp/runtime.ts` | Modify: passes the `mlp` weight id |
-| `src/routes/examples/mlp/+page.svelte` | Modify: passes the MLP storage keys |
-| `.gitignore` | Modify: ignores `static/mnist/` |
-| `vite.config.ts` | Modify: the engine project also collects `scripts/**/*.test.ts` |
-| `package.json` | Modify: adds the `data:mnist` script |
-| `AGENTS.md` | Modify: the new command and the gitignored data directory |
+| Path                                    | Responsibility                                                                               |
+| --------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `src/lib/data/images.ts`                | Pure: the `ImageDataset` type, the binary parser, single-image access, format constants      |
+| `src/lib/data/mnist.ts`                 | Fetching both splits and turning a missing or corrupt asset into `ImageDataUnavailableError` |
+| `src/lib/data/tensors.ts`               | Modify: gains `imagesToTensors` beside the existing point conversion                         |
+| `scripts/prepare-mnist.mjs`             | Download MNIST, parse IDX, write the two split files; exports its pure parts                 |
+| `scripts/prepare-mnist.test.ts`         | IDX parsing, the format round trip against the real parser                                   |
+| `src/lib/editor/networkStore.svelte.ts` | Modify: `clampNetwork` on every mutation, an initial network for `reset`                     |
+| `src/lib/persist/weights.ts`            | Modify: weights addressed by an explicit example id                                          |
+| `src/lib/persist/storage.ts`            | Modify: storage keys passed in rather than hardcoded                                         |
+| `src/lib/examples/mlp/example.ts`       | Modify: exports the MLP's storage keys                                                       |
+| `src/lib/examples/mlp/runtime.ts`       | Modify: passes the `mlp` weight id                                                           |
+| `src/routes/examples/mlp/+page.svelte`  | Modify: passes the MLP storage keys                                                          |
+| `.gitignore`                            | Modify: ignores `static/mnist/`                                                              |
+| `vite.config.ts`                        | Modify: the engine project also collects `scripts/**/*.test.ts`                              |
+| `package.json`                          | Modify: adds the `data:mnist` script                                                         |
+| `AGENTS.md`                             | Modify: the new command and the gitignored data directory                                    |
 
 ---
 
 ### Task 1: The digit asset format parser
 
 **Files:**
+
 - Create: `src/lib/data/images.ts`
 - Test: `src/lib/data/images.test.ts`
 
 **Interfaces:**
+
 - Consumes: nothing.
 - Produces:
 
@@ -90,17 +92,19 @@ const ROWS = 2;
 const COLS = 3;
 const CLASSES = 3;
 
-function build(options: {
-  count?: number;
-  rows?: number;
-  cols?: number;
-  numClasses?: number;
-  magic?: string;
-  version?: number;
-  reserved?: number;
-  extraBytes?: number;
-  labels?: number[];
-} = {}): ArrayBuffer {
+function build(
+  options: {
+    count?: number;
+    rows?: number;
+    cols?: number;
+    numClasses?: number;
+    magic?: string;
+    version?: number;
+    reserved?: number;
+    extraBytes?: number;
+    labels?: number[];
+  } = {}
+): ArrayBuffer {
   const count = options.count ?? 2;
   const rows = options.rows ?? ROWS;
   const cols = options.cols ?? COLS;
@@ -282,6 +286,7 @@ git commit -m "feat: add the digit asset format parser"
 ### Task 2: The MNIST prep script
 
 **Files:**
+
 - Create: `scripts/prepare-mnist.mjs`
 - Test: `scripts/prepare-mnist.test.ts`
 - Modify: `package.json` (add the `data:mnist` script)
@@ -289,6 +294,7 @@ git commit -m "feat: add the digit asset format parser"
 - Modify: `vite.config.ts` (the engine project also collects `scripts/**/*.test.ts`)
 
 **Interfaces:**
+
 - Consumes: nothing at runtime. The script is plain ESM and cannot import the TypeScript module, so it restates the magic bytes, the version, and the header size. **The round-trip test is what keeps that restatement honest** — if `src/lib/data/images.ts` ever changes its format, the test fails.
 - Produces:
   - `parseIdxImages(buffer: ArrayBuffer): { count: number; rows: number; cols: number; pixels: Uint8Array }` — IDX is **big-endian**; magic `0x00000803`.
@@ -297,6 +303,7 @@ git commit -m "feat: add the digit asset format parser"
   - `npm run data:mnist` — downloads, prepares, and writes `static/mnist/train.bin` and `static/mnist/test.bin`.
 
 **Behaviour:**
+
 - Sources: `https://storage.googleapis.com/cvdf-datasets/mnist/` + `train-images-idx3-ubyte.gz`, `train-labels-idx1-ubyte.gz`, `t10k-images-idx3-ubyte.gz`, `t10k-labels-idx1-ubyte.gz`.
 - Flags: `--train=N` (default 1000), `--test=M` (default 200), `--force`.
 - Idempotent: when both outputs exist and `--force` is absent, it prints that the data is already prepared and exits **without any network access**.
@@ -552,7 +559,9 @@ async function main() {
   await writeFile(trainPath, new Uint8Array(trainBytes));
   await writeFile(testPath, new Uint8Array(testBytes));
 
-  console.log(`Wrote ${train.count} training and ${test.count} test digits, ${train.rows}x${train.cols}.`);
+  console.log(
+    `Wrote ${train.count} training and ${test.count} test digits, ${train.rows}x${train.cols}.`
+  );
   console.log(`  ${trainPath} (${trainBytes.byteLength} bytes)`);
   console.log(`  ${testPath} (${testBytes.byteLength} bytes)`);
   console.log('MNIST is a derivative of the NIST Special Database 19.');
@@ -624,10 +633,12 @@ git commit -m "feat: add the MNIST prep script"
 ### Task 3: Loading the prepared data
 
 **Files:**
+
 - Create: `src/lib/data/mnist.ts`
 - Test: `src/lib/data/mnist.test.ts`
 
 **Interfaces:**
+
 - Consumes: `parseSplit`, `ImageDataset` from `./images`.
 - Produces:
 
@@ -677,7 +688,11 @@ function ok(buffer: ArrayBuffer): Response {
 }
 
 function notFound(): Response {
-  return { ok: false, status: 404, arrayBuffer: async () => new ArrayBuffer(0) } as unknown as Response;
+  return {
+    ok: false,
+    status: 404,
+    arrayBuffer: async () => new ArrayBuffer(0)
+  } as unknown as Response;
 }
 
 afterEach(() => {
@@ -707,14 +722,20 @@ describe('loadMnistData', () => {
   });
 
   it('reports a missing asset with the prep command', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => notFound()));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => notFound())
+    );
 
     await expect(loadMnistData()).rejects.toThrow(ImageDataUnavailableError);
     await expect(loadMnistData()).rejects.toThrow(/npm run data:mnist/);
   });
 
   it('reports a corrupt asset', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => ok(new ArrayBuffer(4))));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ok(new ArrayBuffer(4)))
+    );
 
     await expect(loadMnistData()).rejects.toThrow(ImageDataUnavailableError);
   });
@@ -798,10 +819,12 @@ git commit -m "feat: load the prepared digit data with a clear missing-asset err
 ### Task 4: Image tensors
 
 **Files:**
+
 - Modify: `src/lib/data/tensors.ts`
 - Test: `src/lib/data/tensors.test.ts` (extend)
 
 **Interfaces:**
+
 - Consumes: `ImageDataset`, `imageAt` from `./images`.
 - Produces:
 
@@ -946,10 +969,12 @@ git commit -m "feat: convert the image dataset to tensors"
 ### Task 5: Clamp the network on every mutation
 
 **Files:**
+
 - Modify: `src/lib/editor/networkStore.svelte.ts`
 - Test: `src/lib/editor/networkStore.svelte.test.ts` (extend)
 
 **Interfaces:**
+
 - Consumes: `clampNetwork` from `../network/constraints`.
 - Produces: no new public API. `addBlock`, `moveBlock`, and `load` now clamp the resulting network and append every correction to `announcements`, exactly as `updateBlock` already does.
 
@@ -1092,11 +1117,13 @@ git commit -m "fix: clamp the network on every mutation, not only block edits"
 ### Task 6: Weights addressed by example id
 
 **Files:**
+
 - Modify: `src/lib/persist/weights.ts`
 - Modify: `src/lib/examples/mlp/runtime.ts`
 - Test: `src/lib/persist/weights.test.ts` (extend)
 
 **Interfaces:**
+
 - Consumes: nothing new.
 - Produces:
 
@@ -1193,12 +1220,14 @@ git commit -m "fix: namespace saved weights per example"
 ### Task 7: Storage keys passed in rather than hardcoded
 
 **Files:**
+
 - Modify: `src/lib/persist/storage.ts`
 - Modify: `src/lib/examples/mlp/example.ts`
 - Modify: `src/routes/examples/mlp/+page.svelte`
 - Test: `src/lib/persist/storage.test.ts` (extend)
 
 **Interfaces:**
+
 - Consumes: nothing new.
 - Produces:
 
@@ -1351,10 +1380,12 @@ git commit -m "fix: take storage keys as a parameter so examples cannot share on
 ### Task 8: The store's initial network
 
 **Files:**
+
 - Modify: `src/lib/editor/networkStore.svelte.ts`
 - Test: `src/lib/editor/networkStore.svelte.test.ts` (extend)
 
 **Interfaces:**
+
 - Consumes: `createEmptyNetwork` from `../network/factory`.
 - Produces: `new NetworkStore(initial?: Network)` — the constructor's network becomes the network, and `reset()` returns to it. The default argument keeps `new NetworkStore()` behaving exactly as it does today.
 
@@ -1460,9 +1491,11 @@ git commit -m "feat: let the store be constructed with its example's network"
 ### Task 9: Document the prep step and verify the pipeline
 
 **Files:**
+
 - Modify: `AGENTS.md`
 
 **Interfaces:**
+
 - Consumes: everything built in Tasks 1-8.
 - Produces: documentation that matches the repository, and a green full verification.
 
@@ -1515,4 +1548,3 @@ git commit -m "docs: record the MNIST prep command and the ignored data director
 **Placeholder scan.** No "TBD", "TODO", "similar to Task N", or steps that describe work without showing it. Every code step carries complete code, and every command has an expected result.
 
 **Type consistency.** `ImageDataset` is defined once in Task 1 and consumed by Tasks 3 and 4. `parseSplit` is used by Task 3 and by Task 2's round-trip test. `StorageKeys` is defined in Task 7 and consumed by Task 7's MLP keys. `weightsUrl` is defined in Task 6 and used only there. `clampNetwork` comes from the existing engine module and is used by Task 5. The `Network` shape used in Task 5's and Task 8's test fixtures matches the version 2 model from the previous phase, including `positions`.
-

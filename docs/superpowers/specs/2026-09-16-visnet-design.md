@@ -63,17 +63,17 @@ decisions look the way they do.
 
 ## 3. Stack and tooling
 
-| Concern | Choice |
-| --- | --- |
-| Framework | SvelteKit 2, Svelte 5 (runes), TypeScript strict |
-| Build | Vite, `@sveltejs/adapter-static`, all routes prerendered |
-| Package manager | npm |
-| Canvas | `@xyflow/svelte` (Svelte Flow) 1.6.x, MIT |
-| ML runtime | `@tensorflow/tfjs` |
-| Styling | Plain CSS + design tokens, component-scoped styles |
-| Charts | Hand-rolled SVG (no charting dependency) |
-| Tests | Vitest |
-| Lint/format | ESLint + Prettier |
+| Concern         | Choice                                                   |
+| --------------- | -------------------------------------------------------- |
+| Framework       | SvelteKit 2, Svelte 5 (runes), TypeScript strict         |
+| Build           | Vite, `@sveltejs/adapter-static`, all routes prerendered |
+| Package manager | npm                                                      |
+| Canvas          | `@xyflow/svelte` (Svelte Flow) 1.6.x, MIT                |
+| ML runtime      | `@tensorflow/tfjs`                                       |
+| Styling         | Plain CSS + design tokens, component-scoped styles       |
+| Charts          | Hand-rolled SVG (no charting dependency)                 |
+| Tests           | Vitest                                                   |
+| Lint/format     | ESLint + Prettier                                        |
 
 Output is a directory of static files. There is no server component, no API, and
 no persistence beyond the browser.
@@ -135,14 +135,7 @@ through each block, and whether it is valid. Everything else derives from it.
 
 ```ts
 export type BlockKind =
-  | 'input'
-  | 'linear'
-  | 'conv2d'
-  | 'flatten'
-  | 'relu'
-  | 'sigmoid'
-  | 'softmax'
-  | 'output';
+  'input' | 'linear' | 'conv2d' | 'flatten' | 'relu' | 'sigmoid' | 'softmax' | 'output';
 
 interface BlockBase {
   id: string;
@@ -180,12 +173,7 @@ export interface OutputBlock extends BlockBase {
 }
 
 export type Block =
-  | InputBlock
-  | LinearBlock
-  | Conv2dBlock
-  | FlattenBlock
-  | ActivationBlock
-  | OutputBlock;
+  InputBlock | LinearBlock | Conv2dBlock | FlattenBlock | ActivationBlock | OutputBlock;
 
 export interface TrainingConfig {
   loss: 'mse' | 'crossEntropy';
@@ -236,13 +224,13 @@ training fail at runtime, and an error blocks training before that can happen.
 
 `factory.ts` provides defaults so every block is immediately valid:
 
-| Block | Defaults |
-| --- | --- |
-| `input` | `shape: [2]` |
-| `linear` | `units: 8` |
-| `conv2d` | `filters: 8, kernelSize: 3, stride: 1, padding: 'same'` |
-| `relu` / `sigmoid` / `softmax` / `flatten` | none |
-| `output` | `units: 2` |
+| Block                                      | Defaults                                                |
+| ------------------------------------------ | ------------------------------------------------------- |
+| `input`                                    | `shape: [2]`                                            |
+| `linear`                                   | `units: 8`                                              |
+| `conv2d`                                   | `filters: 8, kernelSize: 3, stride: 1, padding: 'same'` |
+| `relu` / `sigmoid` / `softmax` / `flatten` | none                                                    |
+| `output`                                   | `units: 2`                                              |
 
 `createEmptyNetwork()` returns:
 
@@ -264,16 +252,16 @@ Every block kind has a one-line plain-language description, defined once in
 `src/lib/network/descriptions.ts` and used by the palette, the inspector, and the
 canvas tooltip:
 
-| Kind | Description |
-| --- | --- |
-| `input` | "Describes the shape of one example your network receives." |
-| `linear` | "Learns a weighted sum of its inputs. Also called a fully connected or dense layer." |
-| `conv2d` | "Slides small filters over an image to detect local patterns such as edges." |
-| `flatten` | "Turns image-shaped data into a flat list so Linear layers can read it." |
-| `relu` | "Keeps positive values and turns negative ones into zero. Helps the network learn curved patterns." |
-| `sigmoid` | "Squashes each value into the range 0 to 1." |
-| `softmax` | "Turns raw scores into probabilities that add up to 1." |
-| `output` | "Declares what the network predicts and how many classes there are." |
+| Kind      | Description                                                                                         |
+| --------- | --------------------------------------------------------------------------------------------------- |
+| `input`   | "Describes the shape of one example your network receives."                                         |
+| `linear`  | "Learns a weighted sum of its inputs. Also called a fully connected or dense layer."                |
+| `conv2d`  | "Slides small filters over an image to detect local patterns such as edges."                        |
+| `flatten` | "Turns image-shaped data into a flat list so Linear layers can read it."                            |
+| `relu`    | "Keeps positive values and turns negative ones into zero. Helps the network learn curved patterns." |
+| `sigmoid` | "Squashes each value into the range 0 to 1."                                                        |
+| `softmax` | "Turns raw scores into probabilities that add up to 1."                                             |
+| `output`  | "Declares what the network predicts and how many classes there are."                                |
 
 Each parameter has a one-line description in the same module, e.g. `units`: "How
 many numbers this layer produces.", `kernelSize`: "How large the window sliding
@@ -287,6 +275,7 @@ slower but steadier.".
 **`factory.ts`** — `createBlock(kind)`, `createEmptyNetwork()`, `cloneNetwork(net)`.
 
 **`chain.ts`** — immutable chain operations. Each returns a new `Network`.
+
 - `insertAt(net, index, block)` — rejects indices that would place a block before
   the input or after the output.
 - `moveBlock(net, fromIndex, toIndex)` — clamps to the interior; input and output
@@ -299,27 +288,27 @@ slower but steadier.".
 ```ts
 export interface ShapeInfo {
   blockId: string;
-  inShape: number[] | null;   // null when the shape is unknown (earlier error)
+  inShape: number[] | null; // null when the shape is unknown (earlier error)
   outShape: number[] | null;
-  paramCount: number | null;  // trainable parameters this block contributes
+  paramCount: number | null; // trainable parameters this block contributes
 }
 
 export function inferShapes(net: Network): {
   perBlock: ShapeInfo[];
   edges: { fromId: string; toId: string; shape: number[] | null }[];
-}
+};
 ```
 
 Shape rules:
 
-| Block | Output shape |
-| --- | --- |
-| `input` | `block.shape` |
-| `linear` | `[units]` |
-| `conv2d` | `[ceil(H/stride), ceil(W/stride), filters]` for `same`; `[floor((H - kernelSize)/stride) + 1, …]` for `valid` |
-| `flatten` | `[product(shape)]` |
-| `relu` / `sigmoid` / `softmax` | unchanged |
-| `output` | unchanged (marker) |
+| Block                          | Output shape                                                                                                  |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| `input`                        | `block.shape`                                                                                                 |
+| `linear`                       | `[units]`                                                                                                     |
+| `conv2d`                       | `[ceil(H/stride), ceil(W/stride), filters]` for `same`; `[floor((H - kernelSize)/stride) + 1, …]` for `valid` |
+| `flatten`                      | `[product(shape)]`                                                                                            |
+| `relu` / `sigmoid` / `softmax` | unchanged                                                                                                     |
+| `output`                       | unchanged (marker)                                                                                            |
 
 `paramCount` is computed per block so the inspector can show, for example, "this
 layer has 24 trainable numbers", and so a whole-network total can be displayed.
@@ -330,10 +319,10 @@ This is informative for teaching and costs nothing.
 ```ts
 export interface Issue {
   severity: 'error' | 'warning';
-  title: string;          // short, plain language, e.g. "Linear layer needs flat input"
-  message: string;        // what is wrong, in ordinary words
-  fix: string;            // what to do about it, imperative
-  blockId?: string;       // offending block, if any
+  title: string; // short, plain language, e.g. "Linear layer needs flat input"
+  message: string; // what is wrong, in ordinary words
+  fix: string; // what to do about it, imperative
+  blockId?: string; // offending block, if any
 }
 ```
 
@@ -344,31 +333,31 @@ that permits a message without a fix — that is enforced by the type.
 
 Errors (block training):
 
-| Condition | Title | Message | Fix |
-| --- | --- | --- | --- |
-| No input block | "Missing Input block" | "A network needs exactly one Input block to describe the shape of the data it receives." | "Add an Input block to the start of the network." |
-| No output block | "Missing Output block" | "A network needs exactly one Output block to say what it predicts." | "Add an Output block to the end of the network." |
-| More than one input | "More than one Input block" | "There are {n} Input blocks, but a network can only have one." | "Delete the extra Input blocks." |
-| More than one output | "More than one Output block" | "There are {n} Output blocks, but a network can only have one." | "Delete the extra Output blocks." |
-| No layers between input and output | "Nothing to learn" | "The Input connects straight to the Output, so there are no layers for the network to learn with." | "Add at least one layer, such as a Linear layer, between Input and Output." |
-| `linear` on rank-3 input | "Linear layer needs a flat list" | "This Linear layer receives {shape}, which is image-shaped. Linear layers need a flat list of numbers." | "Add a Flatten layer before this Linear layer." |
-| `conv2d` on non-rank-3 input | "Convolution layer needs image data" | "This Convolution layer receives {shape}. It expects image data shaped [height, width, channels]." | "Give the Input block a 3D shape such as [28, 28, 1], or remove the Convolution layer." |
-| `flatten` on rank-1 input | "Nothing to flatten" | "This Flatten layer receives {shape}, which is already a flat list." | "Remove this Flatten layer, or move it after a Convolution layer." |
-| `conv2d` output dimension ≤ 0 | "Kernel is larger than the image" | "A {kernelSize}×{kernelSize} kernel with stride {stride} leaves no room to slide over a {H}×{W} image." | "Use a smaller kernel or stride, or set padding to 'same'." |
-| Unknown block kind | "Unrecognised block" | "This network contains a block type this version of VisNet does not understand ({kind})." | "Delete the block, or reset the network to start fresh." |
-| Last real layer is not rank 1 | "Output must be a list of scores" | "The last layer before the Output produces {shape}, which is not a list of class scores." | "End the network with a Linear layer so the Output is a list of numbers." |
-| Last real layer width ≠ Output units | "Last layer size does not match the Output block" | "The last layer produces {n} numbers, but the Output block says {units} classes." | "Set the last layer to {units} units, or change the Output block to {n}." |
+| Condition                            | Title                                             | Message                                                                                                 | Fix                                                                                     |
+| ------------------------------------ | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| No input block                       | "Missing Input block"                             | "A network needs exactly one Input block to describe the shape of the data it receives."                | "Add an Input block to the start of the network."                                       |
+| No output block                      | "Missing Output block"                            | "A network needs exactly one Output block to say what it predicts."                                     | "Add an Output block to the end of the network."                                        |
+| More than one input                  | "More than one Input block"                       | "There are {n} Input blocks, but a network can only have one."                                          | "Delete the extra Input blocks."                                                        |
+| More than one output                 | "More than one Output block"                      | "There are {n} Output blocks, but a network can only have one."                                         | "Delete the extra Output blocks."                                                       |
+| No layers between input and output   | "Nothing to learn"                                | "The Input connects straight to the Output, so there are no layers for the network to learn with."      | "Add at least one layer, such as a Linear layer, between Input and Output."             |
+| `linear` on rank-3 input             | "Linear layer needs a flat list"                  | "This Linear layer receives {shape}, which is image-shaped. Linear layers need a flat list of numbers." | "Add a Flatten layer before this Linear layer."                                         |
+| `conv2d` on non-rank-3 input         | "Convolution layer needs image data"              | "This Convolution layer receives {shape}. It expects image data shaped [height, width, channels]."      | "Give the Input block a 3D shape such as [28, 28, 1], or remove the Convolution layer." |
+| `flatten` on rank-1 input            | "Nothing to flatten"                              | "This Flatten layer receives {shape}, which is already a flat list."                                    | "Remove this Flatten layer, or move it after a Convolution layer."                      |
+| `conv2d` output dimension ≤ 0        | "Kernel is larger than the image"                 | "A {kernelSize}×{kernelSize} kernel with stride {stride} leaves no room to slide over a {H}×{W} image." | "Use a smaller kernel or stride, or set padding to 'same'."                             |
+| Unknown block kind                   | "Unrecognised block"                              | "This network contains a block type this version of VisNet does not understand ({kind})."               | "Delete the block, or reset the network to start fresh."                                |
+| Last real layer is not rank 1        | "Output must be a list of scores"                 | "The last layer before the Output produces {shape}, which is not a list of class scores."               | "End the network with a Linear layer so the Output is a list of numbers."               |
+| Last real layer width ≠ Output units | "Last layer size does not match the Output block" | "The last layer produces {n} numbers, but the Output block says {units} classes."                       | "Set the last layer to {units} units, or change the Output block to {n}."               |
 
 Warnings (do not block training):
 
-| Condition | Title | Message | Fix |
-| --- | --- | --- | --- |
-| Cross-entropy without softmax | "Add a Softmax for probabilities" | "Cross-entropy works best when the network's outputs are probabilities, but the network currently ends with raw scores. Training will still run, but it may be less stable." | "Add a Softmax block after the last Linear layer." |
-| MSE with softmax | "Softmax is unusual with mean squared error" | "Mean squared error is normally used with raw scores, not probabilities." | "Switch the loss to cross-entropy, or remove the Softmax block." |
-| Softmax not last | "Softmax is not the last layer" | "This Softmax block is followed by more layers, so the probabilities it produces get transformed again." | "Move the Softmax block to just before the Output block." |
-| Output units ≠ dataset classes | "Output size does not match the data" | "The Output block says {units} classes, but the dataset has {n}." | "Set the Output block to {n} units." |
-| Rank-3 input, no conv2d | "Image input without a Convolution layer" | "The Input block is image-shaped {shape}, but the network has no Convolution layer to look at it." | "Add a Convolution layer, or change the Input shape to a flat list." |
-| Rank-1 input with conv2d | "Convolution layer without image input" | "The network has a Convolution layer, but the Input block is a flat list {shape}." | "Set the Input shape to 3D such as [28, 28, 1], or remove the Convolution layer." |
+| Condition                      | Title                                        | Message                                                                                                                                                                      | Fix                                                                               |
+| ------------------------------ | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Cross-entropy without softmax  | "Add a Softmax for probabilities"            | "Cross-entropy works best when the network's outputs are probabilities, but the network currently ends with raw scores. Training will still run, but it may be less stable." | "Add a Softmax block after the last Linear layer."                                |
+| MSE with softmax               | "Softmax is unusual with mean squared error" | "Mean squared error is normally used with raw scores, not probabilities."                                                                                                    | "Switch the loss to cross-entropy, or remove the Softmax block."                  |
+| Softmax not last               | "Softmax is not the last layer"              | "This Softmax block is followed by more layers, so the probabilities it produces get transformed again."                                                                     | "Move the Softmax block to just before the Output block."                         |
+| Output units ≠ dataset classes | "Output size does not match the data"        | "The Output block says {units} classes, but the dataset has {n}."                                                                                                            | "Set the Output block to {n} units."                                              |
+| Rank-3 input, no conv2d        | "Image input without a Convolution layer"    | "The Input block is image-shaped {shape}, but the network has no Convolution layer to look at it."                                                                           | "Add a Convolution layer, or change the Input shape to a flat list."              |
+| Rank-1 input with conv2d       | "Convolution layer without image input"      | "The network has a Convolution layer, but the Input block is a flat list {shape}."                                                                                           | "Set the Input shape to 3D such as [28, 28, 1], or remove the Convolution layer." |
 
 Messages are composed by small functions so values like `{shape}` and `{n}` are
 substituted at validation time, and so each message can be unit-tested.
@@ -481,7 +470,7 @@ network. A wire is a gesture that reorders an array, not stored state.
   drops outside the interior clamp to the first or last interior slot.
 - While a palette block is dragged over the canvas, the **wire it will land on**
   is highlighted: accent-coloured, thicker, and animated. Inserting at interior
-  index *k* puts the block between the blocks that wire already connects, so the
+  index _k_ puts the block between the blocks that wire already connects, so the
   highlighted wire is the edge at `k - 1`. The highlight follows the pointer, is
   cleared when the pointer leaves the canvas, and is cleared on drop. Dragging
   over the canvas without a block (any other drag type) highlights nothing.
@@ -546,13 +535,13 @@ which carries the `Issue[]` so callers can display the same plain-language
 messages the Issues panel shows). Skips the `input` block and uses its `shape` as
 `inputShape` on the first layer actually added. Skips the `output` block.
 
-| Block | TF.js layer |
-| --- | --- |
-| `linear` | `tf.layers.dense({ units })` |
-| `conv2d` | `tf.layers.conv2d({ filters, kernelSize, strides, padding, activation: 'linear' })` |
-| `flatten` | `tf.layers.flatten()` |
-| `relu` / `sigmoid` / `softmax` | `tf.layers.activation({ activation: kind })` |
-| `output` | nothing |
+| Block                          | TF.js layer                                                                         |
+| ------------------------------ | ----------------------------------------------------------------------------------- |
+| `linear`                       | `tf.layers.dense({ units })`                                                        |
+| `conv2d`                       | `tf.layers.conv2d({ filters, kernelSize, strides, padding, activation: 'linear' })` |
+| `flatten`                      | `tf.layers.flatten()`                                                               |
+| `relu` / `sigmoid` / `softmax` | `tf.layers.activation({ activation: kind })`                                        |
+| `output`                       | nothing                                                                             |
 
 No layer is given an explicit input size except the first, which receives the
 Input block's shape. Every later layer's input size is inferred by TensorFlow.js
@@ -560,12 +549,12 @@ from the previous layer, which is the runtime counterpart of principle 2.
 
 Then `model.compile(...)`:
 
-| Config | Mapping |
-| --- | --- |
-| `optimizer: 'sgd'` | `tf.train.sgd(learningRate)` |
-| `optimizer: 'adam'` | `tf.train.adam(learningRate)` |
-| `loss: 'mse'` | `'meanSquaredError'` |
-| `loss: 'crossEntropy'` | `'categoricalCrossentropy'` |
+| Config                 | Mapping                       |
+| ---------------------- | ----------------------------- |
+| `optimizer: 'sgd'`     | `tf.train.sgd(learningRate)`  |
+| `optimizer: 'adam'`    | `tf.train.adam(learningRate)` |
+| `loss: 'mse'`          | `'meanSquaredError'`          |
+| `loss: 'crossEntropy'` | `'categoricalCrossentropy'`   |
 
 ### Architecture vs. compilation
 
@@ -593,9 +582,9 @@ class Trainer {
     data: { xs: tf.Tensor2D; ys: tf.Tensor2D },
     batchSize: number,
     onStats: (s: TrainStats) => void,
-    onError?: (error: unknown) => void,
+    onError?: (error: unknown) => void
   );
-  play(): Promise<void>;   // resolves when the loop stops, on every path
+  play(): Promise<void>; // resolves when the loop stops, on every path
   pause(): void;
   step(): Promise<void>;
   dispose(): void;
@@ -639,8 +628,15 @@ are reproducible.
 `src/lib/data/points.ts`:
 
 ```ts
-interface Point { x: number; y: number; label: 0 | 1 }
-interface PointDataset { points: Point[]; numClasses: 2 }
+interface Point {
+  x: number;
+  y: number;
+  label: 0 | 1;
+}
+interface PointDataset {
+  points: Point[];
+  numClasses: 2;
+}
 ```
 
 - Domain is `x, y ∈ [-1, 1]`, matching the rendering surface.
@@ -714,7 +710,7 @@ could not be read.
 **Weights** — IndexedDB via TF.js's built-in handler:
 `model.save('indexeddb://visnet/weights/main')` and
 `tf.loadLayersModel('indexeddb://visnet/weights/main')`. Weights are Float32
-arrays; localStorage's ~5 MB *string* quota is a poor fit and TF.js offers no
+arrays; localStorage's ~5 MB _string_ quota is a poor fit and TF.js offers no
 localStorage weight handler. Architecture and weights share a single network id,
 and the UI presents one "Save model" / "Load model" pair, so the split is
 invisible to users.
@@ -759,9 +755,9 @@ Named/multiple saved networks are deferred.
 
 ```ts
 interface Props {
-  store: NetworkStore;   // the example page owns the store and its lifetime
-  palette: BlockKind[];  // which blocks this example permits
-  onsave?: () => void;   // model callbacks, rendered only when supplied
+  store: NetworkStore; // the example page owns the store and its lifetime
+  palette: BlockKind[]; // which blocks this example permits
+  onsave?: () => void; // model callbacks, rendered only when supplied
   onload?: () => void;
   saving?: boolean;
 }
@@ -784,6 +780,7 @@ panel on the other) so example pages stay small.
 Vitest, run with `npm test`. Tests live beside their modules as `*.test.ts`.
 
 Covered:
+
 - `chain.ts` — insert/move/remove/replace, including refusal to move or delete
   input and output and index clamping.
 - `inferShapes.ts` — each block kind, conv output sizes for `same` and `valid`,

@@ -19,9 +19,7 @@ describe('BlockPalette', () => {
   it('shows the plain-language description for each block', () => {
     render(BlockPalette, { props: { palette: PALETTE, onadd: () => {} } });
     for (const kind of PALETTE) {
-      expect(screen.getByTestId(`palette-${kind}`).textContent).toContain(
-        BLOCK_DESCRIPTIONS[kind]
-      );
+      expect(screen.getByTestId(`palette-${kind}`).textContent).toContain(BLOCK_DESCRIPTIONS[kind]);
     }
   });
 

@@ -91,7 +91,13 @@ describe('DecisionBoundary', () => {
   it('does not crash when the canvas has no 2d context', () => {
     expect(() =>
       render(DecisionBoundary, {
-        props: { model: null, dataset: DATASET, selectedLabel: 0, onaddpoint: () => {}, redrawKey: 0 }
+        props: {
+          model: null,
+          dataset: DATASET,
+          selectedLabel: 0,
+          onaddpoint: () => {},
+          redrawKey: 0
+        }
       })
     ).not.toThrow();
   });
