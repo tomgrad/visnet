@@ -6,9 +6,10 @@ Static web app for teaching neural networks; see `README.md` for feature scope a
 
 Engine complete and unit-tested: pure network domain modules (`src/lib/network/`),
 the TensorFlow.js model builder (`src/lib/tf/`), the trainer
-(`src/lib/training/`), the 2D dataset (`src/lib/data/`), and the
-decision-boundary renderer (`src/lib/render/`). The editor UI and the MLP example
-page are not built yet.
+(`src/lib/training/`), the 2D dataset (`src/lib/data/`), the
+decision-boundary renderer (`src/lib/render/`), and the editor's
+framework-free canvas projection and undo/redo logic (`src/lib/editor/`). The
+Svelte editor UI and the MLP example page are not built yet.
 
 ## Stack
 
@@ -23,9 +24,11 @@ page are not built yet.
 
 - `npm run dev` — development server
 - `npm run build` — static build
+- `npm run preview` — preview the production build locally
 - `npm run check` — svelte-check and TypeScript
 - `npm run lint` — ESLint
 - `npm test` — Vitest (run once)
+- `npm run test:watch` — Vitest in watch mode
 - `npm run format` — Prettier
 
 ## Architecture rules
@@ -33,8 +36,9 @@ page are not built yet.
 - `src/lib/network/**` is pure: no Svelte, no TensorFlow.js, no DOM. It must run in
   plain Node and is the single source of truth for network validity and shapes.
 - `@tensorflow/tfjs` may only be imported by `src/lib/tf/**`,
-  `src/lib/training/**`, `src/lib/data/tensors.ts`, and
-  `src/lib/render/boundary.ts` (the only render module that runs a forward pass).
+  `src/lib/training/**`, `src/lib/data/tensors.ts`, `src/lib/render/boundary.ts`
+  (the only render module that runs a forward pass), and the test files colocated
+  with those modules. No other production module may import it.
 - No block stores its input dimension; inputs derive from the previous block's
   output.
 - Every validation issue carries a non-empty `title`, `message`, and `fix`.
