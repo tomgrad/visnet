@@ -156,9 +156,9 @@
     if (!api || !train) return;
 
     const next = api.imagesToTensors(train);
+    releaseTrainer();
     api.disposeData(data);
     data = next;
-    releaseTrainer();
 
     if (!currentModelRef || !store.isValid || next.xs.shape[0] === 0) return;
     trainer = api.createTrainer(
