@@ -81,8 +81,9 @@ no persistence beyond the browser.
 ### SSR boundary
 
 SvelteKit prerenders page shells at build time, but TF.js and Svelte Flow require
-a browser. All TF.js access is confined to `src/lib/tf/` and `src/lib/training/`,
-which are imported dynamically from browser-only code paths (`onMount` or an
+a browser. All TF.js access is confined to `src/lib/tf/`, `src/lib/training/`,
+`src/lib/data/tensors.ts`, and `src/lib/render/boundary.ts`, which are imported
+dynamically from browser-only code paths (`onMount` or an
 `$effect` that checks `browser`). Svelte Flow is rendered only after mount.
 Prerendering therefore succeeds and pages hydrate client-side without
 `ssr = false`.
@@ -220,8 +221,10 @@ The `output` block declares the target shape and class count; it adds **no**
 TensorFlow.js layer. The last non-marker block is what actually produces the
 output. This keeps softmax placement natural (it belongs on the last real layer)
 and makes the terminal node a readable statement of what the network predicts.
-Shape inference warns when the last real layer's shape does not match the output
-block's `units`.
+Shape inference reports an **error** when the last real layer's shape does not match
+the output block's `units` (see the catalog below). It cannot be a warning: the
+labels are one-hot with `numClasses` columns, so a mismatched output width makes
+training fail at runtime, and an error blocks training before that can happen.
 
 ### Defaults
 
@@ -346,6 +349,8 @@ Errors (block training):
 | `flatten` on rank-1 input | "Nothing to flatten" | "This Flatten layer receives {shape}, which is already a flat list." | "Remove this Flatten layer, or move it after a Convolution layer." |
 | `conv2d` output dimension ≤ 0 | "Kernel is larger than the image" | "A {kernelSize}×{kernelSize} kernel with stride {stride} leaves no room to slide over a {H}×{W} image." | "Use a smaller kernel or stride, or set padding to 'same'." |
 | Unknown block kind | "Unrecognised block" | "This network contains a block type this version of VisNet does not understand ({kind})." | "Delete the block, or reset the network to start fresh." |
+| Last real layer is not rank 1 | "Output must be a list of scores" | "The last layer before the Output produces {shape}, which is not a list of class scores." | "End the network with a Linear layer so the Output is a list of numbers." |
+| Last real layer width ≠ Output units | "Last layer size does not match the Output block" | "The last layer produces {n} numbers, but the Output block says {units} classes." | "Set the last layer to {units} units, or change the Output block to {n}." |
 
 Warnings (do not block training):
 
@@ -364,9 +369,17 @@ substituted at validation time, and so each message can be unit-tested.
 **`descriptions.ts`** — block and parameter descriptions (section 5).
 
 **`serialize.ts`** — `toJSON(net): string`, `fromJSON(raw: string): Network | null`.
-`fromJSON` validates the version field, runs `migrate(raw)` when the version is
-older, and returns `null` for corrupt data or a version newer than supported so
-callers can fall back to the default network with a notice.
+`fromJSON` is the trust boundary for data read back from browser storage, so it
+validates structure, not semantics: the version field; each block's `id` and
+`kind`; every kind's required parameters as finite positive numbers (with
+`padding` restricted to `'same'` or `'valid'`); the training enums with finite
+positive `learningRate` and `batchSize` (so `NaN` and `Infinity` are rejected,
+not just non-numbers); and the structural invariants that there are at least two
+blocks, exactly one `input` first and exactly one `output` last. It returns
+`null` for corrupt data or a version newer than supported so callers can fall
+back to the default network with a notice. A network that is well-formed but
+semantically invalid — a Linear directly after a rank-3 input, or cross-entropy
+with no Softmax — still loads; reporting that is `validate.ts`'s job.
 
 ## 7. Reactive store and history
 
@@ -410,8 +423,8 @@ buttons and to `Ctrl/Cmd+Z` and `Ctrl/Cmd+Shift+Z`.
 - `connectionToIntent(connection, net): ChainOp | null` — converts a user-drawn
   wire into an operation on the array:
   - dragging block A's output onto block B's input where A precedes B → move A to
-    B's index
-  - dragging A's output onto B's input where A follows B → move A to B's index - 1
+    just before B, i.e. destination `B's index - 1` in the current array
+  - dragging A's output onto B's input where A follows B → move A to B's index
   - self-loops, output-as-source, input-as-target, and connections between already
     adjacent blocks → `null` (ignored)
 
@@ -538,8 +551,9 @@ class Trainer {
     data: { xs: tf.Tensor2D; ys: tf.Tensor2D },
     batchSize: number,
     onStats: (s: TrainStats) => void,
+    onError?: (error: unknown) => void,
   );
-  play(): void;
+  play(): Promise<void>;   // resolves when the loop stops, on every path
   pause(): void;
   step(): Promise<void>;
   dispose(): void;
@@ -557,7 +571,18 @@ class Trainer {
   loss and the training accuracy are computed and emitted, so the UI can show both
   numbers and a learner can see that loss going down is not the same thing as
   accuracy going up.
-- `step()` runs one batch without entering the play loop.
+- `step()` runs one batch without entering the play loop. `LayersModel.trainOnBatch`
+  is asynchronous and returns `Promise<number | number[]>`, so `step()` awaits it and
+  disposes the gathered batch tensors explicitly rather than inside `tf.tidy`, which
+  cannot span an `await`.
+- Batch sizes are sized to what remains in the epoch, so every example is used exactly
+  once per epoch even when the dataset size is not a multiple of the batch size.
+- `epoch` counts completed epochs: mid-epoch steps report the current count, and the
+  step that completes an epoch reports the incremented count with `batch: 0`.
+- A failing step stops the loop, clears `playing`, and reports through `onError`.
+  `play()` therefore resolves rather than rejecting, because the editor calls it
+  without awaiting it and a rejected promise would surface as an unhandled rejection.
+  The embedding page supplies `onError` to show a plain-language banner.
 
 **Why the main thread:** the models are tiny, `tf.nextFrame()` yields to the
 browser so the UI stays responsive, and a worker would require running TF.js in

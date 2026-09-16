@@ -13,7 +13,7 @@
 - Package manager is **npm**. Do not use pnpm, yarn, or bun.
 - TypeScript strict mode is on; `npm run check` must pass at the end of every task.
 - `src/lib/network/**` must not import Svelte, `@tensorflow/tfjs`, or any DOM API. It must run in plain Node.
-- `@tensorflow/tfjs` may only be imported by `src/lib/tf/**`, `src/lib/training/**`, and `src/lib/data/tensors.ts`.
+- `@tensorflow/tfjs` may only be imported by `src/lib/tf/**`, `src/lib/training/**`, `src/lib/data/tensors.ts`, and `src/lib/render/boundary.ts`.
 - No backend, no server code. All routes are prerendered; the build output is static files.
 - Every validation issue must carry a non-empty `title`, `message`, and `fix`.
 - No block stores its input dimension; inputs are always derived from the previous block's output.
@@ -368,7 +368,7 @@ git commit -m "chore: scaffold SvelteKit project with design tokens and vitest"
 
 **Interfaces:**
 - Consumes: nothing.
-- Produces: `BlockKind`, `BlockBase`, `InputBlock`, `LinearBlock`, `Conv2dBlock`, `FlattenBlock`, `ActivationBlock`, `OutputBlock`, `Block`, `TrainingConfig`, `Network`. Every later task imports from this module. The `Network` shape is exactly:
+- Produces: `BlockKind`, `BLOCK_KINDS`, `BlockBase`, `InputBlock`, `LinearBlock`, `Conv2dBlock`, `FlattenBlock`, `ActivationBlock`, `OutputBlock`, `Block`, `TrainingConfig`, `Network`. Every later task imports from this module. `BLOCK_KINDS` is the single runtime source of the eight block kinds; Tasks 3, 4, and 7 import it rather than re-declaring the list. The `Network` shape is exactly:
 
 ```ts
 interface Network {
@@ -384,16 +384,35 @@ interface Network {
 
 ```ts
 import { describe, expect, it } from 'vitest';
-import type { Block, BlockKind, Network } from './types';
+import { BLOCK_KINDS, type Block, type Network } from './types';
+
+describe('BLOCK_KINDS', () => {
+  it('lists the eight block kinds in pipeline order', () => {
+    expect([...BLOCK_KINDS]).toEqual([
+      'input',
+      'linear',
+      'conv2d',
+      'flatten',
+      'relu',
+      'sigmoid',
+      'softmax',
+      'output'
+    ]);
+  });
+
+  it('contains no duplicates', () => {
+    expect(new Set(BLOCK_KINDS).size).toBe(BLOCK_KINDS.length);
+  });
+});
 
 describe('domain types', () => {
-  it('accepts a fully populated network', () => {
+  it('has a valid block representation for every kind', () => {
     const blocks: Block[] = [
       { id: 'a', kind: 'input', shape: [2] },
       { id: 'b', kind: 'linear', units: 8 },
-      { id: 'c', kind: 'relu' },
-      { id: 'd', kind: 'conv2d', filters: 8, kernelSize: 3, stride: 1, padding: 'same' },
-      { id: 'e', kind: 'flatten' },
+      { id: 'c', kind: 'conv2d', filters: 8, kernelSize: 3, stride: 1, padding: 'same' },
+      { id: 'd', kind: 'flatten' },
+      { id: 'e', kind: 'relu' },
       { id: 'f', kind: 'sigmoid' },
       { id: 'g', kind: 'softmax' },
       { id: 'h', kind: 'output', units: 2 }
@@ -405,21 +424,7 @@ describe('domain types', () => {
       training: { loss: 'crossEntropy', optimizer: 'adam', learningRate: 0.01, batchSize: 32 }
     };
 
-    expect(network.blocks).toHaveLength(8);
-  });
-
-  it('covers every block kind', () => {
-    const kinds: BlockKind[] = [
-      'input',
-      'linear',
-      'conv2d',
-      'flatten',
-      'relu',
-      'sigmoid',
-      'softmax',
-      'output'
-    ];
-    expect(new Set(kinds).size).toBe(8);
+    expect(new Set(network.blocks.map((block) => block.kind))).toEqual(new Set(BLOCK_KINDS));
   });
 });
 ```
@@ -443,6 +448,17 @@ export type BlockKind =
   | 'sigmoid'
   | 'softmax'
   | 'output';
+
+export const BLOCK_KINDS: readonly BlockKind[] = [
+  'input',
+  'linear',
+  'conv2d',
+  'flatten',
+  'relu',
+  'sigmoid',
+  'softmax',
+  'output'
+];
 
 export interface BlockBase {
   id: string;
@@ -504,7 +520,7 @@ export interface Network {
 - [ ] **Step 4: Run the test to verify it passes**
 
 Run: `npx vitest run src/lib/network/types.test.ts`
-Expected: PASS, 2 tests.
+Expected: PASS, 3 tests.
 
 - [ ] **Step 5: Commit**
 
@@ -538,21 +554,10 @@ git commit -m "feat: add network domain types"
 ```ts
 import { describe, expect, it } from 'vitest';
 import { cloneNetwork, createBlock, createEmptyNetwork, newBlockId } from './factory';
-import type { BlockKind } from './types';
-
-const KINDS: BlockKind[] = [
-  'input',
-  'linear',
-  'conv2d',
-  'flatten',
-  'relu',
-  'sigmoid',
-  'softmax',
-  'output'
-];
+import { BLOCK_KINDS } from './types';
 
 describe('createBlock', () => {
-  it.each(KINDS)('creates a %s block with a unique id', (kind) => {
+  it.each([...BLOCK_KINDS])('creates a %s block with a unique id', (kind) => {
     const a = createBlock(kind);
     const b = createBlock(kind);
     expect(a.kind).toBe(kind);
@@ -744,27 +749,16 @@ import {
   PARAM_DESCRIPTIONS,
   classifyInputShape
 } from './descriptions';
-import type { BlockKind } from './types';
-
-const KINDS: BlockKind[] = [
-  'input',
-  'linear',
-  'conv2d',
-  'flatten',
-  'relu',
-  'sigmoid',
-  'softmax',
-  'output'
-];
+import { BLOCK_KINDS } from './types';
 
 describe('BLOCK_DESCRIPTIONS', () => {
-  it.each(KINDS)('describes %s', (kind) => {
+  it.each([...BLOCK_KINDS])('describes %s', (kind) => {
     expect(BLOCK_DESCRIPTIONS[kind]).toBeTruthy();
     expect(BLOCK_DESCRIPTIONS[kind].length).toBeGreaterThan(15);
   });
 
   it('has no extra keys', () => {
-    expect(Object.keys(BLOCK_DESCRIPTIONS).sort()).toEqual([...KINDS].sort());
+    expect(Object.keys(BLOCK_DESCRIPTIONS).sort()).toEqual([...BLOCK_KINDS].sort());
   });
 });
 
@@ -1432,8 +1426,8 @@ const errors = (network: Network): Issue[] =>
 
 const titles = (network: Network): string[] => errors(network).map((issue) => issue.title);
 
-const INPUT = { id: 'in', kind: 'input', shape: [2] } as const;
-const OUTPUT = { id: 'out', kind: 'output', units: 2 } as const;
+const INPUT: Block = { id: 'in', kind: 'input', shape: [2] };
+const OUTPUT: Block = { id: 'out', kind: 'output', units: 2 };
 
 describe('validate errors', () => {
   it('accepts the default network', () => {
@@ -1449,14 +1443,14 @@ describe('validate errors', () => {
   });
 
   it('reports more than one input block', () => {
-    const second = { id: 'in2', kind: 'input', shape: [2] } as const;
+    const second: Block = { id: 'in2', kind: 'input', shape: [2] };
     expect(titles(net([INPUT, second, { id: 'a', kind: 'relu' }, OUTPUT]))).toContain(
       'More than one Input block'
     );
   });
 
   it('reports more than one output block', () => {
-    const second = { id: 'out2', kind: 'output', units: 2 } as const;
+    const second: Block = { id: 'out2', kind: 'output', units: 2 };
     expect(titles(net([INPUT, { id: 'a', kind: 'relu' }, OUTPUT, second]))).toContain(
       'More than one Output block'
     );
@@ -1545,7 +1539,7 @@ Expected: FAIL — `Failed to resolve import "./validate"`.
 
 ```ts
 import { inferShapes } from './inferShapes';
-import type { Network } from './types';
+import { BLOCK_KINDS, type Network } from './types';
 
 export type Severity = 'error' | 'warning';
 
@@ -1560,17 +1554,6 @@ export interface Issue {
 export interface ValidateOptions {
   expectedClasses?: number;
 }
-
-const KNOWN_KINDS = new Set<string>([
-  'input',
-  'linear',
-  'conv2d',
-  'flatten',
-  'relu',
-  'sigmoid',
-  'softmax',
-  'output'
-]);
 
 function shapeText(shape: number[] | null): string {
   return shape ? `[${shape.join(', ')}]` : 'an unknown shape';
@@ -1634,7 +1617,7 @@ export function validate(net: Network, options: ValidateOptions = {}): Issue[] {
   net.blocks.forEach((block, index) => {
     const info = perBlock[index];
 
-    if (!KNOWN_KINDS.has(block.kind)) {
+    if (!BLOCK_KINDS.includes(block.kind)) {
       issues.push({
         severity: 'error',
         title: 'Unrecognised block',
@@ -1832,12 +1815,12 @@ Expected: FAIL — the warning assertions find no issues (the new `describe` blo
 
 - [ ] **Step 3: Write the implementation**
 
-In `src/lib/network/validate.ts`, change the import line to:
+In `src/lib/network/validate.ts`, change the import block to:
 
 ```ts
 import { classifyInputShape } from './descriptions';
 import { inferShapes } from './inferShapes';
-import type { Network } from './types';
+import { BLOCK_KINDS, type Network } from './types';
 ```
 
 Remove the `void options;` line.
@@ -2613,7 +2596,8 @@ describe('buildModel', () => {
   it('gives only the first layer an explicit input shape', () => {
     const model = build(createEmptyNetwork());
     expect(model.layers[0].batchInputShape).toEqual([null, 2]);
-    expect(model.layers[1].batchInputShape).toEqual([null, 8]);
+    expect(model.layers[1].outputShape).toEqual([null, 8]);
+    expect(model.layers[1].batchInputShape).toBeUndefined();
   });
 
   it('builds a convolutional chain with flattening', () => {
@@ -2816,6 +2800,8 @@ export class Trainer {
 ```
 
 - Semantics: `batchesPerEpoch` is `Math.max(1, Math.ceil(exampleCount / batchSize))`. `step()` trains exactly one batch, incrementing the batch counter; when the counter reaches `batchesPerEpoch` the epoch counter advances, the batch counter resets, and `epochMeanLoss` (mean of that epoch's batch losses) and `epochAccuracy` (fraction correct on the whole dataset, computed with `argMax` over one-hot labels) are reported. In-progress steps report `epochMeanLoss: null` and `epochAccuracy: null`. `play()` runs `step()` then `yieldFn()` repeatedly until `pause()` is called or `dispose()` happens, and resolves when the loop stops — which makes it awaitable in tests. The default `yieldFn` is `() => tf.nextFrame()`.
+- `model.trainOnBatch(xs, ys)` returns `Promise<number | number[]>` in TensorFlow.js 4.x, not a `Scalar`. `step()` therefore awaits it and disposes the gathered batch tensors in a `finally` block, because `tf.tidy` cannot span an `await`.
+- Epoch numbering counts completed epochs: the first mid-epoch step reports `epoch: 0`, and the step that completes epoch 0 reports `epoch: 1` with `batch: 0`. With `batchesPerEpoch` 2, six steps report epochs `[0, 1, 1, 2, 2, 3]`.
 - Batch sampling: maintain a shuffled pool of example indices, refilling it when exhausted, so each epoch visits every example once in random order.
 
 - [ ] **Step 1: Write the failing test**
@@ -2900,7 +2886,7 @@ describe('Trainer bookkeeping', () => {
     const trainer = makeTrainer((s) => epochs.push(s.epoch));
     expect(trainer.batchesPerEpoch).toBe(2);
     for (let i = 0; i < 6; i++) await trainer.step();
-    expect(epochs).toEqual([0, 0, 1, 1, 2, 2]);
+    expect(epochs).toEqual([0, 1, 1, 2, 2, 3]);
   });
 
   it('never requests a batch larger than the dataset', async () => {
@@ -3025,14 +3011,19 @@ export class Trainer {
   async step(): Promise<void> {
     if (this.disposed) return;
 
-    const batchLoss = tf.tidy(() => {
-      const indices = tf.tensor1d(this.sampleIndices(), 'int32');
-      const batchXs = tf.gather(this.data.xs, indices);
-      const batchYs = tf.gather(this.data.ys, indices);
-      const result = this.model.trainOnBatch(batchXs, batchYs);
-      const scalar = Array.isArray(result) ? result[0] : result;
-      return scalar.dataSync()[0];
-    });
+    const indices = tf.tensor1d(this.sampleIndices(), 'int32');
+    const batchXs = tf.gather(this.data.xs, indices);
+    const batchYs = tf.gather(this.data.ys, indices);
+    indices.dispose();
+
+    let batchLoss: number;
+    try {
+      const result = await this.model.trainOnBatch(batchXs, batchYs);
+      batchLoss = Array.isArray(result) ? result[0] : result;
+    } finally {
+      batchXs.dispose();
+      batchYs.dispose();
+    }
 
     this.batchLosses.push(batchLoss);
     this.batch += 1;
@@ -3791,7 +3782,8 @@ page are not built yet.
 - `src/lib/network/**` is pure: no Svelte, no TensorFlow.js, no DOM. It must run in
   plain Node and is the single source of truth for network validity and shapes.
 - `@tensorflow/tfjs` may only be imported by `src/lib/tf/**`,
-  `src/lib/training/**`, and `src/lib/data/tensors.ts`.
+  `src/lib/training/**`, `src/lib/data/tensors.ts`, and
+  `src/lib/render/boundary.ts` (the only render module that runs a forward pass).
 - No block stores its input dimension; inputs derive from the previous block's
   output.
 - Every validation issue carries a non-empty `title`, `message`, and `fix`.
