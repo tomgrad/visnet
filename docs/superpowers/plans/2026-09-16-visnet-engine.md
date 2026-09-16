@@ -1426,8 +1426,8 @@ const errors = (network: Network): Issue[] =>
 
 const titles = (network: Network): string[] => errors(network).map((issue) => issue.title);
 
-const INPUT = { id: 'in', kind: 'input', shape: [2] } as const;
-const OUTPUT = { id: 'out', kind: 'output', units: 2 } as const;
+const INPUT: Block = { id: 'in', kind: 'input', shape: [2] };
+const OUTPUT: Block = { id: 'out', kind: 'output', units: 2 };
 
 describe('validate errors', () => {
   it('accepts the default network', () => {
@@ -1443,14 +1443,14 @@ describe('validate errors', () => {
   });
 
   it('reports more than one input block', () => {
-    const second = { id: 'in2', kind: 'input', shape: [2] } as const;
+    const second: Block = { id: 'in2', kind: 'input', shape: [2] };
     expect(titles(net([INPUT, second, { id: 'a', kind: 'relu' }, OUTPUT]))).toContain(
       'More than one Input block'
     );
   });
 
   it('reports more than one output block', () => {
-    const second = { id: 'out2', kind: 'output', units: 2 } as const;
+    const second: Block = { id: 'out2', kind: 'output', units: 2 };
     expect(titles(net([INPUT, { id: 'a', kind: 'relu' }, OUTPUT, second]))).toContain(
       'More than one Output block'
     );
