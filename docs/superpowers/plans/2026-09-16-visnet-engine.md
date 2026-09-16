@@ -520,7 +520,7 @@ export interface Network {
 - [ ] **Step 4: Run the test to verify it passes**
 
 Run: `npx vitest run src/lib/network/types.test.ts`
-Expected: PASS, 2 tests.
+Expected: PASS, 3 tests.
 
 - [ ] **Step 5: Commit**
 
