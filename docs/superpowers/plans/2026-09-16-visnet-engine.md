@@ -13,7 +13,7 @@
 - Package manager is **npm**. Do not use pnpm, yarn, or bun.
 - TypeScript strict mode is on; `npm run check` must pass at the end of every task.
 - `src/lib/network/**` must not import Svelte, `@tensorflow/tfjs`, or any DOM API. It must run in plain Node.
-- `@tensorflow/tfjs` may only be imported by `src/lib/tf/**`, `src/lib/training/**`, and `src/lib/data/tensors.ts`.
+- `@tensorflow/tfjs` may only be imported by `src/lib/tf/**`, `src/lib/training/**`, `src/lib/data/tensors.ts`, and `src/lib/render/boundary.ts`.
 - No backend, no server code. All routes are prerendered; the build output is static files.
 - Every validation issue must carry a non-empty `title`, `message`, and `fix`.
 - No block stores its input dimension; inputs are always derived from the previous block's output.
@@ -3782,7 +3782,8 @@ page are not built yet.
 - `src/lib/network/**` is pure: no Svelte, no TensorFlow.js, no DOM. It must run in
   plain Node and is the single source of truth for network validity and shapes.
 - `@tensorflow/tfjs` may only be imported by `src/lib/tf/**`,
-  `src/lib/training/**`, and `src/lib/data/tensors.ts`.
+  `src/lib/training/**`, `src/lib/data/tensors.ts`, and
+  `src/lib/render/boundary.ts` (the only render module that runs a forward pass).
 - No block stores its input dimension; inputs derive from the previous block's
   output.
 - Every validation issue carries a non-empty `title`, `message`, and `fix`.
