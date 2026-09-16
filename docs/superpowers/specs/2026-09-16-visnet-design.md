@@ -107,7 +107,7 @@ Prerendering therefore succeeds and pages hydrate client-side without
                                      │ reads/writes
                      ┌───────────────▼────────────────────────────┐
                      │ editor/networkStore.svelte.ts (runes)       │
-                     │ editor/history.svelte.ts (undo/redo)        │
+                     │ editor/history.ts (undo/redo)        │
                      └───────────────┬────────────────────────────┘
                                      │ delegates to
         ┌────────────────────────────┼────────────────────────────┐
@@ -392,7 +392,7 @@ class NetworkStore {
 defaults to `undefined`. The store holds no rules of its own — it is a thin
 reactive shell over the pure modules.
 
-`src/lib/editor/history.svelte.ts` — undo/redo as a bounded stack of `Network`
+`src/lib/editor/history.ts` — undo/redo as a bounded stack of `Network`
 snapshots (limit 50). Because `Network` is an immutable value, history is a
 `push`/`pop` of a reference and costs almost nothing. Every structural and
 parameter change records a snapshot; the stack is cleared when a different network
@@ -528,8 +528,8 @@ interface TrainStats {
   epoch: number;
   batch: number;
   batchLoss: number;
-  epochMeanLoss: number;
-  epochAccuracy: number; // fraction correct on the training set, classification only
+  epochMeanLoss: number | null; // null until the epoch completes
+  epochAccuracy: number | null; // fraction correct on the training set; null until the epoch completes
 }
 
 class Trainer {
@@ -709,7 +709,7 @@ Covered:
   `connectionToIntent` for legal reorders and every illegal case.
 - `points.ts` / `rng.ts` — seeded generators are deterministic; one-hot encoding
   is correct; `addPoint`/`clearPoints` are pure.
-- `history.svelte.ts` — undo/redo across structural and parameter edits, stack
+- `history.ts` — undo/redo across structural and parameter edits, stack
   limit, and that a new load clears history.
 - `buildModel.ts` — on the CPU backend in Node: a valid MLP builds with the
   expected number of layers, input shape `[null, 2]`, output shape `[null, 2]`;
@@ -761,7 +761,7 @@ interaction, and the training animation. These are verified manually.
 5. Editor UI: `BlockNode` (with shapes and tooltip), `BlockPalette`,
    `BlockCanvas`, `InspectorPanel`, `ShapeTable`, `IssuesPanel`,
    `EditorToolbar`, `NetworkEditor`.
-6. `editor/history.svelte.ts` and keyboard shortcuts.
+6. `editor/history.ts` and keyboard shortcuts.
 7. `/examples/mlp`: dataset controls, `TrainingPanel`, `LossChart`, stats
    readout, `DecisionBoundary`, and the wiring that ties them to the editor.
 8. `src/lib/persist/` and the save/load UI.
