@@ -368,7 +368,7 @@ git commit -m "chore: scaffold SvelteKit project with design tokens and vitest"
 
 **Interfaces:**
 - Consumes: nothing.
-- Produces: `BlockKind`, `BlockBase`, `InputBlock`, `LinearBlock`, `Conv2dBlock`, `FlattenBlock`, `ActivationBlock`, `OutputBlock`, `Block`, `TrainingConfig`, `Network`. Every later task imports from this module. The `Network` shape is exactly:
+- Produces: `BlockKind`, `BLOCK_KINDS`, `BlockBase`, `InputBlock`, `LinearBlock`, `Conv2dBlock`, `FlattenBlock`, `ActivationBlock`, `OutputBlock`, `Block`, `TrainingConfig`, `Network`. Every later task imports from this module. `BLOCK_KINDS` is the single runtime source of the eight block kinds; Tasks 3, 4, and 7 import it rather than re-declaring the list. The `Network` shape is exactly:
 
 ```ts
 interface Network {
@@ -384,16 +384,35 @@ interface Network {
 
 ```ts
 import { describe, expect, it } from 'vitest';
-import type { Block, BlockKind, Network } from './types';
+import { BLOCK_KINDS, type Block, type Network } from './types';
+
+describe('BLOCK_KINDS', () => {
+  it('lists the eight block kinds in pipeline order', () => {
+    expect([...BLOCK_KINDS]).toEqual([
+      'input',
+      'linear',
+      'conv2d',
+      'flatten',
+      'relu',
+      'sigmoid',
+      'softmax',
+      'output'
+    ]);
+  });
+
+  it('contains no duplicates', () => {
+    expect(new Set(BLOCK_KINDS).size).toBe(BLOCK_KINDS.length);
+  });
+});
 
 describe('domain types', () => {
-  it('accepts a fully populated network', () => {
+  it('has a valid block representation for every kind', () => {
     const blocks: Block[] = [
       { id: 'a', kind: 'input', shape: [2] },
       { id: 'b', kind: 'linear', units: 8 },
-      { id: 'c', kind: 'relu' },
-      { id: 'd', kind: 'conv2d', filters: 8, kernelSize: 3, stride: 1, padding: 'same' },
-      { id: 'e', kind: 'flatten' },
+      { id: 'c', kind: 'conv2d', filters: 8, kernelSize: 3, stride: 1, padding: 'same' },
+      { id: 'd', kind: 'flatten' },
+      { id: 'e', kind: 'relu' },
       { id: 'f', kind: 'sigmoid' },
       { id: 'g', kind: 'softmax' },
       { id: 'h', kind: 'output', units: 2 }
@@ -405,21 +424,7 @@ describe('domain types', () => {
       training: { loss: 'crossEntropy', optimizer: 'adam', learningRate: 0.01, batchSize: 32 }
     };
 
-    expect(network.blocks).toHaveLength(8);
-  });
-
-  it('covers every block kind', () => {
-    const kinds: BlockKind[] = [
-      'input',
-      'linear',
-      'conv2d',
-      'flatten',
-      'relu',
-      'sigmoid',
-      'softmax',
-      'output'
-    ];
-    expect(new Set(kinds).size).toBe(8);
+    expect(new Set(network.blocks.map((block) => block.kind))).toEqual(new Set(BLOCK_KINDS));
   });
 });
 ```
@@ -443,6 +448,17 @@ export type BlockKind =
   | 'sigmoid'
   | 'softmax'
   | 'output';
+
+export const BLOCK_KINDS: readonly BlockKind[] = [
+  'input',
+  'linear',
+  'conv2d',
+  'flatten',
+  'relu',
+  'sigmoid',
+  'softmax',
+  'output'
+];
 
 export interface BlockBase {
   id: string;
@@ -538,21 +554,10 @@ git commit -m "feat: add network domain types"
 ```ts
 import { describe, expect, it } from 'vitest';
 import { cloneNetwork, createBlock, createEmptyNetwork, newBlockId } from './factory';
-import type { BlockKind } from './types';
-
-const KINDS: BlockKind[] = [
-  'input',
-  'linear',
-  'conv2d',
-  'flatten',
-  'relu',
-  'sigmoid',
-  'softmax',
-  'output'
-];
+import { BLOCK_KINDS } from './types';
 
 describe('createBlock', () => {
-  it.each(KINDS)('creates a %s block with a unique id', (kind) => {
+  it.each([...BLOCK_KINDS])('creates a %s block with a unique id', (kind) => {
     const a = createBlock(kind);
     const b = createBlock(kind);
     expect(a.kind).toBe(kind);
@@ -744,27 +749,16 @@ import {
   PARAM_DESCRIPTIONS,
   classifyInputShape
 } from './descriptions';
-import type { BlockKind } from './types';
-
-const KINDS: BlockKind[] = [
-  'input',
-  'linear',
-  'conv2d',
-  'flatten',
-  'relu',
-  'sigmoid',
-  'softmax',
-  'output'
-];
+import { BLOCK_KINDS } from './types';
 
 describe('BLOCK_DESCRIPTIONS', () => {
-  it.each(KINDS)('describes %s', (kind) => {
+  it.each([...BLOCK_KINDS])('describes %s', (kind) => {
     expect(BLOCK_DESCRIPTIONS[kind]).toBeTruthy();
     expect(BLOCK_DESCRIPTIONS[kind].length).toBeGreaterThan(15);
   });
 
   it('has no extra keys', () => {
-    expect(Object.keys(BLOCK_DESCRIPTIONS).sort()).toEqual([...KINDS].sort());
+    expect(Object.keys(BLOCK_DESCRIPTIONS).sort()).toEqual([...BLOCK_KINDS].sort());
   });
 });
 
@@ -1545,7 +1539,7 @@ Expected: FAIL — `Failed to resolve import "./validate"`.
 
 ```ts
 import { inferShapes } from './inferShapes';
-import type { Network } from './types';
+import { BLOCK_KINDS, type Network } from './types';
 
 export type Severity = 'error' | 'warning';
 
@@ -1560,17 +1554,6 @@ export interface Issue {
 export interface ValidateOptions {
   expectedClasses?: number;
 }
-
-const KNOWN_KINDS = new Set<string>([
-  'input',
-  'linear',
-  'conv2d',
-  'flatten',
-  'relu',
-  'sigmoid',
-  'softmax',
-  'output'
-]);
 
 function shapeText(shape: number[] | null): string {
   return shape ? `[${shape.join(', ')}]` : 'an unknown shape';
@@ -1634,7 +1617,7 @@ export function validate(net: Network, options: ValidateOptions = {}): Issue[] {
   net.blocks.forEach((block, index) => {
     const info = perBlock[index];
 
-    if (!KNOWN_KINDS.has(block.kind)) {
+    if (!BLOCK_KINDS.includes(block.kind)) {
       issues.push({
         severity: 'error',
         title: 'Unrecognised block',
@@ -1832,12 +1815,12 @@ Expected: FAIL — the warning assertions find no issues (the new `describe` blo
 
 - [ ] **Step 3: Write the implementation**
 
-In `src/lib/network/validate.ts`, change the import line to:
+In `src/lib/network/validate.ts`, change the import block to:
 
 ```ts
 import { classifyInputShape } from './descriptions';
 import { inferShapes } from './inferShapes';
-import type { Network } from './types';
+import { BLOCK_KINDS, type Network } from './types';
 ```
 
 Remove the `void options;` line.
