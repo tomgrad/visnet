@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Component, Snippet } from 'svelte';
-  import { recordEdges, recordHandlers, recordNodes } from './flowProbe';
+  import { recordEdges, recordHandlers, recordNodes, recordProOptions } from './flowProbe';
 
   interface StubNode {
     id: string;
@@ -15,12 +15,14 @@
     nodes = [],
     edges = [],
     nodeTypes = {},
+    proOptions,
     onnodedragstop,
     children
   }: {
     nodes?: StubNode[];
     edges?: unknown[];
     nodeTypes?: Record<string, StubNodeComponent>;
+    proOptions?: unknown;
     onnodedragstop?: (argument: unknown) => void;
     children?: Snippet;
   } = $props();
@@ -35,6 +37,10 @@
 
   $effect(() => {
     recordHandlers({ onnodedragstop });
+  });
+
+  $effect(() => {
+    recordProOptions(proOptions);
   });
 </script>
 

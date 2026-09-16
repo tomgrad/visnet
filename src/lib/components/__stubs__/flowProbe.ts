@@ -21,9 +21,11 @@ export function resetCaptured(): void {
   latestNodes = [];
   latestEdges = [];
   handlers = {};
+  proOptions = null;
 }
 
 let handlers: Record<string, unknown> = {};
+let proOptions: unknown = null;
 
 export function recordHandlers(next: Record<string, unknown>): void {
   handlers = next;
@@ -31,4 +33,12 @@ export function recordHandlers(next: Record<string, unknown>): void {
 
 export function capturedHandler(name: string): ((argument: unknown) => void) | undefined {
   return handlers[name] as ((argument: unknown) => void) | undefined;
+}
+
+export function recordProOptions(next: unknown): void {
+  proOptions = next;
+}
+
+export function capturedProOptions(): unknown {
+  return proOptions;
 }

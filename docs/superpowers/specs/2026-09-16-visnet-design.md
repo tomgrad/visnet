@@ -464,6 +464,12 @@ network. A wire is a gesture that reorders an array, not stored state.
 ### Canvas behaviour
 
 - Pan and zoom are enabled (Svelte Flow defaults), with a fit-view control.
+- Svelte Flow's "Svelte Flow" attribution label is hidden via
+  `proOptions={{ hideAttribution: true }}`. The library is MIT and hiding it is
+  supported, though it is a courtesy request: the library asks that you subscribe to
+  Svelte Flow Pro if you hide it. Hiding it also produces a one-time
+  development-only console warning that cannot be suppressed, and never appears in a
+  production build.
 - Blocks are draggable; dropping a block onto a wire or between neighbours
   reorders the chain. Every reorder is one undoable step.
 - Clicking a block selects it and opens the inspector.

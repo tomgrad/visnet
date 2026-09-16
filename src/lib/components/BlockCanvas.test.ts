@@ -8,6 +8,7 @@ import {
   capturedEdges,
   capturedHandler,
   capturedNodes,
+  capturedProOptions,
   resetCaptured
 } from './__stubs__/flowProbe';
 
@@ -113,6 +114,13 @@ describe('BlockCanvas', () => {
     await userEvent.click(screen.getAllByTestId('block-remove')[0]);
 
     expect(store.network.blocks.length).toBe(before - 1);
+  });
+
+  it('hides the Svelte Flow attribution', async () => {
+    canvas();
+    await tick();
+
+    expect(capturedProOptions()).toMatchObject({ hideAttribution: true });
   });
 
   it('does not offer a delete button for the input or output block', async () => {

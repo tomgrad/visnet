@@ -152,6 +152,7 @@
       fitView
       nodesDraggable
       nodesConnectable
+      proOptions={{ hideAttribution: true }}
       onconnect={handleConnect}
       onnodedragstop={({ targetNode }) => {
         if (targetNode) store.setPosition(targetNode.id, targetNode.position);
