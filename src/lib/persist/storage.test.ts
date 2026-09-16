@@ -37,6 +37,18 @@ describe('network storage', () => {
     expect(createStorage(backing).loadNetwork()).toBeNull();
   });
 
+  it('distinguishes an unreadable saved network from no saved network', () => {
+    const storage = createStorage(backing);
+    expect(storage.hasStoredNetwork()).toBe(false);
+
+    storage.saveNetwork(createEmptyNetwork());
+    expect(storage.hasStoredNetwork()).toBe(true);
+
+    backing.setItem(NETWORK_KEY, '{not json');
+    expect(storage.hasStoredNetwork()).toBe(true);
+    expect(storage.loadNetwork()).toBeNull();
+  });
+
   it('returns null for an unsupported version', () => {
     backing.setItem(NETWORK_KEY, JSON.stringify({ version: 99, network: createEmptyNetwork() }));
     expect(createStorage(backing).loadNetwork()).toBeNull();

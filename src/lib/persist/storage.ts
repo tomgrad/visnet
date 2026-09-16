@@ -14,6 +14,7 @@ export interface KeyValueStore {
 export interface NetworkStorage {
   saveNetwork(net: Network): void;
   loadNetwork(): Network | null;
+  hasStoredNetwork(): boolean;
   saveDataset(dataset: PointDataset): void;
   loadDataset(): PointDataset | null;
   clear(): void;
@@ -49,6 +50,9 @@ export function createStorage(backing: KeyValueStore): NetworkStorage {
     loadNetwork() {
       const raw = backing.getItem(NETWORK_KEY);
       return raw === null ? null : fromJSON(raw);
+    },
+    hasStoredNetwork() {
+      return backing.getItem(NETWORK_KEY) !== null;
     },
     saveDataset(dataset) {
       backing.setItem(DATASET_KEY, JSON.stringify({ points: dataset.points }));

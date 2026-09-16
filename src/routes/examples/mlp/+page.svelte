@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onDestroy, onMount } from 'svelte';
   import DecisionBoundary from '$lib/components/DecisionBoundary.svelte';
   import ExampleLayout from '$lib/components/ExampleLayout.svelte';
   import LossChart from '$lib/components/LossChart.svelte';
@@ -69,9 +69,22 @@
       return;
     }
     const savedNetwork = storage.loadNetwork();
-    if (savedNetwork) store.load(savedNetwork);
+    if (savedNetwork) {
+      store.load(savedNetwork);
+    } else if (storage.hasStoredNetwork()) {
+      banner = 'The saved network could not be read, so a fresh one has been loaded.';
+    }
     const savedDataset = storage.loadDataset();
     if (savedDataset) datasetStore.dataset = savedDataset;
+  });
+
+  onDestroy(() => {
+    releaseTrainer();
+    runtime?.disposeData(data);
+    runtime?.disposeModel(currentModel);
+    data = null;
+    currentModel = null;
+    model = null;
   });
 
   $effect(() => {
@@ -109,9 +122,9 @@
     if (!api) return;
 
     const next = api.toTensors(dataset);
+    releaseTrainer();
     api.disposeData(data);
     data = next;
-    releaseTrainer();
 
     if (!currentModelRef || !store.isValid || next.xs.shape[0] === 0) return;
     trainer = api.createTrainer(
@@ -271,9 +284,11 @@
       dataset={datasetStore.dataset}
       selectedLabel={datasetStore.selectedLabel}
       onaddpoint={(x, y) => datasetStore.addPoint(x, y)}
-      caption={store.isValid
-        ? 'Each coloured area is the class the network predicts at that spot. Click to add a point.'
-        : 'Fix the problems listed in the editor before the boundary can be drawn.'}
+      caption={!runtime
+        ? 'Loading the network. The boundary appears in a moment.'
+        : store.isValid
+          ? 'Each coloured area is the class the network predicts at that spot. Click to add a point.'
+          : 'Fix the problems listed in the editor before the boundary can be drawn.'}
     />
 
     <TrainingPanel
