@@ -2539,7 +2539,7 @@ Test ids: `training-panel`, `training-loss`, `training-optimizer`, `training-lea
 `src/lib/components/TrainingPanel.test.ts`:
 
 ```ts
-import { render, screen } from '@testing-library/svelte';
+import { fireEvent, render, screen } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { NetworkStore } from '../editor/networkStore.svelte';
@@ -2574,18 +2574,22 @@ describe('TrainingPanel', () => {
 
   it('writes a learning rate change through to the network', async () => {
     const { store } = panel();
-    const input = screen.getByTestId('training-learning-rate');
-    await userEvent.clear(input);
-    await userEvent.type(input, '0.25');
+    await fireEvent.change(screen.getByTestId('training-learning-rate'), {
+      target: { value: '0.25' }
+    });
     expect(store.network.training.learningRate).toBe(0.25);
   });
 
   it('writes a batch size change through to the network', async () => {
     const { store } = panel();
-    const input = screen.getByTestId('training-batch-size');
-    await userEvent.clear(input);
-    await userEvent.type(input, '64');
+    await fireEvent.change(screen.getByTestId('training-batch-size'), { target: { value: '64' } });
     expect(store.network.training.batchSize).toBe(64);
+  });
+
+  it('leaves the network alone when a numeric field is cleared', async () => {
+    const { store } = panel();
+    await fireEvent.change(screen.getByTestId('training-batch-size'), { target: { value: '' } });
+    expect(store.network.training.batchSize).toBe(32);
   });
 
   it('describes every setting in plain language', () => {
@@ -2613,7 +2617,7 @@ describe('TrainingPanel', () => {
     panel({ disabled: true });
     expect((screen.getByTestId('training-play') as HTMLButtonElement).disabled).toBe(true);
     expect((screen.getByTestId('training-step') as HTMLButtonElement).disabled).toBe(true);
-    expect(screen.getByTestId('training-blocked').textContent).toContain('fix');
+    expect(screen.getByTestId('training-blocked').textContent).toContain('Fix');
   });
 
   it('disables play while already playing', () => {
@@ -2671,6 +2675,7 @@ Expected: FAIL — `Failed to resolve import "./TrainingPanel.svelte"`.
     <select
       data-testid="training-loss"
       title={PARAM_DESCRIPTIONS.loss}
+      disabled={disabled}
       value={store.network.training.loss}
       onchange={(event) =>
         store.updateTraining({ loss: event.currentTarget.value as 'mse' | 'crossEntropy' })}
@@ -2686,6 +2691,7 @@ Expected: FAIL — `Failed to resolve import "./TrainingPanel.svelte"`.
     <select
       data-testid="training-optimizer"
       title={PARAM_DESCRIPTIONS.optimizer}
+      disabled={disabled}
       value={store.network.training.optimizer}
       onchange={(event) => store.updateTraining({ optimizer: event.currentTarget.value as 'sgd' | 'adam' })}
     >
@@ -2703,6 +2709,7 @@ Expected: FAIL — `Failed to resolve import "./TrainingPanel.svelte"`.
       min="0.0001"
       data-testid="training-learning-rate"
       title={PARAM_DESCRIPTIONS.learningRate}
+      disabled={disabled}
       value={store.network.training.learningRate}
       onchange={(event) => setNumber(event, 'learningRate')}
     />
@@ -2716,6 +2723,7 @@ Expected: FAIL — `Failed to resolve import "./TrainingPanel.svelte"`.
       min="1"
       data-testid="training-batch-size"
       title={PARAM_DESCRIPTIONS.batchSize}
+      disabled={disabled}
       value={store.network.training.batchSize}
       onchange={(event) => setNumber(event, 'batchSize')}
     />
