@@ -48,7 +48,7 @@ export async function loadRuntime(): Promise<Runtime> {
     },
     createTrainer: (model, data, batchSize, onStats, onError) =>
       new trainerModule.Trainer(model, data, batchSize, onStats, undefined, onError),
-    saveWeights: (model) => weights.saveWeights(model),
-    loadWeightsInto: (model) => weights.loadWeightsInto(model)
+    saveWeights: (model) => weights.saveWeights(model, 'mlp'),
+    loadWeightsInto: (model) => weights.loadWeightsInto(model, 'mlp')
   };
 }
