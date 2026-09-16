@@ -4,12 +4,18 @@ Static web app for teaching neural networks; see `README.md` for feature scope a
 
 ## Status
 
-Engine complete and unit-tested: pure network domain modules (`src/lib/network/`),
-the TensorFlow.js model builder (`src/lib/tf/`), the trainer
-(`src/lib/training/`), the 2D dataset (`src/lib/data/`), the
-decision-boundary renderer (`src/lib/render/`), and the editor's
-framework-free canvas projection and undo/redo logic (`src/lib/editor/`). The
-Svelte editor UI and the MLP example page are not built yet.
+Engine complete and unit-tested, and the editor UI and the 2D points example are
+built on top of it. A user can drag blocks onto a canvas, edit them, train, and
+watch a live decision boundary, and their network and dataset are restored on
+reload. The convolutional (MNIST) example page is a placeholder.
+
+Shipped modules: `src/lib/network/` (pure domain), `src/lib/tf/` (model builder),
+`src/lib/training/`, `src/lib/data/`, `src/lib/render/`, `src/lib/persist/`,
+`src/lib/editor/`, `src/lib/components/` (editor UI),
+`src/lib/examples/` (the MLP example), and design tokens in
+`src/lib/styles/tokens.css`.
+
+Component tests run in jsdom; engine tests run in Node. See `npm test`.
 
 ## Stack
 
@@ -36,9 +42,15 @@ Svelte editor UI and the MLP example page are not built yet.
 - `src/lib/network/**` is pure: no Svelte, no TensorFlow.js, no DOM. It must run in
   plain Node and is the single source of truth for network validity and shapes.
 - `@tensorflow/tfjs` may only be imported by `src/lib/tf/**`,
-  `src/lib/training/**`, `src/lib/data/tensors.ts`, `src/lib/render/boundary.ts`
-  (the only render module that runs a forward pass), and the test files colocated
-  with those modules. No other production module may import it.
+  `src/lib/training/**`, `src/lib/data/tensors.ts`,
+  `src/lib/render/boundary.ts` (the only render module that runs a forward pass),
+  `src/lib/persist/weights.ts`, and the test files colocated with those modules.
+  No other production module may import it.
+- TensorFlow.js and `@xyflow/svelte` must only be reached from the browser. Import
+  them dynamically (or inside an `onMount`/`$effect`) so `npm run build` can
+  prerender every route with SSR on.
+- `src/lib/editor/flow.ts` and `src/lib/editor/history.ts` stay free of Svelte,
+  TensorFlow.js, DOM, and `@xyflow/svelte`.
 - No block stores its input dimension; inputs derive from the previous block's
   output.
 - Every validation issue carries a non-empty `title`, `message`, and `fix`.

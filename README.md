@@ -34,23 +34,35 @@ Specifics:
 - uses TensorFlow.js
 - saving models to local storage
 
+## What works today
+
+- Build a network from blocks on a canvas: add, delete, reorder, and connect them.
+- See the tensor shape at every point in the pipeline, on each block and on each wire,
+  with a table of the whole network and its parameter counts.
+- Train on generated 2D points or points you click onto the canvas, and watch the
+  decision boundary change as the loss falls.
+- Undo and redo every edit.
+- Your network, dataset, and saved weights are restored when you reload.
+
+The convolutional (MNIST) example is not built yet.
+
 ## Architecture
 
 The engine is framework-independent. `src/lib/network/` defines networks, infers
 the tensor shape flowing through every block, and reports validation problems as
 plain-language errors with a suggested fix. TensorFlow.js is confined to
-`src/lib/tf/`, `src/lib/training/`, `src/lib/data/tensors.ts`, and
-`src/lib/render/boundary.ts`.
+`src/lib/tf/`, `src/lib/training/`, `src/lib/data/tensors.ts`,
+`src/lib/render/boundary.ts`, and `src/lib/persist/weights.ts`.
 
-The editor UI and example pages are built on top of this engine and are not part
-of the engine itself.
+The editor is a projection of that model, never a second copy of it: the canvas
+draws the network and turns gestures back into operations on it.
 
 ## Development
 
 ```
-npm run dev      # development server
-npm run build    # static build
-npm run check    # type checking
-npm run lint     # linting
-npm test         # unit tests
+npm run dev         # development server
+npm run build       # static build
+npm run check       # type checking
+npm run lint        # linting
+npm test            # unit and component tests
 ```
