@@ -27,7 +27,8 @@ export class Trainer {
     private readonly data: { xs: tf.Tensor2D; ys: tf.Tensor2D },
     private readonly batchSize: number,
     private readonly onStats: (stats: TrainStats) => void,
-    private readonly yieldFn: YieldFn = nextFrame
+    private readonly yieldFn: YieldFn = nextFrame,
+    private readonly onError: (error: unknown) => void = () => {}
   ) {
     const examples = data.xs.shape[0];
     this.batchesPerEpochCount = Math.max(1, Math.ceil(examples / batchSize));
@@ -54,10 +55,10 @@ export class Trainer {
   async step(): Promise<void> {
     if (this.disposed) return;
 
-    const indices = tf.tensor1d(this.sampleIndices(), 'int32');
-    const batchXs = tf.gather(this.data.xs, indices);
-    const batchYs = tf.gather(this.data.ys, indices);
-    indices.dispose();
+    const [batchXs, batchYs] = tf.tidy(() => {
+      const indices = tf.tensor1d(this.sampleIndices(), 'int32');
+      return [tf.gather(this.data.xs, indices), tf.gather(this.data.ys, indices)];
+    });
 
     let batchLoss: number;
     try {
@@ -102,32 +103,35 @@ export class Trainer {
   }
 
   private async loop(): Promise<void> {
-    while (this.playing && !this.disposed) {
-      await this.step();
-      if (!this.playing || this.disposed) break;
-      await this.yieldFn();
+    try {
+      while (this.playing && !this.disposed) {
+        await this.step();
+        if (!this.playing || this.disposed) break;
+        await this.yieldFn();
+      }
+    } catch (error) {
+      this.onError(error);
+    } finally {
+      this.playing = false;
     }
-    this.playing = false;
   }
 
   private sampleIndices(): number[] {
     const examples = this.data.xs.shape[0];
-    const size = Math.min(this.batchSize, examples);
-    const indices: number[] = [];
+    const remaining = examples - this.batch * this.batchSize;
+    const size = Math.min(this.batchSize, remaining);
 
-    while (indices.length < size) {
-      if (this.poolPosition >= this.pool.length) {
-        this.pool = Array.from({ length: examples }, (_, index) => index);
-        for (let i = this.pool.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [this.pool[i], this.pool[j]] = [this.pool[j], this.pool[i]];
-        }
-        this.poolPosition = 0;
+    if (this.batch === 0) {
+      this.pool = Array.from({ length: examples }, (_, index) => index);
+      for (let i = this.pool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [this.pool[i], this.pool[j]] = [this.pool[j], this.pool[i]];
       }
-      indices.push(this.pool[this.poolPosition]);
-      this.poolPosition += 1;
+      this.poolPosition = 0;
     }
 
+    const indices = this.pool.slice(this.poolPosition, this.poolPosition + size);
+    this.poolPosition += indices.length;
     return indices;
   }
 

@@ -1,5 +1,5 @@
 import * as tf from '@tensorflow/tfjs';
-import { afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { createEmptyNetwork } from '../network/factory';
 import { buildModel } from '../tf/buildModel';
 import { Trainer, type TrainStats } from './Trainer';
@@ -25,6 +25,20 @@ function makeTrainer(onStats: (stats: TrainStats) => void, batchSize = 4, yieldF
   const model = buildModel(createEmptyNetwork());
   models.push(model);
   return new Trainer(model, makeData(), batchSize, onStats, yieldFn);
+}
+
+async function captureBatchSizes(count: number, batchSize: number): Promise<number[]> {
+  const model = buildModel(createEmptyNetwork());
+  models.push(model);
+  const original = model.trainOnBatch.bind(model);
+  const sizes: number[] = [];
+  vi.spyOn(model, 'trainOnBatch').mockImplementation(async (x, y) => {
+    sizes.push((x as tf.Tensor).shape[0]);
+    return original(x, y);
+  });
+  const trainer = new Trainer(model, makeData(count), batchSize, () => {});
+  for (let i = 0; i < trainer.batchesPerEpoch; i++) await trainer.step();
+  return sizes;
 }
 
 beforeAll(async () => {
@@ -87,6 +101,14 @@ describe('Trainer bookkeeping', () => {
   });
 });
 
+describe('Trainer batch sampling', () => {
+  it('covers each example exactly once per epoch', async () => {
+    expect(await captureBatchSizes(5, 4)).toEqual([4, 1]);
+    expect(await captureBatchSizes(8, 4)).toEqual([4, 4]);
+    expect(await captureBatchSizes(5, 2)).toEqual([2, 2, 1]);
+  });
+});
+
 describe('Trainer play loop', () => {
   it('runs steps until paused and resolves', async () => {
     const stats: TrainStats[] = [];
@@ -130,5 +152,40 @@ describe('Trainer play loop', () => {
     const seen = stats.length;
     await trainer.step();
     expect(stats).toHaveLength(seen);
+  });
+
+  it('reports an error and stays playable when a step rejects', async () => {
+    const model = buildModel(createEmptyNetwork());
+    models.push(model);
+    const original = model.trainOnBatch.bind(model);
+    let calls = 0;
+    vi.spyOn(model, 'trainOnBatch').mockImplementation(async (x, y) => {
+      calls += 1;
+      if (calls === 1) throw new Error('boom');
+      return original(x, y);
+    });
+
+    const errors: unknown[] = [];
+    let yields = 0;
+    const trainer = new Trainer(
+      model,
+      makeData(),
+      4,
+      () => {},
+      async () => {
+        yields += 1;
+        trainer.pause();
+      },
+      (error) => errors.push(error)
+    );
+
+    await expect(trainer.play()).resolves.toBeUndefined();
+    expect(trainer.isPlaying).toBe(false);
+    expect(errors).toHaveLength(1);
+    expect((errors[0] as Error).message).toBe('boom');
+
+    await expect(trainer.play()).resolves.toBeUndefined();
+    expect(trainer.isPlaying).toBe(false);
+    expect(yields).toBe(1);
   });
 });
