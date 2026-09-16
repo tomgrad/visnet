@@ -88,6 +88,7 @@
   .editor {
     display: grid;
     gap: var(--space-3);
+    container: editor / inline-size;
   }
 
   .body {
@@ -97,7 +98,7 @@
     align-items: start;
   }
 
-  @media (max-width: 1100px) {
+  @container editor (max-width: 780px) {
     .body {
       grid-template-columns: 1fr;
     }
