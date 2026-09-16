@@ -45,34 +45,43 @@ describe('insertionIndexFor', () => {
 });
 
 describe('dropIndexFor', () => {
-  const width = 200;
+  const height = 200;
   const gap = 80;
 
-  it('drops before the first interior block when left of it', () => {
-    expect(dropIndexFor(0, 5, width, gap)).toBe(1);
-    expect(dropIndexFor(200, 5, width, gap)).toBe(1);
+  it('drops before the first interior block when above it', () => {
+    expect(dropIndexFor(0, 5, height, gap)).toBe(1);
+    expect(dropIndexFor(200, 5, height, gap)).toBe(1);
   });
 
   it('advances one slot per interior block centre passed', () => {
-    expect(dropIndexFor(379, 5, width, gap)).toBe(1);
-    expect(dropIndexFor(380, 5, width, gap)).toBe(2);
-    expect(dropIndexFor(659, 5, width, gap)).toBe(2);
-    expect(dropIndexFor(660, 5, width, gap)).toBe(3);
-    expect(dropIndexFor(940, 5, width, gap)).toBe(4);
+    expect(dropIndexFor(379, 5, height, gap)).toBe(1);
+    expect(dropIndexFor(380, 5, height, gap)).toBe(2);
+    expect(dropIndexFor(659, 5, height, gap)).toBe(2);
+    expect(dropIndexFor(660, 5, height, gap)).toBe(3);
+    expect(dropIndexFor(940, 5, height, gap)).toBe(4);
   });
 
   it('clamps to the last interior slot when dropped past the end', () => {
-    expect(dropIndexFor(5000, 5, width, gap)).toBe(4);
+    expect(dropIndexFor(5000, 5, height, gap)).toBe(4);
   });
 
   it('uses both interior slots for a three-block network', () => {
-    expect(dropIndexFor(0, 3, width, gap)).toBe(1);
-    expect(dropIndexFor(9999, 3, width, gap)).toBe(2);
+    expect(dropIndexFor(0, 3, height, gap)).toBe(1);
+    expect(dropIndexFor(9999, 3, height, gap)).toBe(2);
+  });
+
+  it('never moves backwards as the drop point moves down', () => {
+    let previous = 0;
+    for (let y = -500; y <= 3000; y += 37) {
+      const index = dropIndexFor(y, 6, height, gap);
+      expect(index).toBeGreaterThanOrEqual(previous);
+      previous = index;
+    }
   });
 
   it('stays inside the interior range for any coordinate', () => {
-    for (let x = -500; x <= 3000; x += 37) {
-      const index = dropIndexFor(x, 6, width, gap);
+    for (let y = -500; y <= 3000; y += 37) {
+      const index = dropIndexFor(y, 6, height, gap);
       expect(index).toBeGreaterThanOrEqual(1);
       expect(index).toBeLessThanOrEqual(5);
     }

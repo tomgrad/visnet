@@ -2,6 +2,7 @@ import type { ShapeResult } from '../network/inferShapes';
 import type { BlockKind, Network } from '../network/types';
 
 export const NODE_WIDTH = 200;
+export const NODE_HEIGHT = 90;
 export const NODE_GAP = 80;
 
 export interface FlowNode {
@@ -42,7 +43,7 @@ export function toFlow(
     const info = shapes.perBlock[index];
     return {
       id: block.id,
-      position: { x: index * (NODE_WIDTH + NODE_GAP), y: 0 },
+      position: { x: 0, y: index * (NODE_HEIGHT + NODE_GAP) },
       data: {
         kind: block.kind,
         inShape: info.inShape,

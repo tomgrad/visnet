@@ -2,7 +2,7 @@
   import { getContext } from 'svelte';
   import { Handle, Position, type NodeProps } from '@xyflow/svelte';
   import { EDITOR_NODE_ACTIONS, type EditorNodeActions } from '../editor/context';
-  import { NODE_WIDTH, shapeLabel } from '../editor/flow';
+  import { NODE_HEIGHT, NODE_WIDTH, shapeLabel } from '../editor/flow';
   import { BLOCK_DESCRIPTIONS } from '../network/descriptions';
   import type { BlockKind } from '../network/types';
 
@@ -28,12 +28,12 @@
 <div
   class="block"
   class:selected
-  style="width: {NODE_WIDTH}px"
+  style="width: {NODE_WIDTH}px; min-height: {NODE_HEIGHT}px"
   data-testid="block-node"
   title={tooltip}
 >
   {#if info.kind !== 'input'}
-    <Handle type="target" position={Position.Left} />
+    <Handle type="target" position={Position.Top} />
   {/if}
 
   <header>
@@ -55,7 +55,7 @@
   <p class="params">{info.paramCount ?? 0} parameters</p>
 
   {#if info.kind !== 'output'}
-    <Handle type="source" position={Position.Right} />
+    <Handle type="source" position={Position.Bottom} />
   {/if}
 </div>
 

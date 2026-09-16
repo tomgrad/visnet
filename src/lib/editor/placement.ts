@@ -10,19 +10,19 @@ export function insertionIndexFor(net: Network, selectedBlockId: string | null):
 }
 
 export function dropIndexFor(
-  flowX: number,
+  flowY: number,
   blockCount: number,
-  nodeWidth: number,
+  nodeHeight: number,
   gap: number
 ): number {
   const last = blockCount - 1;
   if (last < FIRST_INTERIOR) return FIRST_INTERIOR;
 
-  const step = nodeWidth + gap;
+  const step = nodeHeight + gap;
   let index = FIRST_INTERIOR;
   for (let i = FIRST_INTERIOR; i < last; i++) {
-    const centre = i * step + nodeWidth / 2;
-    if (flowX >= centre) index = i + 1;
+    const centre = i * step + nodeHeight / 2;
+    if (flowY >= centre) index = i + 1;
   }
   return Math.min(Math.max(index, FIRST_INTERIOR), last);
 }

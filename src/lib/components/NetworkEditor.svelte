@@ -110,8 +110,8 @@
   }
 
   .middle {
-    min-height: 360px;
-    height: 480px;
+    min-height: 480px;
+    height: 640px;
   }
 
   .drag-hint {

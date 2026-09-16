@@ -417,9 +417,19 @@ buttons and to `Ctrl/Cmd+Z` and `Ctrl/Cmd+Shift+Z`.
 `src/lib/editor/flow.ts` converts between the domain model and Svelte Flow:
 
 - `toFlow(net, shapes): { nodes: Node[]; edges: Edge[] }` — one node per block,
-  positioned left-to-right from the chain index, with one edge between each pair
+  positioned top-to-bottom from the chain index, with one edge between each pair
   of adjacent blocks. Node and edge data carry the shapes from `inferShapes`.
   Positions are computed, never stored.
+  - The pipeline runs **down the page**: node *i* sits at `x = 0`,
+    `y = i * (NODE_HEIGHT + NODE_GAP)`, with `NODE_WIDTH` 200, `NODE_HEIGHT` 90,
+    and `NODE_GAP` 80. A block's target handle is on its top edge and its source
+    handle on its bottom edge, so data flows downward from the Input to the Output.
+  - `NODE_HEIGHT` is a layout constant, so `BlockNode` sets `min-height` from it.
+    That keeps the spacing math and the rendered box from drifting apart, the same
+    guarantee the node's width already has.
+  - Because the chain is vertical, a canvas drop is resolved against the **y**
+    coordinate: `dropIndexFor(flowY, blockCount, NODE_HEIGHT, NODE_GAP)` returns the
+    interior slot whose block centre is nearest below the drop point.
 - `connectionToIntent(connection, net): ChainOp | null` — converts a user-drawn
   wire into an operation on the array:
   - dragging block A's output onto block B's input where A precedes B → move A to
@@ -747,7 +757,7 @@ interaction, and the training animation. These are verified manually.
 ## 19. Manual verification checklist
 
 1. `npm run dev`, open `/examples/mlp`; the default network renders as a
-   left-to-right pipeline with `in → out` shape badges on every block and shape
+   top-to-bottom pipeline with `in → out` shape badges on every block and shape
    labels on every wire.
 2. The shape table lists the whole pipeline with correct shapes and parameter
    counts, and the network total matches.

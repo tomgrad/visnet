@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { moveBlock } from '../network/chain';
 import { inferShapes } from '../network/inferShapes';
 import type { Network } from '../network/types';
-import { NODE_GAP, NODE_WIDTH, connectionToIntent, shapeLabel, toFlow } from './flow';
+import { NODE_GAP, NODE_HEIGHT, connectionToIntent, shapeLabel, toFlow } from './flow';
 
 function net(): Network {
   return {
@@ -38,16 +38,16 @@ describe('toFlow', () => {
   const network = net();
   const flow = toFlow(network, inferShapes(network));
 
-  it('creates one node per block, positioned left to right', () => {
+  it('creates one node per block, positioned top to bottom', () => {
     expect(flow.nodes.map((node) => node.id)).toEqual(ids(network));
-    expect(flow.nodes.map((node) => node.position.x)).toEqual([
+    expect(flow.nodes.map((node) => node.position.y)).toEqual([
       0,
-      NODE_WIDTH + NODE_GAP,
-      2 * (NODE_WIDTH + NODE_GAP),
-      3 * (NODE_WIDTH + NODE_GAP),
-      4 * (NODE_WIDTH + NODE_GAP)
+      NODE_HEIGHT + NODE_GAP,
+      2 * (NODE_HEIGHT + NODE_GAP),
+      3 * (NODE_HEIGHT + NODE_GAP),
+      4 * (NODE_HEIGHT + NODE_GAP)
     ]);
-    expect(flow.nodes.every((node) => node.position.y === 0)).toBe(true);
+    expect(flow.nodes.every((node) => node.position.x === 0)).toBe(true);
   });
 
   it('marks only the interior blocks as removable', () => {

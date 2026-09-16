@@ -12,7 +12,7 @@
   } from '@xyflow/svelte';
   import '@xyflow/svelte/dist/style.css';
   import { EDITOR_NODE_ACTIONS, type EditorNodeActions } from '../editor/context';
-  import { connectionToIntent, NODE_GAP, NODE_WIDTH, toFlow } from '../editor/flow';
+  import { connectionToIntent, NODE_GAP, NODE_HEIGHT, toFlow } from '../editor/flow';
   import type { NetworkStore } from '../editor/networkStore.svelte';
   import { dropIndexFor } from '../editor/placement';
   import type { BlockKind } from '../network/types';
@@ -94,11 +94,11 @@
     ondragover(null);
     if (!kind || !palette.includes(kind)) return;
 
-    const x =
+    const y =
       viewport && wrapper
-        ? viewport.screenToFlowPosition({ x: event.clientX, y: event.clientY }).x
+        ? viewport.screenToFlowPosition({ x: event.clientX, y: event.clientY }).y
         : 0;
-    const index = dropIndexFor(x, store.network.blocks.length, NODE_WIDTH, NODE_GAP);
+    const index = dropIndexFor(y, store.network.blocks.length, NODE_HEIGHT, NODE_GAP);
     store.addBlock(kind, index);
   }
 </script>
