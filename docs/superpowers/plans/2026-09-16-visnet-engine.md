@@ -2800,6 +2800,8 @@ export class Trainer {
 ```
 
 - Semantics: `batchesPerEpoch` is `Math.max(1, Math.ceil(exampleCount / batchSize))`. `step()` trains exactly one batch, incrementing the batch counter; when the counter reaches `batchesPerEpoch` the epoch counter advances, the batch counter resets, and `epochMeanLoss` (mean of that epoch's batch losses) and `epochAccuracy` (fraction correct on the whole dataset, computed with `argMax` over one-hot labels) are reported. In-progress steps report `epochMeanLoss: null` and `epochAccuracy: null`. `play()` runs `step()` then `yieldFn()` repeatedly until `pause()` is called or `dispose()` happens, and resolves when the loop stops — which makes it awaitable in tests. The default `yieldFn` is `() => tf.nextFrame()`.
+- `model.trainOnBatch(xs, ys)` returns `Promise<number | number[]>` in TensorFlow.js 4.x, not a `Scalar`. `step()` therefore awaits it and disposes the gathered batch tensors in a `finally` block, because `tf.tidy` cannot span an `await`.
+- Epoch numbering counts completed epochs: the first mid-epoch step reports `epoch: 0`, and the step that completes epoch 0 reports `epoch: 1` with `batch: 0`. With `batchesPerEpoch` 2, six steps report epochs `[0, 1, 1, 2, 2, 3]`.
 - Batch sampling: maintain a shuffled pool of example indices, refilling it when exhausted, so each epoch visits every example once in random order.
 
 - [ ] **Step 1: Write the failing test**
@@ -2884,7 +2886,7 @@ describe('Trainer bookkeeping', () => {
     const trainer = makeTrainer((s) => epochs.push(s.epoch));
     expect(trainer.batchesPerEpoch).toBe(2);
     for (let i = 0; i < 6; i++) await trainer.step();
-    expect(epochs).toEqual([0, 0, 1, 1, 2, 2]);
+    expect(epochs).toEqual([0, 1, 1, 2, 2, 3]);
   });
 
   it('never requests a batch larger than the dataset', async () => {
@@ -3009,14 +3011,19 @@ export class Trainer {
   async step(): Promise<void> {
     if (this.disposed) return;
 
-    const batchLoss = tf.tidy(() => {
-      const indices = tf.tensor1d(this.sampleIndices(), 'int32');
-      const batchXs = tf.gather(this.data.xs, indices);
-      const batchYs = tf.gather(this.data.ys, indices);
-      const result = this.model.trainOnBatch(batchXs, batchYs);
-      const scalar = Array.isArray(result) ? result[0] : result;
-      return scalar.dataSync()[0];
-    });
+    const indices = tf.tensor1d(this.sampleIndices(), 'int32');
+    const batchXs = tf.gather(this.data.xs, indices);
+    const batchYs = tf.gather(this.data.ys, indices);
+    indices.dispose();
+
+    let batchLoss: number;
+    try {
+      const result = await this.model.trainOnBatch(batchXs, batchYs);
+      batchLoss = Array.isArray(result) ? result[0] : result;
+    } finally {
+      batchXs.dispose();
+      batchYs.dispose();
+    }
 
     this.batchLosses.push(batchLoss);
     this.batch += 1;
