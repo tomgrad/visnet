@@ -2918,25 +2918,32 @@ describe('DecisionBoundary', () => {
     expect(screen.getByTestId('boundary-caption').textContent).toContain('Fix the network');
   });
 
+  async function waitForBoundary(): Promise<void> {
+    await vi.waitFor(() => {
+      expect(screen.getByTestId('decision-boundary').getAttribute('data-ready')).toBe('true');
+    });
+  }
+
   it('turns a click into domain coordinates', async () => {
     const onaddpoint = vi.fn();
     render(DecisionBoundary, {
       props: { model: null, dataset: DATASET, selectedLabel: 1, onaddpoint }
     });
+    await waitForBoundary();
 
-    const canvas = screen.getByTestId('boundary-canvas');
-    fireEvent.click(canvas, { clientX: 100, clientY: 100 });
+    fireEvent.click(screen.getByTestId('boundary-canvas'), { clientX: 100, clientY: 100 });
     expect(onaddpoint).toHaveBeenCalledTimes(1);
     const [x, y] = onaddpoint.mock.calls[0];
     expect(x).toBeCloseTo(0, 5);
     expect(y).toBeCloseTo(0, 5);
   });
 
-  it('maps the top-right corner to the positive x, positive y corner', () => {
+  it('maps the top-right corner to the positive x, positive y corner', async () => {
     const onaddpoint = vi.fn();
     render(DecisionBoundary, {
       props: { model: null, dataset: DATASET, selectedLabel: 0, onaddpoint }
     });
+    await waitForBoundary();
 
     fireEvent.click(screen.getByTestId('boundary-canvas'), { clientX: 200, clientY: 0 });
     const [x, y] = onaddpoint.mock.calls[0];
@@ -2969,7 +2976,6 @@ Expected: FAIL — `Failed to resolve import "./DecisionBoundary.svelte"`.
   import type * as tf from '@tensorflow/tfjs';
   import type { PointDataset } from '../data/points';
   import { BACKGROUND_RGB, CLASS_COLOURS } from '../render/palette';
-  import { GRID_SIZE } from '../render/boundary';
 
   let {
     model,
@@ -3013,7 +3019,11 @@ Expected: FAIL — `Failed to resolve import "./DecisionBoundary.svelte"`.
       offscreen.height = GRID_SIZE;
       const offscreenContext = offscreen.getContext('2d');
       if (offscreenContext) {
-        offscreenContext.putImageData(new ImageData(rgba, GRID_SIZE, GRID_SIZE), 0, 0);
+        offscreenContext.putImageData(
+          new ImageData(new Uint8ClampedArray(rgba), GRID_SIZE, GRID_SIZE),
+          0,
+          0
+        );
         context.imageSmoothingEnabled = true;
         context.clearRect(0, 0, SIZE, SIZE);
         context.drawImage(offscreen, 0, 0, SIZE, SIZE);
@@ -3048,7 +3058,7 @@ Expected: FAIL — `Failed to resolve import "./DecisionBoundary.svelte"`.
   }
 </script>
 
-<figure class="boundary" data-testid="decision-boundary">
+<figure class="boundary" data-testid="decision-boundary" data-ready={boundary ? 'true' : 'false'}>
   <canvas
     bind:this={canvas}
     width={SIZE}
