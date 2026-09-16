@@ -423,7 +423,9 @@ describe('expectedInputShape', () => {
       { id: 'sm', kind: 'softmax' },
       OUTPUT
     ]);
-    expect(warnings(network, { expectedInputShape: [28, 28, 1] })).toEqual([]);
+    expect(
+      warnings(network, { expectedInputShape: [28, 28, 1] }).map((issue) => issue.title)
+    ).not.toContain('Input shape does not match the data');
   });
 
   it('warns when the input shape differs', () => {
@@ -464,6 +466,54 @@ describe('expectedInputShape', () => {
 ```
 
 Note: `warnings` is the existing helper in that file, and it currently takes `(network, options?: { expectedClasses?: number })`. Widen its options type to `ValidateOptions` so the new key type-checks.
+
+Note also why the matching case asserts *absence of the new title* rather than `toEqual([])`: a rank-3 input with no convolution already triggers the pre-existing "Image input without a Convolution layer" warning, so an empty-array assertion could never pass. The other new tests can use `toEqual`-style checks on their own titles freely.
+
+Then extend the existing message-contract table in the same file so the new rule is covered by it. That table is the spec's guarantee that every rule produces a non-empty title, message, and fix, so a rule missing from it weakens the guarantee.
+
+Widen the table's options type:
+
+```ts
+interface RuleCase {
+  title: string;
+  severity: Severity;
+  network: Network;
+  options?: ValidateOptions;
+}
+```
+
+Add the new title to `WARNING_RULE_TITLES`:
+
+```ts
+const WARNING_RULE_TITLES = [
+  'Add a Softmax for probabilities',
+  'Softmax is unusual with mean squared error',
+  'Softmax is not the last layer',
+  'Output size does not match the data',
+  'Image input without a Convolution layer',
+  'Convolution layer without image input',
+  'Input shape does not match the data'
+];
+```
+
+And append this case to `RULE_CASES`, immediately before the closing `];`:
+
+```ts
+  {
+    title: 'Input shape does not match the data',
+    severity: 'warning',
+    options: { expectedInputShape: [28, 28, 1] },
+    network: net([
+      { id: 'in', kind: 'input', shape: [4, 4, 1] },
+      { id: 'flat', kind: 'flatten' },
+      { id: 'dense', kind: 'linear', units: 10 },
+      { id: 'sm', kind: 'softmax' },
+      OUTPUT
+    ])
+  }
+```
+
+That case's network also produces the pre-existing image-without-convolution warning, which is fine: the table's cross-check compares the *union* of every title produced against the full title set, and that title is already in it. The table's per-case assertion only requires the case's own title to be among the issues produced.
 
 Append to `src/lib/editor/networkStore.svelte.test.ts`:
 
