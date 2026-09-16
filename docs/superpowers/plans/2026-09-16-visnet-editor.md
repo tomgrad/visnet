@@ -4164,7 +4164,7 @@ export async function loadRuntime(): Promise<Runtime> {
       model?.dispose();
     },
     createTrainer: (model, data, batchSize, onStats, onError) =>
-      new trainerModule.Trainer(model, data, batchSize, onStats, onError),
+      new trainerModule.Trainer(model, data, batchSize, onStats, undefined, onError),
     saveWeights: (model) => weights.saveWeights(model),
     loadWeightsInto: (model) => weights.loadWeightsInto(model)
   };
@@ -4642,7 +4642,7 @@ Three points about this script that are load-bearing, so do not "simplify" them 
     already supports convolution, flatten, and the shape inference the editor needs; what is missing
     is this page.
   </p>
-  <p><a href="/examples/mlp">Try the 2D points example instead</a></p>
+  <p><a href={resolve('/examples/mlp')}>Try the 2D points example instead</a></p>
 </main>
 
 <style>
@@ -4665,17 +4665,21 @@ Three points about this script that are load-bearing, so do not "simplify" them 
 - [ ] **Step 5: Write `/`**
 
 ```svelte
+<script lang="ts">
+  import { resolve } from '$app/paths';
+</script>
+
 <main>
   <h1>VisNet</h1>
   <p>Build neural networks from visual blocks and watch them learn.</p>
 
   <ul>
     <li>
-      <a href="/examples/mlp">Points in 2D</a>
+      <a href={resolve('/examples/mlp')}>Points in 2D</a>
       <span>Classify coloured points and see the decision boundary.</span>
     </li>
     <li>
-      <a href="/examples/cnn">Handwritten digits</a>
+      <a href={resolve('/examples/cnn')}>Handwritten digits</a>
       <span>Coming next: convolutional networks on digit images.</span>
     </li>
   </ul>
@@ -4733,7 +4737,7 @@ Run: `npm test`
 Expected: all projects green.
 
 Run: `npm run build`
-Expected: build succeeds and all three routes are prerendered. Confirm `build/examples/mlp/index.html` exists.
+Expected: build succeeds and all three routes are prerendered. `adapter-static` uses the default `trailingSlash: 'never'`, so the files are `build/index.html`, `build/examples/mlp.html`, and `build/examples/cnn.html` — not `examples/mlp/index.html`. Confirm all three exist.
 
 Run: `npm run dev`, then open `/examples/mlp` and work through the manual checklist in Task 16.
 
@@ -4848,7 +4852,7 @@ Run: `npm test`
 Expected: both projects green, 0 failures, no warnings in the output.
 
 Run: `npm run build`
-Expected: build succeeds; `build/index.html`, `build/examples/mlp/index.html`, and `build/examples/cnn/index.html` all exist.
+Expected: build succeeds; `build/index.html`, `build/examples/mlp.html`, and `build/examples/cnn.html` all exist.
 
 If any command fails, fix the cause. Do not weaken or delete a test to make it pass.
 
