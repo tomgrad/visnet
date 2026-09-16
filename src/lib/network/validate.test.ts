@@ -270,14 +270,15 @@ const WARNING_RULE_TITLES = [
   'Softmax is not the last layer',
   'Output size does not match the data',
   'Image input without a Convolution layer',
-  'Convolution layer without image input'
+  'Convolution layer without image input',
+  'Input shape does not match the data'
 ];
 
 interface RuleCase {
   title: string;
   severity: Severity;
   network: Network;
-  options?: { expectedClasses?: number };
+  options?: ValidateOptions;
 }
 
 const RULE_CASES: RuleCase[] = [
@@ -401,6 +402,18 @@ const RULE_CASES: RuleCase[] = [
       CONV,
       { id: 'flat2', kind: 'flatten' },
       { id: 'dense', kind: 'linear', units: 2 },
+      { id: 'sm', kind: 'softmax' },
+      OUTPUT
+    ])
+  },
+  {
+    title: 'Input shape does not match the data',
+    severity: 'warning',
+    options: { expectedInputShape: [28, 28, 1] },
+    network: net([
+      { id: 'in', kind: 'input', shape: [4, 4, 1] },
+      { id: 'flat', kind: 'flatten' },
+      { id: 'dense', kind: 'linear', units: 10 },
       { id: 'sm', kind: 'softmax' },
       OUTPUT
     ])
