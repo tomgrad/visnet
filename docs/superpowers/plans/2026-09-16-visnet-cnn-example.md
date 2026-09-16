@@ -958,9 +958,7 @@ let context: ReturnType<typeof fakeContext>;
 beforeEach(() => {
   context = fakeContext();
   vi.stubGlobal('ImageData', FakeImageData);
-  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
-    context as unknown as CanvasRenderingContext2D
-  );
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(context as never);
 });
 
 afterEach(() => {
@@ -1252,8 +1250,8 @@ Expected: FAIL — `Failed to resolve import "./__stubs__/SampleGridHarness.svel
       Each digit shows what the network predicts; a green outline means it is right, a red one
       that it is wrong.
     {:else}
-      These are test digits the network has not trained on. Predictions appear once training
-      has started.
+      Training has not started. These are test digits the network has never seen; each will show
+      its predicted digit once training begins.
     {/if}
   </figcaption>
 </figure>
