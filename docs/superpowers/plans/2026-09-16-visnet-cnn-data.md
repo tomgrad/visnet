@@ -595,7 +595,13 @@ Run: `npm run data:mnist`
 Expected: `Already prepared at …`. Confirm no network access by running it with the network unavailable if you can; otherwise confirm from the code path that it returns before any `fetch`.
 
 Run: `npm run data:mnist -- --train=50 --test=20 --force`
-Expected: downloads again.
+Expected: downloads again, overwriting the previous subset.
+
+Then restore the defaults, so the working tree is left holding the subset the
+example actually expects:
+
+Run: `npm run data:mnist -- --force`
+Expected: writes 1,000 training and 200 test digits.
 
 Run: `npm run build`
 Expected: build succeeds. Note that `static/mnist/` is copied into `build/`, which is expected.
@@ -669,7 +675,7 @@ function notFound(): Response {
 }
 
 afterEach(() => {
-  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 describe('loadMnistData', () => {
