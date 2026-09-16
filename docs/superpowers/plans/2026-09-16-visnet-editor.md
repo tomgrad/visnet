@@ -673,14 +673,12 @@ export function clampNetwork(net: Network): NetworkClampResult {
       const bounds = parameterBounds(inShape);
       if (!bounds) return;
 
-      const limit = Math.max(...bounds.kernelSize);
       const corrected = clampBlockPatch(current, block.id, {
         kernelSize: block.kernelSize,
         stride: block.stride
       });
       if (!corrected.announcement) return;
 
-      void limit;
       current = replaceBlock(current, block.id, corrected.patch);
       announcements.push(corrected.announcement);
       changed = true;
@@ -877,6 +875,21 @@ describe('updateBlock', () => {
     instance.dismissAnnouncements();
     expect(instance.announcements).toEqual([]);
   });
+
+  it('re-clamps downstream parameters when an upstream shape changes', () => {
+    const instance = store();
+    instance.addBlock('conv2d', 1);
+    instance.updateBlock(instance.network.blocks[0].id, { shape: [28, 28, 1] });
+    instance.updateBlock(instance.network.blocks[1].id, { kernelSize: 7 });
+    instance.dismissAnnouncements();
+
+    instance.updateBlock(instance.network.blocks[0].id, { shape: [4, 4, 1] });
+
+    expect(instance.network.blocks[1]).toMatchObject({ kernelSize: 4 });
+    expect(instance.announcements).toEqual([
+      'Kernel size changed from 7 to 4 because the incoming data is 4×4.'
+    ]);
+  });
 });
 
 describe('updateTraining', () => {
@@ -980,7 +993,7 @@ Expected: FAIL — `Failed to resolve import "./networkStore.svelte"`.
 
 ```ts
 import { insertAt, moveBlock, removeBlock, replaceBlock } from '../network/chain';
-import { clampBlockPatch } from '../network/constraints';
+import { clampBlockPatch, clampNetwork } from '../network/constraints';
 import { createBlock, createEmptyNetwork } from '../network/factory';
 import { inferShapes } from '../network/inferShapes';
 import type { Block, BlockKind, Network, TrainingConfig } from '../network/types';
@@ -1041,8 +1054,10 @@ export class NetworkStore {
 
   updateBlock(id: string, patch: Partial<Block>): void {
     const { patch: clamped, announcement } = clampBlockPatch(this.network, id, patch);
-    this.#commit(replaceBlock(this.network, id, clamped));
-    if (announcement) this.announce(announcement);
+    const result = clampNetwork(replaceBlock(this.network, id, clamped));
+    this.#commit(result.network);
+    const messages = announcement ? [announcement, ...result.announcements] : result.announcements;
+    if (messages.length > 0) this.announcements = [...this.announcements, ...messages];
   }
 
   updateTraining(patch: Partial<TrainingConfig>): void {
