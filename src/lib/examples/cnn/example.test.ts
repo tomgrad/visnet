@@ -11,8 +11,16 @@ import {
 } from './example';
 
 describe('CNN_PALETTE', () => {
-  it('offers convolution and flatten, and no pinned blocks', () => {
-    expect(CNN_PALETTE).toEqual(['conv2d', 'flatten', 'linear', 'relu', 'sigmoid', 'softmax']);
+  it('offers convolution, pooling and flatten, and no pinned blocks', () => {
+    expect(CNN_PALETTE).toEqual([
+      'conv2d',
+      'maxpool2d',
+      'flatten',
+      'linear',
+      'relu',
+      'sigmoid',
+      'softmax'
+    ]);
     expect(CNN_PALETTE).not.toContain('input');
     expect(CNN_PALETTE).not.toContain('output');
   });

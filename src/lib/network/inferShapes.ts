@@ -19,14 +19,14 @@ export interface ShapeResult {
   totalParamCount: number;
 }
 
-export function convOutputSize(
+export function spatialOutputSize(
   size: number,
-  kernelSize: number,
+  window: number,
   stride: number,
   padding: 'same' | 'valid'
 ): number {
   if (padding === 'same') return Math.ceil(size / stride);
-  return Math.floor((size - kernelSize) / stride) + 1;
+  return Math.floor((size - window) / stride) + 1;
 }
 
 function product(shape: number[]): number {
@@ -43,10 +43,18 @@ function outputShapeFor(block: Block, inShape: number[] | null): number[] | null
     case 'conv2d': {
       if (!inShape || inShape.length !== 3) return null;
       const [height, width] = inShape;
-      const outHeight = convOutputSize(height, block.kernelSize, block.stride, block.padding);
-      const outWidth = convOutputSize(width, block.kernelSize, block.stride, block.padding);
+      const outHeight = spatialOutputSize(height, block.kernelSize, block.stride, block.padding);
+      const outWidth = spatialOutputSize(width, block.kernelSize, block.stride, block.padding);
       if (outHeight <= 0 || outWidth <= 0) return null;
       return [outHeight, outWidth, block.filters];
+    }
+    case 'maxpool2d': {
+      if (!inShape || inShape.length !== 3) return null;
+      const [height, width, channels] = inShape;
+      const outHeight = spatialOutputSize(height, block.poolSize, block.stride, block.padding);
+      const outWidth = spatialOutputSize(width, block.poolSize, block.stride, block.padding);
+      if (outHeight <= 0 || outWidth <= 0) return null;
+      return [outHeight, outWidth, channels];
     }
     case 'flatten':
       if (!inShape || inShape.length < 1) return null;

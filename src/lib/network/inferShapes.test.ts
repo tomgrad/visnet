@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { convOutputSize, inferShapes } from './inferShapes';
+import { inferShapes, spatialOutputSize } from './inferShapes';
 import { createEmptyNetwork } from './factory';
 import type { Network } from './types';
 
@@ -12,15 +12,15 @@ function net(blocks: Network['blocks']): Network {
   };
 }
 
-describe('convOutputSize', () => {
+describe('spatialOutputSize', () => {
   it('keeps the size with same padding', () => {
-    expect(convOutputSize(28, 3, 1, 'same')).toBe(28);
-    expect(convOutputSize(28, 3, 2, 'same')).toBe(14);
+    expect(spatialOutputSize(28, 3, 1, 'same')).toBe(28);
+    expect(spatialOutputSize(28, 3, 2, 'same')).toBe(14);
   });
 
   it('shrinks with valid padding', () => {
-    expect(convOutputSize(28, 3, 1, 'valid')).toBe(26);
-    expect(convOutputSize(28, 5, 2, 'valid')).toBe(12);
+    expect(spatialOutputSize(28, 3, 1, 'valid')).toBe(26);
+    expect(spatialOutputSize(28, 5, 2, 'valid')).toBe(12);
   });
 });
 
@@ -106,6 +106,79 @@ describe('inferShapes with an impossible convolution', () => {
       ])
     );
     expect(result.perBlock[1].inShape).toEqual([2, 2, 1]);
+    expect(result.perBlock[1].outShape).toBeNull();
+  });
+});
+
+describe('inferShapes on a pooling chain', () => {
+  const result = inferShapes(
+    net([
+      { id: 'in', kind: 'input', shape: [28, 28, 3] },
+      { id: 'pool', kind: 'maxpool2d', poolSize: 2, stride: 2, padding: 'valid' },
+      { id: 'flat', kind: 'flatten' },
+      { id: 'dense', kind: 'linear', units: 10 },
+      { id: 'out', kind: 'output', units: 10 }
+    ])
+  );
+
+  it('halves each spatial dimension and passes the channels through', () => {
+    expect(result.perBlock[1].outShape).toEqual([14, 14, 3]);
+  });
+
+  it('costs no trainable parameters', () => {
+    expect(result.perBlock[1].paramCount).toBe(0);
+  });
+
+  it('flattens the pooled result', () => {
+    expect(result.perBlock[2].outShape).toEqual([14 * 14 * 3]);
+  });
+});
+
+describe('inferShapes with same-padded pooling', () => {
+  it('halves an even size', () => {
+    const result = inferShapes(
+      net([
+        { id: 'in', kind: 'input', shape: [28, 28, 1] },
+        { id: 'pool', kind: 'maxpool2d', poolSize: 2, stride: 2, padding: 'same' },
+        { id: 'out', kind: 'output', units: 2 }
+      ])
+    );
+    expect(result.perBlock[1].outShape).toEqual([14, 14, 1]);
+  });
+
+  it('rounds up an odd size', () => {
+    const result = inferShapes(
+      net([
+        { id: 'in', kind: 'input', shape: [27, 27, 1] },
+        { id: 'pool', kind: 'maxpool2d', poolSize: 2, stride: 2, padding: 'same' },
+        { id: 'out', kind: 'output', units: 2 }
+      ])
+    );
+    expect(result.perBlock[1].outShape).toEqual([14, 14, 1]);
+  });
+});
+
+describe('inferShapes with an impossible pool', () => {
+  it('returns a null output shape when the window does not fit', () => {
+    const result = inferShapes(
+      net([
+        { id: 'in', kind: 'input', shape: [2, 2, 1] },
+        { id: 'pool', kind: 'maxpool2d', poolSize: 3, stride: 3, padding: 'valid' },
+        { id: 'out', kind: 'output', units: 2 }
+      ])
+    );
+    expect(result.perBlock[1].inShape).toEqual([2, 2, 1]);
+    expect(result.perBlock[1].outShape).toBeNull();
+  });
+
+  it('returns a null output shape for flat input', () => {
+    const result = inferShapes(
+      net([
+        { id: 'in', kind: 'input', shape: [784] },
+        { id: 'pool', kind: 'maxpool2d', poolSize: 2, stride: 2, padding: 'valid' },
+        { id: 'out', kind: 'output', units: 2 }
+      ])
+    );
     expect(result.perBlock[1].outShape).toBeNull();
   });
 });

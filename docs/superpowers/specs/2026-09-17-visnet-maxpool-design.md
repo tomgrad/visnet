@@ -94,10 +94,10 @@ would be left oversized and broken instead of being corrected with an announceme
 
 `src/lib/network/validate.ts` gains two error rules, mirroring the convolution ones.
 
-| Condition | Title | Message | Fix |
-| --- | --- | --- | --- |
-| `maxpool2d` on input that is not rank 3 | Pooling layer needs image data | `This Pooling layer receives {shape}. It expects image data shaped [height, width, channels].` | Give the Input block a 3D shape such as [28, 28, 1], or remove the Pooling layer. |
-| `maxpool2d` on rank-3 input whose output dimension would be ≤ 0 | Pool window is larger than the image | `A {poolSize}×{poolSize} pool with stride {stride} leaves no room to slide over a {H}×{W} image.` | Use a smaller pool or stride, or set padding to 'same'. |
+| Condition                                                       | Title                                | Message                                                                                           | Fix                                                                               |
+| --------------------------------------------------------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `maxpool2d` on input that is not rank 3                         | Pooling layer needs image data       | `This Pooling layer receives {shape}. It expects image data shaped [height, width, channels].`    | Give the Input block a 3D shape such as [28, 28, 1], or remove the Pooling layer. |
+| `maxpool2d` on rank-3 input whose output dimension would be ≤ 0 | Pool window is larger than the image | `A {poolSize}×{poolSize} pool with stride {stride} leaves no room to slide over a {H}×{W} image.` | Use a smaller pool or stride, or set padding to 'same'.                           |
 
 Both carry the offending `blockId`. Every issue keeps a non-empty `title`, `message`, and
 `fix`, and both rules are added to the message-contract table in `validate.test.ts`.

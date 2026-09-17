@@ -18,6 +18,8 @@ const envelope = (blocks: unknown[], training: unknown = TRAINING) => ({
 const INPUT = { id: 'in', kind: 'input', shape: [2] };
 const OUTPUT = { id: 'out', kind: 'output', units: 2 };
 const LINEAR = { id: 'l', kind: 'linear', units: 2 };
+const IMAGE = { id: 'img', kind: 'input', shape: [28, 28, 1] };
+const MAXPOOL = { id: 'p', kind: 'maxpool2d', poolSize: 2, stride: 2, padding: 'valid' };
 
 describe('toJSON', () => {
   it('wraps the network in a versioned envelope', () => {
@@ -72,6 +74,21 @@ describe('fromJSON', () => {
   it('rejects a conv2d block with an invalid padding', () => {
     const conv = { id: 'c', kind: 'conv2d', filters: 4, kernelSize: 3, stride: 1, padding: 'half' };
     expect(fromJSON(JSON.stringify(envelope([INPUT, conv, OUTPUT])))).toBeNull();
+  });
+
+  it('round-trips a maxpool2d block', () => {
+    const restored = fromJSON(JSON.stringify(envelope([IMAGE, MAXPOOL, OUTPUT])));
+    expect(restored?.blocks[1]).toEqual(MAXPOOL);
+  });
+
+  it('rejects a maxpool2d block with an invalid padding', () => {
+    const pool = { id: 'p', kind: 'maxpool2d', poolSize: 2, stride: 2, padding: 'half' };
+    expect(fromJSON(JSON.stringify(envelope([IMAGE, pool, OUTPUT])))).toBeNull();
+  });
+
+  it('rejects a maxpool2d block with no pool size', () => {
+    const pool = { id: 'p', kind: 'maxpool2d', stride: 2, padding: 'valid' };
+    expect(fromJSON(JSON.stringify(envelope([IMAGE, pool, OUTPUT])))).toBeNull();
   });
 
   it('rejects a network whose first block is not an input', () => {

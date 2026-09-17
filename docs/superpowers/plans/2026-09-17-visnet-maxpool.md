@@ -30,15 +30,18 @@
 ### Task 1: The block kind, its defaults, and its persistence
 
 **Files:**
+
 - Modify: `src/lib/network/types.ts`
 - Modify: `src/lib/network/factory.ts`
 - Modify: `src/lib/network/descriptions.ts`
 - Modify: `src/lib/network/serialize.ts`
 - Test: `src/lib/network/types.test.ts`
 - Test: `src/lib/network/factory.test.ts`
+- Test: `src/lib/network/descriptions.test.ts`
 - Test: `src/lib/network/serialize.test.ts`
 
 **Interfaces:**
+
 - Produces: `MaxPool2dBlock { kind: 'maxpool2d'; poolSize: number; stride: number; padding: 'same' | 'valid' }`, added to `BlockKind`, `BLOCK_KINDS`, and the `Block` union. `createBlock('maxpool2d')` returns `{ poolSize: 2, stride: 2, padding: 'valid' }`. `BLOCK_DESCRIPTIONS.maxpool2d` and `PARAM_DESCRIPTIONS.poolSize` exist. `isBlock` in `serialize.ts` accepts the kind.
 
 Adding `maxpool2d` to the `BlockKind` union makes `createBlock` non-exhaustive and makes `BLOCK_DESCRIPTIONS` (typed `Record<BlockKind, string>`) incomplete, so all three of `types.ts`, `factory.ts`, and `descriptions.ts` must change together for the project to type-check.
@@ -75,12 +78,12 @@ In the `domain types` describe, insert a pooling block into the fixture so every
 In `src/lib/network/factory.test.ts`, extend the `applies the documented defaults` test:
 
 ```ts
-    expect(createBlock('maxpool2d')).toMatchObject({
-      kind: 'maxpool2d',
-      poolSize: 2,
-      stride: 2,
-      padding: 'valid'
-    });
+expect(createBlock('maxpool2d')).toMatchObject({
+  kind: 'maxpool2d',
+  poolSize: 2,
+  stride: 2,
+  padding: 'valid'
+});
 ```
 
 In `src/lib/network/serialize.test.ts`, add a fixture beside the existing `INPUT`, `OUTPUT`, and `LINEAR` constants and three tests inside the `fromJSON` describe:
@@ -91,27 +94,36 @@ const MAXPOOL = { id: 'p', kind: 'maxpool2d', poolSize: 2, stride: 2, padding: '
 ```
 
 ```ts
-  it('round-trips a maxpool2d block', () => {
-    const restored = fromJSON(JSON.stringify(envelope([IMAGE, MAXPOOL, OUTPUT])));
-    expect(restored?.blocks[1]).toEqual(MAXPOOL);
-  });
+it('round-trips a maxpool2d block', () => {
+  const restored = fromJSON(JSON.stringify(envelope([IMAGE, MAXPOOL, OUTPUT])));
+  expect(restored?.blocks[1]).toEqual(MAXPOOL);
+});
 
-  it('rejects a maxpool2d block with an invalid padding', () => {
-    const pool = { id: 'p', kind: 'maxpool2d', poolSize: 2, stride: 2, padding: 'half' };
-    expect(fromJSON(JSON.stringify(envelope([IMAGE, pool, OUTPUT])))).toBeNull();
-  });
+it('rejects a maxpool2d block with an invalid padding', () => {
+  const pool = { id: 'p', kind: 'maxpool2d', poolSize: 2, stride: 2, padding: 'half' };
+  expect(fromJSON(JSON.stringify(envelope([IMAGE, pool, OUTPUT])))).toBeNull();
+});
 
-  it('rejects a maxpool2d block with no pool size', () => {
-    const pool = { id: 'p', kind: 'maxpool2d', stride: 2, padding: 'valid' };
-    expect(fromJSON(JSON.stringify(envelope([IMAGE, pool, OUTPUT])))).toBeNull();
-  });
+it('rejects a maxpool2d block with no pool size', () => {
+  const pool = { id: 'p', kind: 'maxpool2d', stride: 2, padding: 'valid' };
+  expect(fromJSON(JSON.stringify(envelope([IMAGE, pool, OUTPUT])))).toBeNull();
+});
+```
+
+In `src/lib/network/descriptions.test.ts`, the `covers every tunable parameter` test asserts the
+exhaustive `PARAM_DESCRIPTIONS` key list, so `'poolSize'` joins it in alphabetical position:
+
+```ts
+        'padding',
+        'poolSize',
+        'stride',
 ```
 
 - [ ] **Step 2: Run the tests to verify they fail**
 
-Run: `npx vitest run --project engine src/lib/network/types.test.ts src/lib/network/factory.test.ts src/lib/network/serialize.test.ts`
+Run: `npx vitest run --project engine src/lib/network/types.test.ts src/lib/network/factory.test.ts src/lib/network/descriptions.test.ts src/lib/network/serialize.test.ts`
 
-Expected: FAIL. `types.test.ts` fails the ordered array, `factory.test.ts` fails because `createBlock('maxpool2d')` returns `undefined`, and the three new `serialize.test.ts` tests fail because `isBlock` rejects the kind.
+Expected: FAIL. `types.test.ts` fails the ordered array, `factory.test.ts` fails because `createBlock('maxpool2d')` returns `undefined`, `descriptions.test.ts` fails because `BLOCK_DESCRIPTIONS.maxpool2d` is missing, and only the _round-trip_ serialize test fails. The two negative serialize tests pass even before this task, because a malformed `maxpool2d` block is rejected by `isBlock`'s `default: return false` branch either way; they are regression guards for the explicit case's internals, not RED evidence.
 
 - [ ] **Step 3: Add the block kind**
 
@@ -208,7 +220,7 @@ This case is load-bearing: a saved network is rejected whole if any block fails 
 
 - [ ] **Step 7: Run the tests to verify they pass**
 
-Run: `npx vitest run --project engine src/lib/network/types.test.ts src/lib/network/factory.test.ts src/lib/network/serialize.test.ts`
+Run: `npx vitest run --project engine src/lib/network/types.test.ts src/lib/network/factory.test.ts src/lib/network/descriptions.test.ts src/lib/network/serialize.test.ts`
 
 Expected: PASS.
 
@@ -221,7 +233,7 @@ Expected: PASS.
 - [ ] **Step 8: Commit**
 
 ```bash
-git add src/lib/network/types.ts src/lib/network/factory.ts src/lib/network/descriptions.ts src/lib/network/serialize.ts src/lib/network/types.test.ts src/lib/network/factory.test.ts src/lib/network/serialize.test.ts
+git add src/lib/network/types.ts src/lib/network/factory.ts src/lib/network/descriptions.ts src/lib/network/serialize.ts src/lib/network/types.test.ts src/lib/network/factory.test.ts src/lib/network/descriptions.test.ts src/lib/network/serialize.test.ts
 git commit -m "feat: add the maxpool2d block kind, its defaults, and its persistence"
 ```
 
@@ -230,11 +242,13 @@ git commit -m "feat: add the maxpool2d block kind, its defaults, and its persist
 ### Task 2: Shape inference and the spatial rename
 
 **Files:**
+
 - Modify: `src/lib/network/inferShapes.ts`
 - Modify: `src/lib/components/InspectorPanel.svelte`
 - Test: `src/lib/network/inferShapes.test.ts`
 
 **Interfaces:**
+
 - Consumes: `MaxPool2dBlock` from Task 1.
 - Produces: `spatialOutputSize(size, window, stride, padding)` — the renamed `convOutputSize`, same body, second parameter renamed from `kernelSize` to `window`. Pooling output shape is `[outHeight, outWidth, channels]`.
 
@@ -381,11 +395,11 @@ Do **not** add a `maxpool2d` case to `paramCountFor`. Its `default` branch alrea
 In `src/lib/components/InspectorPanel.svelte`, update the import and the one call site:
 
 ```ts
-  import { spatialOutputSize } from '../network/inferShapes';
+import { spatialOutputSize } from '../network/inferShapes';
 ```
 
 ```ts
-      spatialOutputSize(dimension, kernelSize, stride, padding);
+spatialOutputSize(dimension, kernelSize, stride, padding);
 ```
 
 - [ ] **Step 5: Run the tests to verify they pass**
@@ -410,10 +424,12 @@ git commit -m "feat: infer maxpool2d output shapes from the shared spatial helpe
 ### Task 3: Parameter clamping
 
 **Files:**
+
 - Modify: `src/lib/network/constraints.ts`
 - Test: `src/lib/network/constraints.test.ts`
 
 **Interfaces:**
+
 - Consumes: `MaxPool2dBlock` from Task 1, `spatialOutputSize` from Task 2 (not used directly here, but the same bounds apply).
 - Produces: `clampBlockPatch` clamps `poolSize` with the label `Pool size`; `clampNetwork` corrects pooling blocks as well as convolutions.
 
@@ -436,41 +452,41 @@ const POOL_NETWORK = net([
 Add these tests to the `clampBlockPatch` describe:
 
 ```ts
-  it('leaves a valid pool untouched and says nothing', () => {
-    expect(clampBlockPatch(POOL_NETWORK, 'pool', { poolSize: 2, stride: 2 })).toEqual({
-      patch: { poolSize: 2, stride: 2 },
-      announcement: null
-    });
+it('leaves a valid pool untouched and says nothing', () => {
+  expect(clampBlockPatch(POOL_NETWORK, 'pool', { poolSize: 2, stride: 2 })).toEqual({
+    patch: { poolSize: 2, stride: 2 },
+    announcement: null
   });
+});
 
-  it('clamps a pool window larger than the image and names the dimensions', () => {
-    const result = clampBlockPatch(POOL_NETWORK, 'pool', { poolSize: 40 });
-    expect(result.patch).toEqual({ poolSize: 28 });
-    expect(result.announcement).toBe(
-      'Pool size changed from 40 to 28 because the incoming data is 28×28.'
-    );
-  });
+it('clamps a pool window larger than the image and names the dimensions', () => {
+  const result = clampBlockPatch(POOL_NETWORK, 'pool', { poolSize: 40 });
+  expect(result.patch).toEqual({ poolSize: 28 });
+  expect(result.announcement).toBe(
+    'Pool size changed from 40 to 28 because the incoming data is 28×28.'
+  );
+});
 ```
 
 Add this test to the `clampNetwork` describe:
 
 ```ts
-  it('re-clamps a downstream pool when the input shape shrinks', () => {
-    const shrunk = net([
-      { id: 'in', kind: 'input', shape: [4, 4, 1] },
-      { id: 'pool', kind: 'maxpool2d', poolSize: 28, stride: 1, padding: 'valid' },
-      { id: 'flat', kind: 'flatten' },
-      { id: 'dense', kind: 'linear', units: 10 },
-      { id: 'out', kind: 'output', units: 10 }
-    ]);
+it('re-clamps a downstream pool when the input shape shrinks', () => {
+  const shrunk = net([
+    { id: 'in', kind: 'input', shape: [4, 4, 1] },
+    { id: 'pool', kind: 'maxpool2d', poolSize: 28, stride: 1, padding: 'valid' },
+    { id: 'flat', kind: 'flatten' },
+    { id: 'dense', kind: 'linear', units: 10 },
+    { id: 'out', kind: 'output', units: 10 }
+  ]);
 
-    const result = clampNetwork(shrunk);
+  const result = clampNetwork(shrunk);
 
-    expect(result.network.blocks[1]).toMatchObject({ poolSize: 4, stride: 1 });
-    expect(result.announcements).toEqual([
-      'Pool size changed from 28 to 4 because the incoming data is 4×4.'
-    ]);
-  });
+  expect(result.network.blocks[1]).toMatchObject({ poolSize: 4, stride: 1 });
+  expect(result.announcements).toEqual([
+    'Pool size changed from 28 to 4 because the incoming data is 4×4.'
+  ]);
+});
 ```
 
 - [ ] **Step 2: Run the tests to verify they fail**
@@ -484,11 +500,11 @@ Expected: FAIL. `clampBlockPatch` ignores `poolSize`, so the patch comes back as
 In `src/lib/network/constraints.ts`, inside `clampBlockPatch`, add a `poolSize` branch between the existing `kernelSize` and `stride` branches, so the first-reported correction keeps the documented order:
 
 ```ts
-    if ('poolSize' in patch && typeof patch.poolSize === 'number') {
-      const next = clampDimension(patch.poolSize, 'Pool size', limit, inShape);
-      Object.assign(result, { poolSize: next.value });
-      if (announcement === null) announcement = next.announcement;
-    }
+if ('poolSize' in patch && typeof patch.poolSize === 'number') {
+  const next = clampDimension(patch.poolSize, 'Pool size', limit, inShape);
+  Object.assign(result, { poolSize: next.value });
+  if (announcement === null) announcement = next.announcement;
+}
 ```
 
 - [ ] **Step 4: Correct pooling blocks on the way in**
@@ -496,25 +512,25 @@ In `src/lib/network/constraints.ts`, inside `clampBlockPatch`, add a `poolSize` 
 In `src/lib/network/constraints.ts`, replace the body of the `forEach` inside `clampNetwork` so it handles both spatial kinds:
 
 ```ts
-    current.blocks.forEach((block, index) => {
-      const patch: Partial<Block> | null =
-        block.kind === 'conv2d'
-          ? { kernelSize: block.kernelSize, stride: block.stride }
-          : block.kind === 'maxpool2d'
-            ? { poolSize: block.poolSize, stride: block.stride }
-            : null;
-      if (!patch) return;
+current.blocks.forEach((block, index) => {
+  const patch: Partial<Block> | null =
+    block.kind === 'conv2d'
+      ? { kernelSize: block.kernelSize, stride: block.stride }
+      : block.kind === 'maxpool2d'
+        ? { poolSize: block.poolSize, stride: block.stride }
+        : null;
+  if (!patch) return;
 
-      const bounds = parameterBounds(perBlock[index].inShape);
-      if (!bounds) return;
+  const bounds = parameterBounds(perBlock[index].inShape);
+  if (!bounds) return;
 
-      const corrected = clampBlockPatch(current, block.id, patch);
-      if (!corrected.announcement) return;
+  const corrected = clampBlockPatch(current, block.id, patch);
+  if (!corrected.announcement) return;
 
-      current = replaceBlock(current, block.id, corrected.patch);
-      announcements.push(corrected.announcement);
-      changed = true;
-    });
+  current = replaceBlock(current, block.id, corrected.patch);
+  announcements.push(corrected.announcement);
+  changed = true;
+});
 ```
 
 `Partial<Block>` is already imported in this file.
@@ -537,10 +553,12 @@ git commit -m "feat: clamp maxpool2d pool sizes like convolution kernels"
 ### Task 4: Validation rules
 
 **Files:**
+
 - Modify: `src/lib/network/validate.ts`
 - Test: `src/lib/network/validate.test.ts`
 
 **Interfaces:**
+
 - Consumes: `MaxPool2dBlock` from Task 1; the null output shape Task 2 produces for an impossible pool.
 - Produces: two error rules, `Pooling layer needs image data` and `Pool window is larger than the image`.
 
@@ -551,29 +569,29 @@ git commit -m "feat: clamp maxpool2d pool sizes like convolution kernels"
 In `src/lib/network/validate.test.ts`, add these tests to the `validate errors` describe, after the existing convolution tests:
 
 ```ts
-  it('reports a pooling layer receiving flat data', () => {
-    const network = net([
-      INPUT,
-      { id: 'pool', kind: 'maxpool2d', poolSize: 2, stride: 2, padding: 'valid' },
-      OUTPUT
-    ]);
-    const issue = errors(network).find((i) => i.title === 'Pooling layer needs image data');
-    expect(issue).toBeDefined();
-    expect(issue?.blockId).toBe('pool');
-    expect(issue?.message).toContain('[2]');
-  });
+it('reports a pooling layer receiving flat data', () => {
+  const network = net([
+    INPUT,
+    { id: 'pool', kind: 'maxpool2d', poolSize: 2, stride: 2, padding: 'valid' },
+    OUTPUT
+  ]);
+  const issue = errors(network).find((i) => i.title === 'Pooling layer needs image data');
+  expect(issue).toBeDefined();
+  expect(issue?.blockId).toBe('pool');
+  expect(issue?.message).toContain('[2]');
+});
 
-  it('reports a pool window larger than the image', () => {
-    const network = net([
-      { id: 'in', kind: 'input', shape: [2, 2, 1] },
-      { id: 'pool', kind: 'maxpool2d', poolSize: 3, stride: 3, padding: 'valid' },
-      OUTPUT
-    ]);
-    const issue = errors(network).find((i) => i.title === 'Pool window is larger than the image');
-    expect(issue).toBeDefined();
-    expect(issue?.blockId).toBe('pool');
-    expect(issue?.message).toContain('3');
-  });
+it('reports a pool window larger than the image', () => {
+  const network = net([
+    { id: 'in', kind: 'input', shape: [2, 2, 1] },
+    { id: 'pool', kind: 'maxpool2d', poolSize: 3, stride: 3, padding: 'valid' },
+    OUTPUT
+  ]);
+  const issue = errors(network).find((i) => i.title === 'Pool window is larger than the image');
+  expect(issue).toBeDefined();
+  expect(issue?.blockId).toBe('pool');
+  expect(issue?.message).toContain('3');
+});
 ```
 
 Add both titles to `ERROR_RULE_TITLES`, after `'Kernel is larger than the image'`:
@@ -617,31 +635,31 @@ Expected: FAIL. Both new tests find no matching issue, and the contract test fai
 In `src/lib/network/validate.ts`, inside the `net.blocks.forEach` block, add both rules directly after the existing `conv2d` output-dimension rule:
 
 ```ts
-    if (block.kind === 'maxpool2d' && info.inShape && info.inShape.length !== 3) {
-      issues.push({
-        severity: 'error',
-        title: 'Pooling layer needs image data',
-        message: `This Pooling layer receives ${shapeText(info.inShape)}. It expects image data shaped [height, width, channels].`,
-        fix: 'Give the Input block a 3D shape such as [28, 28, 1], or remove the Pooling layer.',
-        blockId: block.id
-      });
-    }
+if (block.kind === 'maxpool2d' && info.inShape && info.inShape.length !== 3) {
+  issues.push({
+    severity: 'error',
+    title: 'Pooling layer needs image data',
+    message: `This Pooling layer receives ${shapeText(info.inShape)}. It expects image data shaped [height, width, channels].`,
+    fix: 'Give the Input block a 3D shape such as [28, 28, 1], or remove the Pooling layer.',
+    blockId: block.id
+  });
+}
 
-    if (
-      block.kind === 'maxpool2d' &&
-      info.inShape &&
-      info.inShape.length === 3 &&
-      info.outShape === null
-    ) {
-      const [height, width] = info.inShape;
-      issues.push({
-        severity: 'error',
-        title: 'Pool window is larger than the image',
-        message: `A ${block.poolSize}×${block.poolSize} pool with stride ${block.stride} leaves no room to slide over a ${height}×${width} image.`,
-        fix: "Use a smaller pool or stride, or set padding to 'same'.",
-        blockId: block.id
-      });
-    }
+if (
+  block.kind === 'maxpool2d' &&
+  info.inShape &&
+  info.inShape.length === 3 &&
+  info.outShape === null
+) {
+  const [height, width] = info.inShape;
+  issues.push({
+    severity: 'error',
+    title: 'Pool window is larger than the image',
+    message: `A ${block.poolSize}×${block.poolSize} pool with stride ${block.stride} leaves no room to slide over a ${height}×${width} image.`,
+    fix: "Use a smaller pool or stride, or set padding to 'same'.",
+    blockId: block.id
+  });
+}
 ```
 
 Leave `hasConvolution` keyed to `conv2d` alone. Pooling has no weights, so a network of pooling without convolution should still receive the "Image input without a Convolution layer" warning.
@@ -664,10 +682,12 @@ git commit -m "feat: validate maxpool2d input rank and window size"
 ### Task 5: The TensorFlow.js layer
 
 **Files:**
+
 - Modify: `src/lib/tf/buildModel.ts`
 - Test: `src/lib/tf/buildModel.test.ts`
 
 **Interfaces:**
+
 - Consumes: `MaxPool2dBlock` from Task 1.
 - Produces: a `maxpool2d` block builds a `tf.layers.maxPooling2d`.
 
@@ -676,46 +696,46 @@ git commit -m "feat: validate maxpool2d input rank and window size"
 In `src/lib/tf/buildModel.test.ts`, add this test to the `buildModel` describe, after `builds a convolutional chain with flattening`:
 
 ```ts
-  it('builds a pooling chain and halves the spatial dimensions', () => {
-    const network: Network = {
-      version: 2,
-      blocks: [
-        { id: 'in', kind: 'input', shape: [28, 28, 1] },
-        { id: 'pool', kind: 'maxpool2d', poolSize: 2, stride: 2, padding: 'valid' },
-        { id: 'flat', kind: 'flatten' },
-        { id: 'dense', kind: 'linear', units: 10 },
-        { id: 'sm', kind: 'softmax' },
-        { id: 'out', kind: 'output', units: 10 }
-      ],
-      training: { loss: 'crossEntropy', optimizer: 'adam', learningRate: 0.01, batchSize: 32 },
-      positions: {}
-    };
-    const model = build(network);
-    expect(model.layers[0].getClassName()).toBe('MaxPooling2D');
-    expect(model.inputs[0].shape).toEqual([null, 28, 28, 1]);
-    expect(model.layers[0].outputShape).toEqual([null, 14, 14, 1]);
-    expect(model.outputs[0].shape).toEqual([null, 10]);
-  });
+it('builds a pooling chain and halves the spatial dimensions', () => {
+  const network: Network = {
+    version: 2,
+    blocks: [
+      { id: 'in', kind: 'input', shape: [28, 28, 1] },
+      { id: 'pool', kind: 'maxpool2d', poolSize: 2, stride: 2, padding: 'valid' },
+      { id: 'flat', kind: 'flatten' },
+      { id: 'dense', kind: 'linear', units: 10 },
+      { id: 'sm', kind: 'softmax' },
+      { id: 'out', kind: 'output', units: 10 }
+    ],
+    training: { loss: 'crossEntropy', optimizer: 'adam', learningRate: 0.01, batchSize: 32 },
+    positions: {}
+  };
+  const model = build(network);
+  expect(model.layers[0].getClassName()).toBe('MaxPooling2D');
+  expect(model.inputs[0].shape).toEqual([null, 28, 28, 1]);
+  expect(model.layers[0].outputShape).toEqual([null, 14, 14, 1]);
+  expect(model.outputs[0].shape).toEqual([null, 10]);
+});
 
-  it('runs a forward pass through a pooling layer', () => {
-    const network: Network = {
-      version: 2,
-      blocks: [
-        { id: 'in', kind: 'input', shape: [28, 28, 1] },
-        { id: 'pool', kind: 'maxpool2d', poolSize: 2, stride: 2, padding: 'valid' },
-        { id: 'flat', kind: 'flatten' },
-        { id: 'dense', kind: 'linear', units: 10 },
-        { id: 'sm', kind: 'softmax' },
-        { id: 'out', kind: 'output', units: 10 }
-      ],
-      training: { loss: 'crossEntropy', optimizer: 'adam', learningRate: 0.01, batchSize: 32 },
-      positions: {}
-    };
-    const model = build(network);
-    const prediction = model.predict(tf.ones([1, 28, 28, 1])) as tf.Tensor;
-    expect(prediction.shape).toEqual([1, 10]);
-    prediction.dispose();
-  });
+it('runs a forward pass through a pooling layer', () => {
+  const network: Network = {
+    version: 2,
+    blocks: [
+      { id: 'in', kind: 'input', shape: [28, 28, 1] },
+      { id: 'pool', kind: 'maxpool2d', poolSize: 2, stride: 2, padding: 'valid' },
+      { id: 'flat', kind: 'flatten' },
+      { id: 'dense', kind: 'linear', units: 10 },
+      { id: 'sm', kind: 'softmax' },
+      { id: 'out', kind: 'output', units: 10 }
+    ],
+    training: { loss: 'crossEntropy', optimizer: 'adam', learningRate: 0.01, batchSize: 32 },
+    positions: {}
+  };
+  const model = build(network);
+  const prediction = model.predict(tf.ones([1, 28, 28, 1])) as tf.Tensor;
+  expect(prediction.shape).toEqual([1, 10]);
+  prediction.dispose();
+});
 ```
 
 - [ ] **Step 2: Run the test to verify it fails**
@@ -758,12 +778,14 @@ git commit -m "feat: build a max pooling layer for maxpool2d blocks"
 ### Task 6: The CNN palette and the inspector controls
 
 **Files:**
+
 - Modify: `src/lib/examples/cnn/example.ts`
 - Modify: `src/lib/components/InspectorPanel.svelte`
 - Test: `src/lib/examples/cnn/example.test.ts`
 - Test: `src/lib/components/InspectorPanel.test.ts`
 
 **Interfaces:**
+
 - Consumes: everything from Tasks 1-5.
 - Produces: `CNN_PALETTE` includes `maxpool2d`; the inspector renders `param-pool-size`, `param-stride`, and `param-padding` for a pooling block.
 
@@ -794,42 +816,42 @@ describe('CNN_PALETTE', () => {
 In `src/lib/components/InspectorPanel.test.ts`, add these tests at the end of the describe:
 
 ```ts
-  it('offers pool size choices limited to the incoming image', () => {
-    const store = new NetworkStore();
-    store.updateBlock(store.network.blocks[0].id, { shape: [6, 4, 1] });
-    store.addBlock('maxpool2d', 1);
-    store.updateBlock(store.network.blocks[1].id, { poolSize: 3 });
-    render(InspectorPanel, { props: { store } });
+it('offers pool size choices limited to the incoming image', () => {
+  const store = new NetworkStore();
+  store.updateBlock(store.network.blocks[0].id, { shape: [6, 4, 1] });
+  store.addBlock('maxpool2d', 1);
+  store.updateBlock(store.network.blocks[1].id, { poolSize: 3 });
+  render(InspectorPanel, { props: { store } });
 
-    const options = Array.from(
-      screen.getByTestId('param-pool-size').querySelectorAll('option')
-    ).map((option) => option.getAttribute('value'));
-    expect(options).toEqual(['1', '2', '3', '4']);
-  });
+  const options = Array.from(screen.getByTestId('param-pool-size').querySelectorAll('option')).map(
+    (option) => option.getAttribute('value')
+  );
+  expect(options).toEqual(['1', '2', '3', '4']);
+});
 
-  it('changes the pool size', async () => {
-    const store = new NetworkStore();
-    store.updateBlock(store.network.blocks[0].id, { shape: [6, 4, 1] });
-    store.addBlock('maxpool2d', 1);
-    store.select(store.network.blocks[1].id);
-    render(InspectorPanel, { props: { store } });
-    await fireEvent.change(screen.getByTestId('param-pool-size'), { target: { value: '4' } });
-    expect(store.network.blocks[1]).toMatchObject({ poolSize: 4 });
-  });
+it('changes the pool size', async () => {
+  const store = new NetworkStore();
+  store.updateBlock(store.network.blocks[0].id, { shape: [6, 4, 1] });
+  store.addBlock('maxpool2d', 1);
+  store.select(store.network.blocks[1].id);
+  render(InspectorPanel, { props: { store } });
+  await fireEvent.change(screen.getByTestId('param-pool-size'), { target: { value: '4' } });
+  expect(store.network.blocks[1]).toMatchObject({ poolSize: 4 });
+});
 
-  it('describes what each padding choice does to a pooled image', () => {
-    const store = new NetworkStore();
-    store.updateBlock(store.network.blocks[0].id, { shape: [28, 28, 1] });
-    store.addBlock('maxpool2d', 1);
-    store.updateBlock(store.network.blocks[1].id, { poolSize: 3 });
-    render(InspectorPanel, { props: { store } });
+it('describes what each padding choice does to a pooled image', () => {
+  const store = new NetworkStore();
+  store.updateBlock(store.network.blocks[0].id, { shape: [28, 28, 1] });
+  store.addBlock('maxpool2d', 1);
+  store.updateBlock(store.network.blocks[1].id, { poolSize: 3 });
+  render(InspectorPanel, { props: { store } });
 
-    const labels = Array.from(screen.getByTestId('param-padding').querySelectorAll('option')).map(
-      (option) => option.textContent ?? ''
-    );
-    expect(labels.some((label) => label.includes('14×14'))).toBe(true);
-    expect(labels.some((label) => label.includes('13×13'))).toBe(true);
-  });
+  const labels = Array.from(screen.getByTestId('param-padding').querySelectorAll('option')).map(
+    (option) => option.textContent ?? ''
+  );
+  expect(labels.some((label) => label.includes('14×14'))).toBe(true);
+  expect(labels.some((label) => label.includes('13×13'))).toBe(true);
+});
 ```
 
 A 3×3 pool with stride 2 over 28×28 gives 14 with `same` padding and 13 with `valid`, which is why this test sets the pool size before rendering.
@@ -861,37 +883,37 @@ export const CNN_PALETTE: BlockKind[] = [
 In `src/lib/components/InspectorPanel.svelte`, replace the `kernelChoices` and `strideChoices` deriveds with:
 
 ```ts
-  const spatialSize = $derived(
-    block?.kind === 'conv2d' ? block.kernelSize : block?.kind === 'maxpool2d' ? block.poolSize : null
-  );
-  const spatialStride = $derived(
-    block?.kind === 'conv2d' || block?.kind === 'maxpool2d' ? block.stride : null
-  );
-  const paddingValue = $derived(
-    block?.kind === 'conv2d' || block?.kind === 'maxpool2d' ? block.padding : 'valid'
-  );
-  const sizeChoices = $derived(
-    spatialSize === null ? [] : bounds ? bounds.kernelSize : [spatialSize]
-  );
-  const strideChoices = $derived(
-    spatialStride === null ? [] : bounds ? bounds.stride : [spatialStride]
-  );
+const spatialSize = $derived(
+  block?.kind === 'conv2d' ? block.kernelSize : block?.kind === 'maxpool2d' ? block.poolSize : null
+);
+const spatialStride = $derived(
+  block?.kind === 'conv2d' || block?.kind === 'maxpool2d' ? block.stride : null
+);
+const paddingValue = $derived(
+  block?.kind === 'conv2d' || block?.kind === 'maxpool2d' ? block.padding : 'valid'
+);
+const sizeChoices = $derived(
+  spatialSize === null ? [] : bounds ? bounds.kernelSize : [spatialSize]
+);
+const strideChoices = $derived(
+  spatialStride === null ? [] : bounds ? bounds.stride : [spatialStride]
+);
 ```
 
 Replace `outputSizeFor` with:
 
 ```ts
-  function outputSizeFor(padding: 'same' | 'valid'): string {
-    if (!inShape || inShape.length !== 3 || spatialSize === null || spatialStride === null) {
-      return '';
-    }
-    const [height, width] = inShape;
-    const compute = (dimension: number): number =>
-      spatialOutputSize(dimension, spatialSize, spatialStride, padding);
-    const result = `${compute(height)}×${compute(width)}`;
-    if (padding === 'same' && result === `${height}×${width}`) return `stays ${result}`;
-    return `becomes ${result}`;
+function outputSizeFor(padding: 'same' | 'valid'): string {
+  if (!inShape || inShape.length !== 3 || spatialSize === null || spatialStride === null) {
+    return '';
   }
+  const [height, width] = inShape;
+  const compute = (dimension: number): number =>
+    spatialOutputSize(dimension, spatialSize, spatialStride, padding);
+  const result = `${compute(height)}×${compute(width)}`;
+  if (padding === 'same' && result === `${height}×${width}`) return `stays ${result}`;
+  return `becomes ${result}`;
+}
 ```
 
 - [ ] **Step 5: Share the spatial controls**
@@ -958,38 +980,38 @@ In `src/lib/components/InspectorPanel.svelte`, declare this snippet at the top l
 In `src/lib/components/InspectorPanel.svelte`, replace the whole existing `{#if block.kind === 'conv2d'} … {/if}` block with the filters field, guarded to convolution only, followed by the shared snippet call:
 
 ```svelte
-    {#if block.kind === 'conv2d'}
-      <label>
-        <span>Filters</span>
-        <input
-          type="number"
-          min="1"
-          data-testid="param-filters"
-          title={PARAM_DESCRIPTIONS.filters}
-          value={block.filters}
-          onchange={(event) => commitNumber(event, 'filters')}
-        />
-        <small>{PARAM_DESCRIPTIONS.filters}</small>
-      </label>
-    {/if}
+{#if block.kind === 'conv2d'}
+  <label>
+    <span>Filters</span>
+    <input
+      type="number"
+      min="1"
+      data-testid="param-filters"
+      title={PARAM_DESCRIPTIONS.filters}
+      value={block.filters}
+      onchange={(event) => commitNumber(event, 'filters')}
+    />
+    <small>{PARAM_DESCRIPTIONS.filters}</small>
+  </label>
+{/if}
 
-    {#if block.kind === 'conv2d'}
-      {@render spatialControls(
-        'param-kernel-size',
-        'Kernel size',
-        'kernelSize',
-        block.kernelSize,
-        PARAM_DESCRIPTIONS.kernelSize
-      )}
-    {:else if block.kind === 'maxpool2d'}
-      {@render spatialControls(
-        'param-pool-size',
-        'Pool size',
-        'poolSize',
-        block.poolSize,
-        PARAM_DESCRIPTIONS.poolSize
-      )}
-    {/if}
+{#if block.kind === 'conv2d'}
+  {@render spatialControls(
+    'param-kernel-size',
+    'Kernel size',
+    'kernelSize',
+    block.kernelSize,
+    PARAM_DESCRIPTIONS.kernelSize
+  )}
+{:else if block.kind === 'maxpool2d'}
+  {@render spatialControls(
+    'param-pool-size',
+    'Pool size',
+    'poolSize',
+    block.poolSize,
+    PARAM_DESCRIPTIONS.poolSize
+  )}
+{/if}
 ```
 
 - [ ] **Step 7: Run the tests to verify they pass**
@@ -1014,9 +1036,11 @@ git commit -m "feat: offer maxpool2d in the CNN palette with pool size and strid
 ### Task 7: Documentation and full verification
 
 **Files:**
+
 - Modify: `docs/superpowers/specs/2026-09-16-visnet-design.md`
 
 **Interfaces:**
+
 - Consumes: everything from Tasks 1-6.
 - Produces: a master design document whose engine tables match the code, and a green full verification.
 

@@ -61,6 +61,47 @@ describe('buildModel', () => {
     expect(model.outputs[0].shape).toEqual([null, 10]);
   });
 
+  it('builds a pooling chain and halves the spatial dimensions', () => {
+    const network: Network = {
+      version: 2,
+      blocks: [
+        { id: 'in', kind: 'input', shape: [28, 28, 1] },
+        { id: 'pool', kind: 'maxpool2d', poolSize: 2, stride: 2, padding: 'valid' },
+        { id: 'flat', kind: 'flatten' },
+        { id: 'dense', kind: 'linear', units: 10 },
+        { id: 'sm', kind: 'softmax' },
+        { id: 'out', kind: 'output', units: 10 }
+      ],
+      training: { loss: 'crossEntropy', optimizer: 'adam', learningRate: 0.01, batchSize: 32 },
+      positions: {}
+    };
+    const model = build(network);
+    expect(model.layers[0].getClassName()).toBe('MaxPooling2D');
+    expect(model.inputs[0].shape).toEqual([null, 28, 28, 1]);
+    expect(model.layers[0].outputShape).toEqual([null, 14, 14, 1]);
+    expect(model.outputs[0].shape).toEqual([null, 10]);
+  });
+
+  it('runs a forward pass through a pooling layer', () => {
+    const network: Network = {
+      version: 2,
+      blocks: [
+        { id: 'in', kind: 'input', shape: [28, 28, 1] },
+        { id: 'pool', kind: 'maxpool2d', poolSize: 2, stride: 2, padding: 'valid' },
+        { id: 'flat', kind: 'flatten' },
+        { id: 'dense', kind: 'linear', units: 10 },
+        { id: 'sm', kind: 'softmax' },
+        { id: 'out', kind: 'output', units: 10 }
+      ],
+      training: { loss: 'crossEntropy', optimizer: 'adam', learningRate: 0.01, batchSize: 32 },
+      positions: {}
+    };
+    const model = build(network);
+    const prediction = model.predict(tf.ones([1, 28, 28, 1])) as tf.Tensor;
+    expect(prediction.shape).toEqual([1, 10]);
+    prediction.dispose();
+  });
+
   it('refuses to build an invalid network and carries the issues', () => {
     const network: Network = {
       version: 2,

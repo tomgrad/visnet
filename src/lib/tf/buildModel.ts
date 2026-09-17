@@ -30,6 +30,13 @@ function layerFor(block: Block, inputShape: number[] | undefined): tf.layers.Lay
         activation: 'linear',
         inputShape
       });
+    case 'maxpool2d':
+      return tf.layers.maxPooling2d({
+        poolSize: block.poolSize,
+        strides: block.stride,
+        padding: block.padding,
+        inputShape
+      });
     case 'flatten':
       return tf.layers.flatten({ inputShape });
     case 'relu':

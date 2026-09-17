@@ -4,6 +4,7 @@ import type { StorageKeys } from '../../persist/storage';
 
 export const CNN_PALETTE: BlockKind[] = [
   'conv2d',
+  'maxpool2d',
   'flatten',
   'linear',
   'relu',

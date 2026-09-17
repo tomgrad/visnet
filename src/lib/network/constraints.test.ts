@@ -25,6 +25,14 @@ const FLAT_NETWORK = net([
   { id: 'out', kind: 'output', units: 2 }
 ]);
 
+const POOL_NETWORK = net([
+  { id: 'in', kind: 'input', shape: [28, 28, 1] },
+  { id: 'pool', kind: 'maxpool2d', poolSize: 2, stride: 2, padding: 'valid' },
+  { id: 'flat', kind: 'flatten' },
+  { id: 'dense', kind: 'linear', units: 10 },
+  { id: 'out', kind: 'output', units: 10 }
+]);
+
 describe('parameterBounds', () => {
   it('returns no bounds for flat input', () => {
     expect(parameterBounds([2])).toBeNull();
@@ -111,6 +119,21 @@ describe('clampBlockPatch', () => {
       'Kernel size changed from 40 to 28 because the incoming data is 28×28.'
     );
   });
+
+  it('leaves a valid pool untouched and says nothing', () => {
+    expect(clampBlockPatch(POOL_NETWORK, 'pool', { poolSize: 2, stride: 2 })).toEqual({
+      patch: { poolSize: 2, stride: 2 },
+      announcement: null
+    });
+  });
+
+  it('clamps a pool window larger than the image and names the dimensions', () => {
+    const result = clampBlockPatch(POOL_NETWORK, 'pool', { poolSize: 40 });
+    expect(result.patch).toEqual({ poolSize: 28 });
+    expect(result.announcement).toBe(
+      'Pool size changed from 40 to 28 because the incoming data is 28×28.'
+    );
+  });
 });
 
 describe('clampNetwork', () => {
@@ -148,5 +171,22 @@ describe('clampNetwork', () => {
 
     expect(result.network).toBe(flat);
     expect(result.announcements).toEqual([]);
+  });
+
+  it('re-clamps a downstream pool when the input shape shrinks', () => {
+    const shrunk = net([
+      { id: 'in', kind: 'input', shape: [4, 4, 1] },
+      { id: 'pool', kind: 'maxpool2d', poolSize: 28, stride: 1, padding: 'valid' },
+      { id: 'flat', kind: 'flatten' },
+      { id: 'dense', kind: 'linear', units: 10 },
+      { id: 'out', kind: 'output', units: 10 }
+    ]);
+
+    const result = clampNetwork(shrunk);
+
+    expect(result.network.blocks[1]).toMatchObject({ poolSize: 4, stride: 1 });
+    expect(result.announcements).toEqual([
+      'Pool size changed from 28 to 4 because the incoming data is 4×4.'
+    ]);
   });
 });

@@ -129,6 +129,32 @@ export function validate(net: Network, options: ValidateOptions = {}): Issue[] {
       });
     }
 
+    if (block.kind === 'maxpool2d' && info.inShape && info.inShape.length !== 3) {
+      issues.push({
+        severity: 'error',
+        title: 'Pooling layer needs image data',
+        message: `This Pooling layer receives ${shapeText(info.inShape)}. It expects image data shaped [height, width, channels].`,
+        fix: 'Give the Input block a 3D shape such as [28, 28, 1], or remove the Pooling layer.',
+        blockId: block.id
+      });
+    }
+
+    if (
+      block.kind === 'maxpool2d' &&
+      info.inShape &&
+      info.inShape.length === 3 &&
+      info.outShape === null
+    ) {
+      const [height, width] = info.inShape;
+      issues.push({
+        severity: 'error',
+        title: 'Pool window is larger than the image',
+        message: `A ${block.poolSize}×${block.poolSize} pool with stride ${block.stride} leaves no room to slide over a ${height}×${width} image.`,
+        fix: "Use a smaller pool or stride, or set padding to 'same'.",
+        blockId: block.id
+      });
+    }
+
     if (block.kind === 'flatten' && info.inShape && info.inShape.length === 1) {
       issues.push({
         severity: 'error',

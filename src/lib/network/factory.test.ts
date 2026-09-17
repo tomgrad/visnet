@@ -21,6 +21,12 @@ describe('createBlock', () => {
       stride: 1,
       padding: 'same'
     });
+    expect(createBlock('maxpool2d')).toMatchObject({
+      kind: 'maxpool2d',
+      poolSize: 2,
+      stride: 2,
+      padding: 'valid'
+    });
     expect(createBlock('output')).toMatchObject({ kind: 'output', units: 2 });
   });
 });
