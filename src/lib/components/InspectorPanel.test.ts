@@ -166,4 +166,31 @@ describe('InspectorPanel', () => {
     expect(labels.some((label) => label.includes('14×14'))).toBe(true);
     expect(labels.some((label) => label.includes('13×13'))).toBe(true);
   });
+
+  it('edits the output block shape', async () => {
+    const store = new NetworkStore();
+    const id = store.network.blocks.at(-1)!.id;
+    store.select(id);
+    render(InspectorPanel, { props: { store } });
+    await fireEvent.change(screen.getByTestId('param-shape'), { target: { value: '3' } });
+    expect(store.network.blocks.at(-1)).toMatchObject({ kind: 'output', shape: [3] });
+  });
+
+  it('edits the reshape shape and shows the incoming count', async () => {
+    const store = new NetworkStore();
+    store.updateBlock(store.network.blocks[0].id, { shape: [4, 4, 1] });
+    store.addBlock('reshape', 1);
+    store.select(store.network.blocks[1].id);
+    render(InspectorPanel, { props: { store } });
+    await fireEvent.change(screen.getByTestId('param-shape'), { target: { value: '16' } });
+    expect(store.network.blocks[1]).toMatchObject({ kind: 'reshape', shape: [16] });
+    expect(screen.getByTestId('inspector').textContent).toContain('16');
+  });
+
+  it('shows no units field for the output block', () => {
+    const store = new NetworkStore();
+    store.select(store.network.blocks.at(-1)!.id);
+    render(InspectorPanel, { props: { store } });
+    expect(screen.queryByTestId('param-units')).toBeNull();
+  });
 });

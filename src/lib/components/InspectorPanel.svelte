@@ -3,7 +3,7 @@
   import { spatialOutputSize } from '../network/inferShapes';
   import { shapeLabel } from '../editor/flow';
   import type { NetworkStore } from '../editor/networkStore.svelte';
-  import type { Block, InputBlock } from '../network/types';
+  import type { Block } from '../network/types';
 
   let { store }: { store: NetworkStore } = $props();
 
@@ -56,7 +56,7 @@
   }
 
   function commitShape(event: Event): void {
-    if (!block || block.kind !== 'input') return;
+    if (!block || !('shape' in block)) return;
     const input = event.currentTarget as HTMLInputElement;
     const parts = input.value.split(',').map((part) => part.trim());
     const parsed = parts.map((part) => Number(part));
@@ -71,7 +71,7 @@
       return;
     }
     paramError = null;
-    patch({ shape: parsed } as Partial<InputBlock>);
+    patch({ shape: parsed } as Partial<Block>);
   }
 
   function commitNumber(event: Event, key: 'units' | 'filters' | 'size'): void {
@@ -153,6 +153,20 @@
   </label>
 {/snippet}
 
+{#snippet shapeField(value: number[], label: string, description: string)}
+  <label>
+    <span>{label}</span>
+    <input
+      type="text"
+      data-testid="param-shape"
+      title={description}
+      value={value.join(', ')}
+      onchange={commitShape}
+    />
+    <small>{description}</small>
+  </label>
+{/snippet}
+
 {#if !block}
   <div class="inspector" data-testid="inspector-empty">
     <p>Select a block to see and change its settings.</p>
@@ -169,17 +183,14 @@
     {/if}
 
     {#if block.kind === 'input'}
-      <label>
-        <span>Shape</span>
-        <input
-          type="text"
-          data-testid="param-shape"
-          title={PARAM_DESCRIPTIONS.inputShape}
-          value={block.shape.join(', ')}
-          onchange={commitShape}
-        />
-        <small>{PARAM_DESCRIPTIONS.inputShape}</small>
-      </label>
+      {@render shapeField(block.shape, 'Shape', PARAM_DESCRIPTIONS.inputShape)}
+    {:else if block.kind === 'output'}
+      {@render shapeField(block.shape, 'Output shape', PARAM_DESCRIPTIONS.outputShape)}
+    {:else if block.kind === 'reshape'}
+      {@render shapeField(block.shape, 'New shape', PARAM_DESCRIPTIONS.reshapeShape)}
+      <p class="incoming" data-testid="reshape-count">
+        The incoming data has {inShape ? inShape.reduce((total, size) => total * size, 1) : '—'} numbers.
+      </p>
     {/if}
 
     {#if block.kind === 'linear'}
