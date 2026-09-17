@@ -50,20 +50,28 @@ decision boundary. The existing `NetworkEditor`, `Network` model, `buildModel`,
 
 ```
 LatentSpace.svelte
-  ├─ static import: network/probe.ts        (pure: block -> probe target)
+  ├─ static import: network/probe.ts        (pure: block -> target)
   ├─ dynamic import: render/latent.ts       (TF.js, browser only)
   └─ props: model, store, dataset, redrawKey
 
 render/latent.ts
-  ├─ createProbe(model)          -> multi-output LayersModel sharing weights
-  ├─ disposeProbe(probe)
-  └─ projectLatent(probe, ...)   -> projected grid + points + classes + bounds
+  ├─ gridInputs(size)
+  └─ projectLatent(model, cells, points, source, dimA)
+        -> projected grid + points + classes + bounds
 ```
 
-The probe is a `tf.model({ inputs: model.inputs, outputs: model.layers.map(l => l.output) })`.
-Because it shares the training model's layer objects and weights, training is
-reflected without rebuilding the probe; the probe is rebuilt only when the
-architecture changes (a new `model` object) and disposed when it does.
+Activations are collected with a **manual forward pass** over the model's own
+layers: start from an input tensor and call `layer.apply` for each layer in
+order, keeping each result. This reads the live weights, so training is
+reflected automatically, and it never creates a second model.
+
+**Why not a multi-output probe model:** `tf.model({ inputs, outputs: model.layers.map(l => l.output) })`
+shares the training model's layer objects, and disposing that probe disposes
+the shared weights — which breaks the training model (verified: after
+`probe.dispose()`, `model.getWeights()` throws "already disposed"). The manual
+forward pass avoids the hazard entirely: it allocates only intermediate tensors
+that `tf.tidy` reclaims, and repeated passes neither leak tensors nor grow the
+layers' inbound-node lists (verified over 50 passes).
 
 ### SSR boundary
 
@@ -108,11 +116,6 @@ with `dims.length < 2` cannot be plotted.
 ```ts
 export const LATENT_GRID_SIZE = 32;
 
-export interface Probe {
-  model: tf.LayersModel;
-  layerCount: number;
-}
-
 export interface LatentBounds {
   minX: number;
   maxX: number;
@@ -127,11 +130,9 @@ export interface LatentSample {
   bounds: LatentBounds;
 }
 
-export function createProbe(model: tf.LayersModel): Probe;
-export function disposeProbe(probe: Probe | null): void;
 export function gridInputs(size?: number): Float32Array;
 export function projectLatent(
-  probe: Probe,
+  model: tf.LayersModel,
   cells: Float32Array,
   points: Float32Array,
   source: 'input' | number,
@@ -139,18 +140,19 @@ export function projectLatent(
 ): LatentSample;
 ```
 
-- `createProbe` builds the multi-output model. If `layer.output` is not yet
-  defined, it first runs one warm-up `predict` on a zero input of the model's
-  input shape so the layers are built.
-- `projectLatent` runs one batched `predict` of the grid and points through the
-  probe inside `tf.tidy`. The final predicted class per grid cell is the
-  `argMax` of the probe's last output. Projected coordinates are the target's
-  outputs `[dimA]` and `[dimA + 1]`, except for `source === 'input'`, where the
-  coordinates are the input coordinates themselves (the class colours still
-  come from the probe).
+- `gridInputs` returns the `[x, y]` coordinates of the centres of a
+  `size × size` grid over `[-1, 1]²`, the same domain the decision boundary
+  uses.
+- `projectLatent` concatenates the grid and point coordinates into one batch,
+  runs a manual forward pass over `model.layers` inside `tf.tidy`, and collects
+  each layer's activation. The final predicted class per grid cell is the
+  `argMax` of the last activation. Projected coordinates are the target
+  activation's `[dimA]` and `[dimA + 1]`, except for `source === 'input'`,
+  where the coordinates are the input coordinates themselves (the class colours
+  still come from the final activation).
 - `bounds` is the combined extent of the projected grid and points.
-- All intermediate tensors are disposed; the returned arrays are plain typed
-  arrays.
+- All intermediate tensors are reclaimed by `tf.tidy`; the returned arrays are
+  plain typed arrays and hold no tensors.
 
 ## 8. Component
 
@@ -166,8 +168,10 @@ interface Props {
 ```
 
 - On mount, dynamically import `render/latent`.
-- Rebuild the probe whenever `model` changes; dispose the previous probe and on
-  unmount. This is component-local, so `experiment.svelte.ts` is untouched.
+- No probe or other TF.js object is held across frames: the redraw effect calls
+  `projectLatent` with the current `model` and lets `tf.tidy` reclaim the
+  intermediates. This is component-local, so `experiment.svelte.ts` is
+  untouched and the model's lifecycle is unchanged.
 - `pair` is component state: the index of the first dimension, starting at 0.
   It resets to 0 when the selected block changes, and is clamped to
   `dims.length - 2` when the dimensions shrink.
@@ -200,7 +204,7 @@ The canvas reuses the class colours and background from
 - Nothing selected → "Select a block to see its latent space."
 - `probeTargetFor` returns null, or `dims.length < 2` → "This layer has fewer
   than two dimensions, so there is nothing to plot."
-- Probe creation throws → a plain-language message; the panel does not crash.
+- `projectLatent` throws → a plain-language message; the panel does not crash.
 
 ## 10. Performance
 
@@ -214,11 +218,12 @@ introduced.
 
 - `network/probe.test.ts` (engine project): input, each real block kind, the
   output marker, no selection, unknown id, and a `null` output shape.
-- `render/latent.test.ts` (engine project, CPU backend): `createProbe` shares
-  weights with the training model (changing a weight changes the probe output),
-  `projectLatent` returns the expected projection for a known layer, the class
-  indices match the model's argmax, bounds cover the sample, and
-  `disposeProbe` returns `tf.memory().numTensors` to its baseline.
+- `render/latent.test.ts` (engine project, CPU backend): the manual forward
+  pass's last activation matches `model.predict`; `projectLatent` returns the
+  expected projection for a known layer; the class indices match the model's
+  argmax; bounds cover the sample; the training model still predicts after
+  `projectLatent`; and repeated calls leave `tf.memory().numTensors` at its
+  baseline (no leak).
 - `components/LatentSpace.test.ts` (ui project, render module mocked as in
   `DecisionBoundary.test.ts`): the cycler advances and wraps, the label is
   correct, the fallback messages appear, and the canvas redraws when
