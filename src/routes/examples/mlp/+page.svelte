@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import DecisionBoundary from '$lib/components/DecisionBoundary.svelte';
   import ExampleLayout from '$lib/components/ExampleLayout.svelte';
+  import LatentSpace from '$lib/components/LatentSpace.svelte';
   import LossChart from '$lib/components/LossChart.svelte';
   import NetworkEditor from '$lib/components/NetworkEditor.svelte';
   import TrainingPanel from '$lib/components/TrainingPanel.svelte';
@@ -138,6 +139,13 @@
         : store.isValid
           ? 'Each coloured area is the class the network predicts at that spot. Click to add a point.'
           : 'Fix the problems listed in the editor before the boundary can be drawn.'}
+    />
+
+    <LatentSpace
+      model={session.model}
+      {store}
+      dataset={datasetStore.dataset}
+      redrawKey={session.redrawKey}
     />
 
     <TrainingPanel

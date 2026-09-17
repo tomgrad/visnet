@@ -47,6 +47,8 @@ Specifics:
   with a table of the whole network and its parameter counts.
 - Train on generated 2D points or points you click onto the canvas, and watch the
   decision boundary change as the loss falls.
+- See the latent space of the block selected on the canvas: the input grid warped
+  through that layer, with a button to cycle which pair of dimensions is shown.
 - Undo and redo every edit.
 - Your network and dataset are restored when you reload, and you can load your saved weights
   on demand.

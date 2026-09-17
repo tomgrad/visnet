@@ -46,7 +46,8 @@ the rest in Node. See `npm test`.
   plain Node and is the single source of truth for network validity and shapes.
 - `@tensorflow/tfjs` may only be imported at runtime by `src/lib/tf/**`,
   `src/lib/training/**`, `src/lib/data/tensors.ts`, `src/lib/render/boundary.ts`,
-  `src/lib/persist/weights.ts`, and the test files colocated with those modules.
+  `src/lib/render/latent.ts`, `src/lib/persist/weights.ts`, and the test files
+  colocated with those modules.
   Other modules may import its types with `import type`; no other production
   module may reach it at runtime.
 - TensorFlow.js and `@xyflow/svelte` must only be reached from the browser. Import
