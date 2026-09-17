@@ -36,6 +36,7 @@
 - Modify: `src/lib/network/serialize.ts`
 - Test: `src/lib/network/types.test.ts`
 - Test: `src/lib/network/factory.test.ts`
+- Test: `src/lib/network/descriptions.test.ts`
 - Test: `src/lib/network/serialize.test.ts`
 
 **Interfaces:**
@@ -107,11 +108,20 @@ const MAXPOOL = { id: 'p', kind: 'maxpool2d', poolSize: 2, stride: 2, padding: '
   });
 ```
 
+In `src/lib/network/descriptions.test.ts`, the `covers every tunable parameter` test asserts the
+exhaustive `PARAM_DESCRIPTIONS` key list, so `'poolSize'` joins it in alphabetical position:
+
+```ts
+        'padding',
+        'poolSize',
+        'stride',
+```
+
 - [ ] **Step 2: Run the tests to verify they fail**
 
-Run: `npx vitest run --project engine src/lib/network/types.test.ts src/lib/network/factory.test.ts src/lib/network/serialize.test.ts`
+Run: `npx vitest run --project engine src/lib/network/types.test.ts src/lib/network/factory.test.ts src/lib/network/descriptions.test.ts src/lib/network/serialize.test.ts`
 
-Expected: FAIL. `types.test.ts` fails the ordered array, `factory.test.ts` fails because `createBlock('maxpool2d')` returns `undefined`, and the three new `serialize.test.ts` tests fail because `isBlock` rejects the kind.
+Expected: FAIL. `types.test.ts` fails the ordered array, `factory.test.ts` fails because `createBlock('maxpool2d')` returns `undefined`, `descriptions.test.ts` fails because `BLOCK_DESCRIPTIONS.maxpool2d` is missing, and only the *round-trip* serialize test fails. The two negative serialize tests pass even before this task, because a malformed `maxpool2d` block is rejected by `isBlock`'s `default: return false` branch either way; they are regression guards for the explicit case's internals, not RED evidence.
 
 - [ ] **Step 3: Add the block kind**
 
@@ -208,7 +218,7 @@ This case is load-bearing: a saved network is rejected whole if any block fails 
 
 - [ ] **Step 7: Run the tests to verify they pass**
 
-Run: `npx vitest run --project engine src/lib/network/types.test.ts src/lib/network/factory.test.ts src/lib/network/serialize.test.ts`
+Run: `npx vitest run --project engine src/lib/network/types.test.ts src/lib/network/factory.test.ts src/lib/network/descriptions.test.ts src/lib/network/serialize.test.ts`
 
 Expected: PASS.
 
@@ -221,7 +231,7 @@ Expected: PASS.
 - [ ] **Step 8: Commit**
 
 ```bash
-git add src/lib/network/types.ts src/lib/network/factory.ts src/lib/network/descriptions.ts src/lib/network/serialize.ts src/lib/network/types.test.ts src/lib/network/factory.test.ts src/lib/network/serialize.test.ts
+git add src/lib/network/types.ts src/lib/network/factory.ts src/lib/network/descriptions.ts src/lib/network/serialize.ts src/lib/network/types.test.ts src/lib/network/factory.test.ts src/lib/network/descriptions.test.ts src/lib/network/serialize.test.ts
 git commit -m "feat: add the maxpool2d block kind, its defaults, and its persistence"
 ```
 
