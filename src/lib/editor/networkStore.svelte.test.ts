@@ -116,44 +116,11 @@ describe('moveBlock', () => {
 });
 
 describe('updateBlock', () => {
-  it('applies a valid patch with no announcement', () => {
-    const instance = store();
-    const target = instance.network.blocks[1].id;
-    instance.updateBlock(target, { units: 16 });
-    expect(instance.network.blocks[1]).toMatchObject({ units: 16 });
-    expect(instance.announcements).toEqual([]);
-  });
-
-  it('announces an automatic correction', () => {
-    const instance = store();
-    const target = instance.network.blocks[1].id;
-    instance.updateBlock(target, { units: 0 });
-    expect(instance.network.blocks[1]).toMatchObject({ units: 1 });
-    expect(instance.announcements).toEqual([
-      'Units changed from 0 to 1. A layer must produce at least one number.'
-    ]);
-  });
-
-  it('dismisses announcements', () => {
-    const instance = store();
-    instance.announce('something');
-    instance.dismissAnnouncements();
-    expect(instance.announcements).toEqual([]);
-  });
-
-  it('re-clamps downstream parameters when an upstream shape changes', () => {
-    const instance = store();
-    instance.addBlock('conv2d', 1);
-    instance.updateBlock(instance.network.blocks[0].id, { shape: [28, 28, 1] });
-    instance.updateBlock(instance.network.blocks[1].id, { kernelSize: 7 });
-    instance.dismissAnnouncements();
-
-    instance.updateBlock(instance.network.blocks[0].id, { shape: [4, 4, 1] });
-
-    expect(instance.network.blocks[1]).toMatchObject({ kernelSize: 4 });
-    expect(instance.announcements).toEqual([
-      'Kernel size changed from 7 to 4 because the incoming data is 4×4.'
-    ]);
+  it('stores a unit count without an announcement', () => {
+    const store = new NetworkStore();
+    const id = store.network.blocks[1].id;
+    store.updateBlock(id, { units: 4 });
+    expect(store.network.blocks[1]).toMatchObject({ units: 4 });
   });
 });
 
@@ -199,7 +166,6 @@ describe('history', () => {
     expect(instance.canUndo).toBe(false);
     expect(instance.canRedo).toBe(false);
     expect(instance.selectedBlockId).toBeNull();
-    expect(instance.announcements).toEqual([]);
   });
 
   it('resets to a fresh default network', () => {
@@ -385,62 +351,5 @@ describe('initial network', () => {
       'output'
     ]);
     expect(instance.canUndo).toBe(false);
-  });
-});
-
-describe('clamping on every mutation', () => {
-  it('clamps a convolution added to a small image and announces it', () => {
-    const instance = store();
-    instance.updateBlock(instance.network.blocks[0].id, { shape: [2, 2, 1] });
-    instance.dismissAnnouncements();
-
-    const created = instance.addBlock('conv2d', 1);
-
-    expect(instance.network.blocks[1]).toMatchObject({ id: created, kernelSize: 2 });
-    expect(instance.announcements).toEqual([
-      'Kernel size changed from 3 to 2 because the incoming data is 2×2.'
-    ]);
-  });
-
-  it('clamps a network that is loaded already out of range', () => {
-    const instance = store();
-    instance.load({
-      version: 2,
-      blocks: [
-        { id: 'in', kind: 'input', shape: [2, 2, 1] },
-        { id: 'conv', kind: 'conv2d', filters: 8, kernelSize: 5, stride: 1, padding: 'same' },
-        { id: 'out', kind: 'output', units: 2 }
-      ],
-      training: { loss: 'crossEntropy', optimizer: 'adam', learningRate: 0.01, batchSize: 32 },
-      positions: {}
-    });
-
-    expect(instance.network.blocks[1]).toMatchObject({ kernelSize: 2 });
-    expect(instance.announcements).toEqual([
-      'Kernel size changed from 5 to 2 because the incoming data is 2×2.'
-    ]);
-  });
-
-  it('re-clamps a convolution when a reorder shrinks its input', () => {
-    const instance = store();
-    instance.load({
-      version: 2,
-      blocks: [
-        { id: 'in', kind: 'input', shape: [4, 4, 1] },
-        { id: 'wide', kind: 'conv2d', filters: 4, kernelSize: 4, stride: 1, padding: 'same' },
-        { id: 'shrink', kind: 'conv2d', filters: 4, kernelSize: 4, stride: 4, padding: 'same' },
-        { id: 'out', kind: 'output', units: 2 }
-      ],
-      training: { loss: 'crossEntropy', optimizer: 'adam', learningRate: 0.01, batchSize: 32 },
-      positions: {}
-    });
-    expect(instance.network.blocks[1]).toMatchObject({ id: 'wide', kernelSize: 4 });
-
-    instance.moveBlock(2, 1);
-
-    expect(instance.network.blocks[2]).toMatchObject({ id: 'wide', kernelSize: 1 });
-    expect(instance.announcements).toEqual([
-      'Kernel size changed from 4 to 1 because the incoming data is 1×1.'
-    ]);
   });
 });

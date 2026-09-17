@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { parameterBounds } from '../network/constraints';
   import { BLOCK_DESCRIPTIONS, PARAM_DESCRIPTIONS } from '../network/descriptions';
   import { spatialOutputSize } from '../network/inferShapes';
   import { shapeLabel } from '../editor/flow';
@@ -15,7 +14,9 @@
   const info = $derived(index === -1 ? null : store.shapes.perBlock[index]);
   const previousKind = $derived(index > 0 ? store.network.blocks[index - 1].kind : null);
   const inShape = $derived(info?.inShape ?? null);
-  const bounds = $derived(parameterBounds(inShape));
+  const limit = $derived(
+    inShape && inShape.length === 3 ? Math.min(inShape[0], inShape[1]) : null
+  );
   const spatialSize = $derived(
     block?.kind === 'conv2d'
       ? block.kernelSize
@@ -30,10 +31,18 @@
     block?.kind === 'conv2d' || block?.kind === 'maxpool2d' ? block.padding : 'valid'
   );
   const sizeChoices = $derived(
-    spatialSize === null ? [] : bounds ? bounds.kernelSize : [spatialSize]
+    spatialSize === null
+      ? []
+      : limit === null
+        ? [spatialSize]
+        : Array.from({ length: Math.floor(limit) }, (_, index) => index + 1)
   );
   const strideChoices = $derived(
-    spatialStride === null ? [] : bounds ? bounds.stride : [spatialStride]
+    spatialStride === null
+      ? []
+      : limit === null
+        ? [spatialStride]
+        : Array.from({ length: Math.floor(limit) }, (_, index) => index + 1)
   );
   const canMove = $derived(block !== null && block.kind !== 'input' && block.kind !== 'output');
   let paramError = $state<string | null>(null);

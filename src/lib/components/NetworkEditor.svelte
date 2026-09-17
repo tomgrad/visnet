@@ -55,16 +55,6 @@
     </div>
 
     <aside class="right">
-      {#if store.announcements.length > 0}
-        <div class="announcements" data-testid="announcements" role="status" aria-live="polite">
-          <ul>
-            {#each store.announcements as announcement, index (index)}
-              <li>{announcement}</li>
-            {/each}
-          </ul>
-          <button type="button" onclick={() => store.dismissAnnouncements()}>Dismiss</button>
-        </div>
-      {/if}
       <InspectorPanel {store} />
       <ShapeTable {store} />
     </aside>
@@ -104,28 +94,4 @@
     height: 640px;
   }
 
-  .announcements {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: var(--space-3);
-    padding: var(--space-2) var(--space-3);
-    background: color-mix(in srgb, var(--color-accent) 12%, var(--color-surface));
-    border: 1px solid var(--color-accent);
-    border-radius: var(--radius-md);
-    font-size: var(--text-sm);
-  }
-
-  .announcements ul {
-    margin: 0;
-    padding-left: var(--space-4);
-  }
-
-  .announcements button {
-    border: 1px solid var(--color-border);
-    background: var(--color-surface);
-    border-radius: var(--radius-sm);
-    padding: var(--space-1) var(--space-2);
-    cursor: pointer;
-  }
 </style>
