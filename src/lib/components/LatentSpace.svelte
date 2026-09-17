@@ -129,13 +129,14 @@
     const currentModel = model;
     const currentTarget = target;
     const currentPair = pair;
+    const currentDims = dims;
     if (!module || !element) return;
     const context = element.getContext('2d');
     if (!context) return;
 
     context.fillStyle = `rgb(${BACKGROUND_RGB.join(',')})`;
     context.fillRect(0, 0, SIZE, SIZE);
-    if (!currentModel || !currentTarget || currentTarget.dims.length < 2) return;
+    if (!currentModel || !currentTarget || currentDims < 2) return;
 
     try {
       const cells = module.gridInputs(GRID);
