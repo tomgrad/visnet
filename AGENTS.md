@@ -7,8 +7,10 @@ Static web app for teaching neural networks; see `README.md` for feature scope a
 Engine complete and unit-tested, and the editor UI and both examples are built on
 top of it. A user can drag blocks onto a canvas, edit them, train, and watch a live
 decision boundary on the 2D points example or a grid of test digits turn from wrong
-to right on the handwritten-digits example, whose data is prepared locally. Their
-network and dataset are restored on reload.
+to right on the handwritten-digits example, whose data is prepared locally. Both
+examples also inspect the selected block's output: a feature-maps panel on the
+CNN example and a latent-space projection on the 2D points example. Their network
+and dataset are restored on reload.
 
 Shipped modules: `src/lib/network/` (pure domain), `src/lib/tf/` (model builder),
 `src/lib/training/`, `src/lib/data/`, `src/lib/render/`, `src/lib/persist/`

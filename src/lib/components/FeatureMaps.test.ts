@@ -34,9 +34,12 @@ class FakeImageData {
   }
 }
 
+let originalGetContext: typeof HTMLCanvasElement.prototype.getContext;
+
 beforeEach(() => {
   vi.mocked(featureMaps).mockClear();
   vi.stubGlobal('ImageData', FakeImageData);
+  originalGetContext = HTMLCanvasElement.prototype.getContext;
   HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
     scale: vi.fn(),
     clearRect: vi.fn(),
@@ -49,6 +52,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  HTMLCanvasElement.prototype.getContext = originalGetContext;
   vi.unstubAllGlobals();
 });
 
@@ -84,9 +88,11 @@ describe('FeatureMaps', () => {
     show(storeSelecting(1));
     await waitFor(() => expect(featureMaps).toHaveBeenCalled());
     expect(screen.getByTestId('feature-caption').textContent).toContain('sample 1 of 3');
-    for (let i = 0; i < 3; i++) {
-      await userEvent.click(screen.getByTestId('feature-next'));
-    }
+    await userEvent.click(screen.getByTestId('feature-next'));
+    expect(screen.getByTestId('feature-caption').textContent).toContain('sample 2 of 3');
+    await userEvent.click(screen.getByTestId('feature-next'));
+    expect(screen.getByTestId('feature-caption').textContent).toContain('sample 3 of 3');
+    await userEvent.click(screen.getByTestId('feature-next'));
     expect(screen.getByTestId('feature-caption').textContent).toContain('sample 1 of 3');
   });
 

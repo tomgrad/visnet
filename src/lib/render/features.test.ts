@@ -41,6 +41,25 @@ describe('featureMaps', () => {
     expect(maps[0].height).toBe(1);
   });
 
+  it('normalises a dense vector against its global minimum and maximum', () => {
+    const maps = featureMaps(cnn(), VARIED, 28, 28, 3);
+    const values = maps.map((map) => map.values[0]);
+    expect(Math.min(...values)).toBe(0);
+    expect(Math.max(...values)).toBe(255);
+  });
+
+  it('shows a constant dense vector as mid-grey', () => {
+    const model = tf.sequential();
+    model.add(tf.layers.flatten({ inputShape: [28, 28, 1] }));
+    model.add(tf.layers.dense({ units: 4, activation: 'linear' }));
+    model.layers[1].setWeights([tf.zeros([28 * 28, 4]), tf.zeros([4])]);
+    models.push(model);
+
+    const maps = featureMaps(model, FLAT, 28, 28, 1);
+    expect(maps).toHaveLength(4);
+    expect(maps.map((map) => map.values[0])).toEqual([128, 128, 128, 128]);
+  });
+
   it('normalises a map between its own minimum and maximum', () => {
     const maps = featureMaps(cnn(), VARIED, 28, 28, 0);
     const values = Array.from(maps[0].values);

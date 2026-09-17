@@ -93,19 +93,21 @@
     const currentTarget = target;
     const data = dataset;
     const imageIndex = indices[digit];
+    if (!module || !element) return;
+    const context = element.getContext('2d');
+    if (!context) return;
+
     if (
-      !module ||
-      !element ||
       !currentModel ||
       !currentTarget ||
       !data ||
       imageIndex === undefined ||
       !supported
     ) {
+      context.clearRect(0, 0, element.width, element.height);
+      error = null;
       return;
     }
-    const context = element.getContext('2d');
-    if (!context) return;
 
     try {
       const pixels = imageAt(data, imageIndex);
@@ -148,7 +150,7 @@
   });
 </script>
 
-<figure class="features" data-testid="feature-maps" data-ready={features ? 'true' : 'false'}>
+<figure class="features" data-testid="feature-maps">
   <div class="controls">
     <button
       type="button"
