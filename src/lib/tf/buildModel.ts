@@ -67,10 +67,15 @@ export function buildModel(net: Network): tf.Sequential {
   const layers = net.blocks.filter((block) => block.kind !== 'input' && block.kind !== 'output');
 
   const model = tf.sequential();
-  layers.forEach((block, index) => {
-    model.add(layerFor(block, index === 0 ? inputShape : undefined));
-  });
+  try {
+    layers.forEach((block, index) => {
+      model.add(layerFor(block, index === 0 ? inputShape : undefined));
+    });
+    compileModel(model, net.training);
+  } catch (error) {
+    model.dispose();
+    throw error;
+  }
 
-  compileModel(model, net.training);
   return model;
 }

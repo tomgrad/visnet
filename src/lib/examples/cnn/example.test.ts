@@ -67,4 +67,16 @@ describe('defaultSampleIndices', () => {
     expect(indices[SAMPLE_GRID_SIZE - 1]).toBe(SAMPLE_GRID_SIZE - 1);
     expect(SAMPLE_GRID_SIZE % SAMPLE_GRID_COLUMNS).toBe(0);
   });
+
+  it('never asks for more images than the dataset holds', () => {
+    expect(defaultSampleIndices(5)).toEqual([0, 1, 2, 3, 4]);
+  });
+
+  it('still caps at the grid size for a large dataset', () => {
+    expect(defaultSampleIndices(1000)).toHaveLength(SAMPLE_GRID_SIZE);
+  });
+
+  it('returns nothing for an empty dataset', () => {
+    expect(defaultSampleIndices(0)).toEqual([]);
+  });
 });

@@ -105,6 +105,38 @@ describe('fromJSON', () => {
     ).toBeNull();
   });
 
+  it('rejects a fractional layer size', () => {
+    const linear = { id: 'l', kind: 'linear', units: 2.5 };
+    const output = { id: 'out', kind: 'output', units: 2.5 };
+    expect(fromJSON(JSON.stringify(envelope([INPUT, linear, output])))).toBeNull();
+  });
+
+  it('rejects a fractional input dimension', () => {
+    expect(
+      fromJSON(
+        JSON.stringify(envelope([{ id: 'in', kind: 'input', shape: [2.5] }, LINEAR, OUTPUT]))
+      )
+    ).toBeNull();
+  });
+
+  it('rejects a fractional batch size', () => {
+    expect(
+      fromJSON(JSON.stringify(envelope([INPUT, LINEAR, OUTPUT], { ...TRAINING, batchSize: 0.5 })))
+    ).toBeNull();
+  });
+
+  it('rejects an empty block id', () => {
+    expect(
+      fromJSON(JSON.stringify(envelope([{ id: '', kind: 'input', shape: [2] }, LINEAR, OUTPUT])))
+    ).toBeNull();
+  });
+
+  it('rejects duplicate block ids', () => {
+    const duplicateInput = { id: 'same', kind: 'input', shape: [2] };
+    const duplicateOutput = { id: 'same', kind: 'output', units: 2 };
+    expect(fromJSON(JSON.stringify(envelope([duplicateInput, duplicateOutput])))).toBeNull();
+  });
+
   it('still accepts the default network', () => {
     expect(fromJSON(toJSON(createEmptyNetwork()))).not.toBeNull();
   });
@@ -201,12 +233,12 @@ describe('positions', () => {
     expect(fromJSON(JSON.stringify(payload))?.positions).toEqual({ [id]: { x: 1, y: 2 } });
   });
 
-  it('rejects a current-version payload with no positions field', () => {
+  it('defaults a current-version payload with no positions field to empty', () => {
     const net = createEmptyNetwork();
     const payload = {
       version: 2,
       network: { version: 2, blocks: net.blocks, training: TRAINING }
     };
-    expect(fromJSON(JSON.stringify(payload))).toBeNull();
+    expect(fromJSON(JSON.stringify(payload))?.positions).toEqual({});
   });
 });

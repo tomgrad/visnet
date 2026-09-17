@@ -15,6 +15,7 @@
     MLP_STORAGE_KEYS,
     MLP_WEIGHTS_ID
   } from '$lib/examples/mlp/example';
+  import { weightsDiscardedNotice } from '$lib/examples/notices';
   import {
     loadRuntime,
     type Model,
@@ -38,6 +39,7 @@
   let banner = $state<string | null>(null);
   let saving = $state(false);
   let builtSignature = $state('');
+  let trained = $state(false);
 
   let currentModel: Model | null = null;
   let data: ModelData | null = null;
@@ -52,6 +54,7 @@
     redrawKey += 1;
     stats = next;
     if (next.epochMeanLoss !== null) {
+      trained = true;
       lossPoints = [...lossPoints, next.epochMeanLoss].slice(-200);
     }
   }
@@ -105,9 +108,12 @@
     releaseTrainer();
     stats = null;
     lossPoints = [];
+    const hadTrained = trained;
+    trained = false;
     api.disposeModel(currentModel);
     currentModel = null;
     model = null;
+    if (hadTrained) banner = weightsDiscardedNotice(true);
 
     if (!store.isValid) return;
     try {
@@ -191,6 +197,7 @@
     model = null;
     stats = null;
     lossPoints = [];
+    trained = false;
     builtSignature = '';
   }
 

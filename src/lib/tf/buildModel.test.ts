@@ -127,6 +127,24 @@ describe('buildModel', () => {
     }
   });
 
+  it('disposes the partially built model when a layer cannot be created', () => {
+    const network: Network = {
+      version: 2,
+      blocks: [
+        { id: 'in', kind: 'input', shape: [2] },
+        { id: 'good', kind: 'linear', units: 8 },
+        { id: 'bad', kind: 'linear', units: -1 },
+        { id: 'out', kind: 'output', units: -1 }
+      ],
+      training: { loss: 'crossEntropy', optimizer: 'adam', learningRate: 0.01, batchSize: 32 },
+      positions: {}
+    };
+
+    const before = tf.memory().numTensors;
+    expect(() => buildModel(network)).toThrow();
+    expect(tf.memory().numTensors).toBe(before);
+  });
+
   it('runs a forward pass with the shape the network describes', () => {
     const model = build(createEmptyNetwork());
     const prediction = model.predict(tf.tensor2d([[0.1, -0.2]])) as tf.Tensor;

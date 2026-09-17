@@ -16,9 +16,16 @@
     saving?: boolean;
   } = $props();
 
+  function isEditingText(target: EventTarget | null): boolean {
+    if (!(target instanceof HTMLElement)) return false;
+    if (target.isContentEditable) return true;
+    return target.tagName === 'INPUT' || target.tagName === 'TEXTAREA';
+  }
+
   function handleKeydown(event: KeyboardEvent): void {
     const modifier = event.ctrlKey || event.metaKey;
     if (!modifier || event.key.toLowerCase() !== 'z') return;
+    if (isEditingText(event.target)) return;
     event.preventDefault();
     if (event.shiftKey) store.redo();
     else store.undo();

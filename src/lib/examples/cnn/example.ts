@@ -42,6 +42,7 @@ export function createCnnNetwork(): Network {
   };
 }
 
-export function defaultSampleIndices(): number[] {
-  return Array.from({ length: SAMPLE_GRID_SIZE }, (_, index) => index);
+export function defaultSampleIndices(count: number = SAMPLE_GRID_SIZE): number[] {
+  const size = Math.max(0, Math.min(count, SAMPLE_GRID_SIZE));
+  return Array.from({ length: size }, (_, index) => index);
 }

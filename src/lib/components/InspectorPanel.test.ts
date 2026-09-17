@@ -36,6 +36,26 @@ describe('InspectorPanel', () => {
     expect(store.network.blocks[1]).toMatchObject({ units: 8 });
   });
 
+  it('restores the units field and explains a non-integer entry', async () => {
+    const store = storeWithSelection(1);
+    render(InspectorPanel, { props: { store } });
+    const field = screen.getByTestId('param-units') as HTMLInputElement;
+    await fireEvent.change(field, { target: { value: '2.5' } });
+    expect(store.network.blocks[1]).toMatchObject({ units: 8 });
+    expect(field.value).toBe('8');
+    expect(screen.getByTestId('param-error').textContent).toContain('whole number');
+  });
+
+  it('rejects a shape entry with an invalid part instead of dropping it silently', async () => {
+    const store = storeWithSelection(0);
+    render(InspectorPanel, { props: { store } });
+    const field = screen.getByTestId('param-shape') as HTMLInputElement;
+    await fireEvent.change(field, { target: { value: '2, -1, x' } });
+    expect(store.network.blocks[0]).toMatchObject({ shape: [2] });
+    expect(field.value).toBe('2');
+    expect(screen.getByTestId('param-error').textContent).toContain('positive whole numbers');
+  });
+
   it('shows no unit control for an activation block', () => {
     render(InspectorPanel, { props: { store: storeWithSelection(2) } });
     expect(screen.queryByTestId('param-units')).toBeNull();

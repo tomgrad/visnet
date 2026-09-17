@@ -36,35 +36,49 @@
     spatialStride === null ? [] : bounds ? bounds.stride : [spatialStride]
   );
   const canMove = $derived(block !== null && block.kind !== 'input' && block.kind !== 'output');
-  let shapeError = $state<string | null>(null);
+  let paramError = $state<string | null>(null);
 
   function patch(next: Partial<Block>): void {
     if (!block) return;
     store.updateBlock(block.id, next);
   }
 
+  function currentNumber(key: 'units' | 'filters'): number | null {
+    if (!block) return null;
+    if (key === 'units' && (block.kind === 'linear' || block.kind === 'output')) return block.units;
+    if (key === 'filters' && block.kind === 'conv2d') return block.filters;
+    return null;
+  }
+
   function commitShape(event: Event): void {
     if (!block || block.kind !== 'input') return;
-    const raw = (event.currentTarget as HTMLInputElement).value;
-    const parsed = raw
-      .split(',')
-      .map((part) => Number(part.trim()))
-      .filter((value) => Number.isFinite(value) && value > 0)
-      .map((value) => Math.floor(value));
+    const input = event.currentTarget as HTMLInputElement;
+    const parts = input.value.split(',').map((part) => part.trim());
+    const parsed = parts.map((part) => Number(part));
+    const valid =
+      parts.length > 0 &&
+      parts.every((part) => part !== '') &&
+      parsed.every((value) => Number.isInteger(value) && value > 0);
 
-    if (parsed.length === 0) {
-      shapeError = 'Enter at least one positive number, separated by commas.';
+    if (!valid) {
+      input.value = block.shape.join(', ');
+      paramError = 'Enter positive whole numbers, separated by commas.';
       return;
     }
-    shapeError = null;
+    paramError = null;
     patch({ shape: parsed } as Partial<InputBlock>);
   }
 
   function commitNumber(event: Event, key: 'units' | 'filters'): void {
-    const raw = (event.currentTarget as HTMLInputElement).value;
-    if (raw.trim() === '') return;
-    const value = Number(raw);
-    if (!Number.isFinite(value)) return;
+    const input = event.currentTarget as HTMLInputElement;
+    const value = Number(input.value);
+    if (input.value.trim() === '' || !Number.isInteger(value) || value <= 0) {
+      const current = currentNumber(key);
+      if (current !== null) input.value = String(current);
+      paramError = 'Enter a positive whole number.';
+      return;
+    }
+    paramError = null;
     patch({ [key]: value } as Partial<Block>);
   }
 
@@ -161,7 +175,6 @@
         />
         <small>{PARAM_DESCRIPTIONS.inputShape}</small>
       </label>
-      {#if shapeError}<p class="error">{shapeError}</p>{/if}
     {/if}
 
     {#if block.kind === 'linear' || block.kind === 'output'}
@@ -210,6 +223,10 @@
         block.poolSize,
         PARAM_DESCRIPTIONS.poolSize
       )}
+    {/if}
+
+    {#if paramError}
+      <p class="error" data-testid="param-error">{paramError}</p>
     {/if}
 
     <dl class="facts">

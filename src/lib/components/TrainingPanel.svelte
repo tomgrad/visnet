@@ -20,9 +20,27 @@
     onreset: () => void;
   } = $props();
 
+  let error = $state<string | null>(null);
+
   function setNumber(event: Event, key: 'learningRate' | 'batchSize'): void {
-    const value = Number((event.currentTarget as HTMLInputElement).value);
-    if (!Number.isFinite(value) || value <= 0) return;
+    const input = event.currentTarget as HTMLInputElement;
+    const value = Number(input.value);
+    const valid =
+      input.value.trim() !== '' &&
+      Number.isFinite(value) &&
+      value > 0 &&
+      (key !== 'batchSize' || Number.isInteger(value));
+
+    if (!valid) {
+      input.value = String(store.network.training[key]);
+      error =
+        key === 'batchSize'
+          ? 'Batch size must be a positive whole number.'
+          : 'Learning rate must be a positive number.';
+      return;
+    }
+
+    error = null;
     store.updateTraining({ [key]: value });
   }
 </script>
@@ -91,6 +109,10 @@
     <small>{PARAM_DESCRIPTIONS.batchSize}</small>
   </label>
 
+  {#if error}
+    <p class="error" data-testid="training-error">{error}</p>
+  {/if}
+
   <div class="controls">
     <button
       type="button"
@@ -153,6 +175,12 @@
 
   small {
     color: var(--color-text-muted);
+    font-size: var(--text-xs);
+  }
+
+  .error {
+    margin: 0;
+    color: var(--color-error);
     font-size: var(--text-xs);
   }
 

@@ -16,6 +16,7 @@
     createCnnNetwork,
     defaultSampleIndices
   } from '$lib/examples/cnn/example';
+  import { weightsDiscardedNotice } from '$lib/examples/notices';
   import {
     loadRuntime,
     type Model,
@@ -30,11 +31,10 @@
   store.expectedClasses = 10;
   store.expectedInputShape = [28, 28, 1];
 
-  const sampleIndices = defaultSampleIndices();
-
   let runtime = $state.raw<Runtime | null>(null);
   let model = $state.raw<Model | null>(null);
   let testData = $state.raw<ImageDataset | null>(null);
+  const sampleIndices = $derived(testData ? defaultSampleIndices(testData.count) : []);
   let sampleData = $state.raw<ModelData | null>(null);
   let playing = $state(false);
   let stats = $state<TrainStats | null>(null);
@@ -42,6 +42,7 @@
   let banner = $state<string | null>(null);
   let saving = $state(false);
   let builtSignature = $state('');
+  let trained = $state(false);
   let trainData = $state.raw<ImageDataset | null>(null);
   let loadState = $state<'loading' | 'ready' | 'unavailable'>('loading');
   let redrawKey = $state(0);
@@ -61,6 +62,7 @@
     stats = next;
     redrawKey += 1;
     if (next.epochMeanLoss !== null) {
+      trained = true;
       lossPoints = [...lossPoints, next.epochMeanLoss].slice(-200);
     }
   }
@@ -124,9 +126,12 @@
     releaseTrainer();
     stats = null;
     lossPoints = [];
+    const hadTrained = trained;
+    trained = false;
     api.disposeModel(currentModel);
     currentModel = null;
     model = null;
+    if (hadTrained) banner = weightsDiscardedNotice(true);
 
     if (!store.isValid) return;
     try {
@@ -218,6 +223,7 @@
     model = null;
     stats = null;
     lossPoints = [];
+    trained = false;
     builtSignature = '';
   }
 

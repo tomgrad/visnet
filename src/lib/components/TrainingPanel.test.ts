@@ -51,6 +51,33 @@ describe('TrainingPanel', () => {
     expect(store.network.training.batchSize).toBe(32);
   });
 
+  it('restores the field and explains a rejected batch size', async () => {
+    const { store } = panel();
+    const field = screen.getByTestId('training-batch-size') as HTMLInputElement;
+    await fireEvent.change(field, { target: { value: '2.5' } });
+    expect(store.network.training.batchSize).toBe(32);
+    expect(field.value).toBe('32');
+    expect(screen.getByTestId('training-error').textContent).toContain('whole number');
+  });
+
+  it('restores the field and explains a rejected learning rate', async () => {
+    const { store } = panel();
+    const field = screen.getByTestId('training-learning-rate') as HTMLInputElement;
+    await fireEvent.change(field, { target: { value: '-1' } });
+    expect(store.network.training.learningRate).toBe(0.01);
+    expect(field.value).toBe('0.01');
+    expect(screen.getByTestId('training-error').textContent).toContain('positive');
+  });
+
+  it('clears the error once a valid value is entered', async () => {
+    const { store } = panel();
+    const field = screen.getByTestId('training-batch-size') as HTMLInputElement;
+    await fireEvent.change(field, { target: { value: '2.5' } });
+    await fireEvent.change(field, { target: { value: '64' } });
+    expect(store.network.training.batchSize).toBe(64);
+    expect(screen.queryByTestId('training-error')).toBeNull();
+  });
+
   it('describes every setting in plain language', () => {
     panel();
     const text = screen.getByTestId('training-panel').textContent ?? '';

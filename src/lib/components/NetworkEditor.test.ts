@@ -32,6 +32,16 @@ describe('NetworkEditor', () => {
     expect(store.network.blocks.length).toBe(before);
   });
 
+  it('announces corrections in a live region', async () => {
+    const store = editor();
+    store.select(store.network.blocks[1].id);
+    store.updateBlock(store.network.blocks[1].id, { units: 0 });
+    await Promise.resolve();
+    const region = screen.getByTestId('announcements');
+    expect(region.getAttribute('role')).toBe('status');
+    expect(region.getAttribute('aria-live')).toBe('polite');
+  });
+
   it('undoes and redoes through the toolbar', async () => {
     const store = editor();
     const before = store.network.blocks.length;

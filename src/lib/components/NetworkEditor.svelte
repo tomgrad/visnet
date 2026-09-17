@@ -38,17 +38,6 @@
 <section class="editor" data-testid="network-editor">
   <EditorToolbar {store} {onsave} {onload} {saving} />
 
-  {#if store.announcements.length > 0}
-    <div class="announcements" data-testid="announcements">
-      <ul>
-        {#each store.announcements as announcement, index (index)}
-          <li>{announcement}</li>
-        {/each}
-      </ul>
-      <button type="button" onclick={() => store.dismissAnnouncements()}>Dismiss</button>
-    </div>
-  {/if}
-
   <div class="body">
     <aside class="left">
       <BlockPalette
@@ -66,6 +55,16 @@
     </div>
 
     <aside class="right">
+      {#if store.announcements.length > 0}
+        <div class="announcements" data-testid="announcements" role="status" aria-live="polite">
+          <ul>
+            {#each store.announcements as announcement, index (index)}
+              <li>{announcement}</li>
+            {/each}
+          </ul>
+          <button type="button" onclick={() => store.dismissAnnouncements()}>Dismiss</button>
+        </div>
+      {/if}
       <InspectorPanel {store} />
       <ShapeTable {store} />
     </aside>

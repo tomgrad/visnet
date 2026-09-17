@@ -210,6 +210,26 @@ describe('Trainer play loop', () => {
     expect(yields).toBe(1);
   });
 
+  it('reports a manual step failure through onError instead of rejecting', async () => {
+    const model = buildModel(createEmptyNetwork());
+    models.push(model);
+    vi.spyOn(model, 'trainOnBatch').mockRejectedValue(new Error('boom'));
+
+    const errors: unknown[] = [];
+    const trainer = new Trainer(
+      model,
+      makeData(),
+      4,
+      () => {},
+      async () => {},
+      (error) => errors.push(error)
+    );
+
+    await expect(trainer.step()).resolves.toBeUndefined();
+    expect(errors).toHaveLength(1);
+    expect((errors[0] as Error).message).toBe('boom');
+  });
+
   it('ignores a training result that arrives after dispose', async () => {
     const model = buildModel(createEmptyNetwork());
     models.push(model);

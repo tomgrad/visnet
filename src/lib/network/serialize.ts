@@ -10,33 +10,37 @@ function isFinitePositive(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value) && value > 0;
 }
 
+function isPositiveInteger(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value > 0;
+}
+
 function isInputShape(value: unknown): value is number[] {
-  return Array.isArray(value) && value.length > 0 && value.every(isFinitePositive);
+  return Array.isArray(value) && value.length > 0 && value.every(isPositiveInteger);
 }
 
 function isBlock(value: unknown): value is Block {
   if (!isRecord(value)) return false;
-  if (typeof value.id !== 'string') return false;
+  if (typeof value.id !== 'string' || value.id.length === 0) return false;
   switch (value.kind) {
     case 'input':
       return isInputShape(value.shape);
     case 'linear':
-      return isFinitePositive(value.units);
+      return isPositiveInteger(value.units);
     case 'conv2d':
       return (
-        isFinitePositive(value.filters) &&
-        isFinitePositive(value.kernelSize) &&
-        isFinitePositive(value.stride) &&
+        isPositiveInteger(value.filters) &&
+        isPositiveInteger(value.kernelSize) &&
+        isPositiveInteger(value.stride) &&
         (value.padding === 'same' || value.padding === 'valid')
       );
     case 'maxpool2d':
       return (
-        isFinitePositive(value.poolSize) &&
-        isFinitePositive(value.stride) &&
+        isPositiveInteger(value.poolSize) &&
+        isPositiveInteger(value.stride) &&
         (value.padding === 'same' || value.padding === 'valid')
       );
     case 'output':
-      return isFinitePositive(value.units);
+      return isPositiveInteger(value.units);
     case 'flatten':
     case 'relu':
     case 'sigmoid':
@@ -53,7 +57,7 @@ function isTrainingConfig(value: unknown): value is TrainingConfig {
     (value.loss === 'mse' || value.loss === 'crossEntropy') &&
     (value.optimizer === 'sgd' || value.optimizer === 'adam') &&
     isFinitePositive(value.learningRate) &&
-    isFinitePositive(value.batchSize)
+    isPositiveInteger(value.batchSize)
   );
 }
 
@@ -68,6 +72,7 @@ function isNodePosition(value: unknown): value is NodePosition {
 }
 
 function readPositions(value: unknown, blocks: Block[]): Record<string, NodePosition> | null {
+  if (value === undefined) return {};
   if (!isRecord(value)) return null;
   const known = new Set(blocks.map((block) => block.id));
   const positions: Record<string, NodePosition> = {};
@@ -91,6 +96,7 @@ function normalize(value: unknown): Network | null {
   if (blocks[blocks.length - 1].kind !== 'output') return null;
   if (blocks.filter((block) => block.kind === 'input').length !== 1) return null;
   if (blocks.filter((block) => block.kind === 'output').length !== 1) return null;
+  if (new Set(blocks.map((block) => block.id)).size !== blocks.length) return null;
 
   const positions = readPositions(value.positions, blocks);
   if (positions === null) return null;

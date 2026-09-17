@@ -55,48 +55,53 @@ export class Trainer {
   async step(): Promise<void> {
     if (this.disposed) return;
 
-    const [batchXs, batchYs] = tf.tidy(() => {
-      const indices = tf.tensor1d(this.sampleIndices(), 'int32');
-      return [tf.gather(this.data.xs, indices), tf.gather(this.data.ys, indices)];
-    });
-
-    let batchLoss: number;
     try {
-      const result = await this.model.trainOnBatch(batchXs, batchYs);
-      if (this.disposed) return;
-      batchLoss = Array.isArray(result) ? result[0] : result;
-    } finally {
-      batchXs.dispose();
-      batchYs.dispose();
-    }
+      const [batchXs, batchYs] = tf.tidy(() => {
+        const indices = tf.tensor1d(this.sampleIndices(), 'int32');
+        return [tf.gather(this.data.xs, indices), tf.gather(this.data.ys, indices)];
+      });
 
-    this.batchLosses.push(batchLoss);
-    this.batch += 1;
+      let batchLoss: number;
+      try {
+        const result = await this.model.trainOnBatch(batchXs, batchYs);
+        if (this.disposed) return;
+        batchLoss = Array.isArray(result) ? result[0] : result;
+      } finally {
+        batchXs.dispose();
+        batchYs.dispose();
+      }
 
-    if (this.batch >= this.batchesPerEpochCount) {
-      const mean =
-        this.batchLosses.reduce((total, value) => total + value, 0) / this.batchLosses.length;
-      const accuracy = this.accuracy();
-      this.epoch += 1;
-      this.batch = 0;
-      this.batchLosses = [];
+      this.batchLosses.push(batchLoss);
+      this.batch += 1;
+
+      if (this.batch >= this.batchesPerEpochCount) {
+        const mean =
+          this.batchLosses.reduce((total, value) => total + value, 0) / this.batchLosses.length;
+        const accuracy = this.accuracy();
+        this.epoch += 1;
+        this.batch = 0;
+        this.batchLosses = [];
+        this.onStats({
+          epoch: this.epoch,
+          batch: 0,
+          batchLoss,
+          epochMeanLoss: mean,
+          epochAccuracy: accuracy
+        });
+        return;
+      }
+
       this.onStats({
         epoch: this.epoch,
-        batch: 0,
+        batch: this.batch,
         batchLoss,
-        epochMeanLoss: mean,
-        epochAccuracy: accuracy
+        epochMeanLoss: null,
+        epochAccuracy: null
       });
-      return;
+    } catch (error) {
+      this.playing = false;
+      this.onError(error);
     }
-
-    this.onStats({
-      epoch: this.epoch,
-      batch: this.batch,
-      batchLoss,
-      epochMeanLoss: null,
-      epochAccuracy: null
-    });
   }
 
   dispose(): void {
