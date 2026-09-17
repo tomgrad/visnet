@@ -12,11 +12,27 @@ function panel(overrides: Partial<Record<string, unknown>> = {}) {
     onstep: vi.fn(),
     onreset: vi.fn()
   };
-  render(TrainingPanel, {
+  const view = render(TrainingPanel, {
     props: { store, playing: false, disabled: false, ...handlers, ...overrides }
   });
-  return { store, ...handlers };
+  return { store, view, ...handlers };
 }
+
+const MID_EPOCH = {
+  epoch: 3,
+  batch: 2,
+  batchLoss: 0.42,
+  epochMeanLoss: null,
+  epochAccuracy: null
+};
+
+const EPOCH_END = {
+  epoch: 4,
+  batch: 0,
+  batchLoss: 0.2,
+  epochMeanLoss: 0.25,
+  epochAccuracy: 0.875
+};
 
 describe('TrainingPanel', () => {
   it('writes a loss change through to the network', async () => {
@@ -126,9 +142,52 @@ describe('TrainingPanel', () => {
     panel({
       stats: { epoch: 3, batch: 0, batchLoss: 0.12, epochMeanLoss: 0.2, epochAccuracy: 0.9 }
     });
-    const text = screen.getByTestId('training-panel').textContent ?? '';
-    expect(text).toContain('3');
-    expect(text).toContain('0.20');
-    expect(text).toContain('90');
+    expect(screen.getByTestId('stats-epoch').textContent).toContain('3');
+    expect(screen.getByTestId('stats-loss').textContent).toContain('0.200');
+    expect(screen.getByTestId('stats-accuracy').textContent).toContain('90');
+  });
+
+  it('prompts the user before training starts', () => {
+    panel({ stats: null });
+    expect(screen.getByTestId('stats-empty')).toBeTruthy();
+  });
+
+  it('labels the mid-epoch loss as the last batch and leaves accuracy blank', () => {
+    panel({ stats: MID_EPOCH });
+    expect(screen.getByTestId('stats-epoch').textContent).toContain('3');
+    expect(screen.getByTestId('stats-loss').textContent).toContain('0.420');
+    expect(screen.getByTestId('stats-loss-label').textContent).toBe('Last batch');
+    expect(screen.getByTestId('stats-accuracy').textContent).toContain('—');
+  });
+
+  it('labels the completed-epoch loss as the epoch average', () => {
+    panel({ stats: EPOCH_END });
+    expect(screen.getByTestId('stats-loss').textContent).toContain('0.250');
+    expect(screen.getByTestId('stats-loss-label').textContent).toBe('Epoch average');
+    expect(screen.getByTestId('stats-accuracy').textContent).toContain('87.5');
+  });
+
+  it('keeps the last accuracy visible between epochs instead of blanking it', async () => {
+    const { view } = panel({ stats: MID_EPOCH });
+    const shown = () => screen.getByTestId('stats-accuracy').textContent?.trim();
+
+    expect(shown()).toBe('—');
+
+    await view.rerender({ stats: EPOCH_END });
+    expect(shown()).toBe('87.5%');
+
+    await view.rerender({ stats: MID_EPOCH });
+    expect(shown()).toBe('87.5%');
+  });
+
+  it('forgets the accuracy when training resets', async () => {
+    const { view } = panel({ stats: EPOCH_END });
+    expect(screen.getByTestId('stats-accuracy').textContent?.trim()).toBe('87.5%');
+
+    await view.rerender({ stats: null });
+    expect(screen.getByTestId('stats-empty')).toBeTruthy();
+
+    await view.rerender({ stats: MID_EPOCH });
+    expect(screen.getByTestId('stats-accuracy').textContent?.trim()).toBe('—');
   });
 });
