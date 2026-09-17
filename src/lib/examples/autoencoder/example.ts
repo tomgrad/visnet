@@ -1,5 +1,6 @@
 import { createBlock } from '../../network/factory';
 import type {
+  Block,
   BlockKind,
   Conv2dBlock,
   InputBlock,
@@ -128,14 +129,45 @@ export const PRESETS: AutoencoderPreset[] = [
   { id: 'conv', label: 'Convolutional', create: createConvNetwork }
 ];
 
-const PRESET_KINDS = new Map<AutoencoderPresetId, BlockKind[]>(
-  PRESETS.map((preset) => [preset.id, preset.create().blocks.map((block) => block.kind)])
+function blockSignature(block: Block): unknown {
+  switch (block.kind) {
+    case 'linear':
+      return [block.kind, block.units];
+    case 'conv2d':
+      return [block.kind, block.filters, block.kernelSize, block.stride, block.padding];
+    case 'maxpool2d':
+      return [block.kind, block.poolSize, block.stride, block.padding];
+    case 'upsampling2d':
+      return [block.kind, block.size];
+    case 'input':
+    case 'reshape':
+    case 'output':
+      return [block.kind, ...block.shape];
+    default:
+      return [block.kind];
+  }
+}
+
+function networkSignature(network: Network): string {
+  return JSON.stringify({
+    blocks: network.blocks.map(blockSignature),
+    training: {
+      loss: network.training.loss,
+      optimizer: network.training.optimizer,
+      learningRate: network.training.learningRate,
+      batchSize: network.training.batchSize
+    }
+  });
+}
+
+const PRESET_SIGNATURES = new Map<AutoencoderPresetId, string>(
+  PRESETS.map((preset) => [preset.id, networkSignature(preset.create())])
 );
 
 export function presetFor(network: Network): AutoencoderPresetId | null {
-  const kinds = network.blocks.map((block) => block.kind);
-  for (const [id, presetKinds] of PRESET_KINDS) {
-    if (presetKinds.length === kinds.length && presetKinds.every((kind, i) => kind === kinds[i])) {
+  const signature = networkSignature(network);
+  for (const [id, presetSignature] of PRESET_SIGNATURES) {
+    if (presetSignature === signature) {
       return id;
     }
   }

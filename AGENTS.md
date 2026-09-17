@@ -4,19 +4,20 @@ Static web app for teaching neural networks; see `README.md` for feature scope a
 
 ## Status
 
-Engine complete and unit-tested, and the editor UI and both examples are built on
-top of it. A user can drag blocks onto a canvas, edit them, train, and watch a live
-decision boundary on the 2D points example or a grid of test digits turn from wrong
-to right on the handwritten-digits example, whose data is prepared locally. Both
-examples also inspect the selected block's output: a feature-maps panel on the
-CNN example and a latent-space projection on the 2D points example. Their network
-and dataset are restored on reload.
+Engine complete and unit-tested, and the editor UI and all three examples are built
+on top of it. A user can drag blocks onto a canvas, edit them, train, and watch a
+live decision boundary on the 2D points example, a grid of test digits turn from
+wrong to right on the handwritten-digits example, or reconstructions sharpen on the
+autoencoder example; the digit data is prepared locally. The examples also inspect
+the selected block's output: a latent-space projection on the 2D points example, a
+feature-maps panel on the CNN example, and a code scatter or feature-maps panel on
+the autoencoder example. Their network and dataset are restored on reload.
 
 Shipped modules: `src/lib/network/` (pure domain), `src/lib/tf/` (model builder),
 `src/lib/training/`, `src/lib/data/`, `src/lib/render/`, `src/lib/persist/`
 (network codec and weights), `src/lib/editor/`, `src/lib/components/` (editor UI),
-`src/lib/examples/` (the shared experiment controller and the MLP and CNN
-examples), and design tokens in `src/lib/styles/tokens.css`.
+`src/lib/examples/` (the shared experiment controller and the MLP, CNN, and
+autoencoder examples), and design tokens in `src/lib/styles/tokens.css`.
 
 The `ui` Vitest project runs component tests in jsdom; the `engine` project runs
 the rest in Node. See `npm test`.

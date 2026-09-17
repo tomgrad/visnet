@@ -29,4 +29,18 @@ describe('presetFor', () => {
     const network = PRESETS[0].create();
     expect(presetFor({ ...network, blocks: network.blocks.slice(0, -1) })).toBeNull();
   });
+
+  it('returns null once a block field is edited', () => {
+    const network = PRESETS[0].create();
+    const blocks = network.blocks.map((block) =>
+      block.kind === 'linear' ? { ...block, units: block.units + 1 } : block
+    );
+    expect(presetFor({ ...network, blocks })).toBeNull();
+  });
+
+  it('returns null once the training config is edited', () => {
+    const network = PRESETS[1].create();
+    const training = { ...network.training, learningRate: network.training.learningRate + 0.001 };
+    expect(presetFor({ ...network, training })).toBeNull();
+  });
 });

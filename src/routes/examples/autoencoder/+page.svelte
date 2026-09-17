@@ -110,15 +110,13 @@
         <span>Network</span>
         <select
           data-testid="autoencoder-preset"
-          value={selectedPreset ?? ''}
+          value={selectedPreset ?? 'custom'}
           onchange={choosePreset}
         >
           {#each PRESETS as preset (preset.id)}
             <option value={preset.id}>{preset.label}</option>
           {/each}
-          {#if selectedPreset === null}
-            <option value="" disabled>Custom</option>
-          {/if}
+          <option value="custom">Custom</option>
         </select>
       </label>
 
