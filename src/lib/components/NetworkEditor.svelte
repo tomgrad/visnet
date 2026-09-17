@@ -94,11 +94,11 @@
   .body {
     display: grid;
     gap: var(--space-3);
-    grid-template-columns: minmax(180px, 220px) minmax(320px, 1fr) minmax(240px, 300px);
+    grid-template-columns: minmax(180px, 220px) minmax(320px, 1fr) minmax(260px, 300px);
     align-items: start;
   }
 
-  @container editor (max-width: 780px) {
+  @container editor (max-width: 790px) {
     .body {
       grid-template-columns: 1fr;
     }

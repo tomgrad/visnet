@@ -58,7 +58,7 @@
   th,
   td {
     text-align: left;
-    padding: var(--space-1) var(--space-3);
+    padding: var(--space-1);
     border-top: 1px solid var(--color-border);
     font-family: var(--font-mono);
   }
