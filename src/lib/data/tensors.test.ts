@@ -2,7 +2,7 @@ import * as tf from '@tensorflow/tfjs';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import type { ImageDataset } from './images';
 import { generate } from './points';
-import { imagesToTensors, toTensors } from './tensors';
+import { imagesToReconstruction, imagesToTensors, toTensors } from './tensors';
 
 let created: tf.Tensor[] = [];
 
@@ -112,5 +112,32 @@ describe('imagesToTensors', () => {
     expect(Array.from(xs.dataSync()).slice(0, 4)).toEqual(
       Array.from(dataset.pixels.slice(8, 12), (value) => Math.fround(value / 255))
     );
+  });
+});
+
+describe('imagesToReconstruction', () => {
+  const dataset = {
+    count: 2,
+    rows: 2,
+    cols: 2,
+    numClasses: 10,
+    pixels: Uint8Array.of(0, 255, 128, 64, 10, 20, 30, 40),
+    labels: Uint8Array.of(3, 7)
+  };
+
+  it('builds matching input and target tensors', () => {
+    const { xs, ys } = imagesToReconstruction(dataset);
+    expect(xs.shape).toEqual([2, 2, 2, 1]);
+    expect(ys.shape).toEqual([2, 2, 2, 1]);
+    expect(Array.from(xs.dataSync())).toEqual(Array.from(ys.dataSync()));
+    xs.dispose();
+    ys.dispose();
+  });
+
+  it('normalises pixels to the zero-to-one range', () => {
+    const { xs, ys } = imagesToReconstruction(dataset);
+    expect(Array.from(xs.dataSync())[1]).toBeCloseTo(1, 5);
+    xs.dispose();
+    ys.dispose();
   });
 });

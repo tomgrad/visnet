@@ -37,3 +37,20 @@ export function imagesToTensors(
     ys: tf.tensor2d(oneHot, [selected.length, dataset.numClasses])
   };
 }
+
+export function imagesToReconstruction(
+  dataset: ImageDataset,
+  indices?: number[]
+): { xs: tf.Tensor4D; ys: tf.Tensor4D } {
+  const selected = indices ?? Array.from({ length: dataset.count }, (_, index) => index);
+  const size = dataset.rows * dataset.cols;
+  const pixels = new Float32Array(selected.length * size);
+
+  selected.forEach((imageIndex, row) => {
+    const source = imageAt(dataset, imageIndex);
+    for (let i = 0; i < size; i++) pixels[row * size + i] = source[i] / 255;
+  });
+
+  const shape: [number, number, number, number] = [selected.length, dataset.rows, dataset.cols, 1];
+  return { xs: tf.tensor4d(pixels, shape), ys: tf.tensor4d(pixels.slice(), shape) };
+}
