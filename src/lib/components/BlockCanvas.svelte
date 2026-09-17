@@ -21,12 +21,10 @@
 
   let {
     store,
-    palette,
-    ondragover
+    palette
   }: {
     store: NetworkStore;
     palette: BlockKind[];
-    ondragover: (kind: BlockKind | null) => void;
   } = $props();
 
   setContext<EditorNodeActions>(EDITOR_NODE_ACTIONS, {
@@ -124,7 +122,6 @@
     const point = dropPoint(event);
     const index = dropIndex ?? dropIndexFor(point, centres);
     dropIndex = null;
-    ondragover(null);
     if (!kind || !palette.includes(kind)) return;
 
     store.addBlock(kind, index, point);

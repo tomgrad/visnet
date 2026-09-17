@@ -11,7 +11,6 @@
   type CanvasProps = {
     store: NetworkStore;
     palette: BlockKind[];
-    ondragover: (kind: BlockKind | null) => void;
   };
 
   let {
@@ -28,7 +27,6 @@
     saving?: boolean;
   } = $props();
 
-  let dragging = $state<BlockKind | null>(null);
   let Canvas = $state<Component<CanvasProps> | null>(null);
 
   onMount(async () => {
@@ -56,20 +54,14 @@
       <BlockPalette
         {palette}
         ondragstart={(kind, event) => {
-          dragging = kind;
           event.dataTransfer?.setData('application/visnet-block', kind);
         }}
       />
-      <p class="drag-hint">
-        {dragging
-          ? `Drop ${dragging} onto the canvas to place it.`
-          : 'Drag a block onto the canvas to add it.'}
-      </p>
     </aside>
 
     <div class="middle">
       {#if Canvas}
-        <Canvas {store} {palette} ondragover={(kind) => (dragging = kind)} />
+        <Canvas {store} {palette} />
       {/if}
     </div>
 
@@ -111,12 +103,6 @@
   .middle {
     min-height: 480px;
     height: 640px;
-  }
-
-  .drag-hint {
-    margin: 0;
-    font-size: var(--text-xs);
-    color: var(--color-text-muted);
   }
 
   .announcements {

@@ -39,7 +39,7 @@ function highlighted(): CapturedEdge[] {
 
 function canvas() {
   const store = new NetworkStore();
-  render(BlockCanvas, { props: { store, palette: ['linear'], ondragover: () => {} } });
+  render(BlockCanvas, { props: { store, palette: ['linear'] } });
   return store;
 }
 
