@@ -68,6 +68,13 @@ describe('networkCodec', () => {
     ).toBeNull();
   });
 
+  it('rejects a reshape block without a numeric shape', () => {
+    const training = createEmptyNetwork().training;
+    expect(
+      decodeNetwork(JSON.stringify({ blocks: [{ id: 'r', kind: 'reshape' }], training }))
+    ).toBeNull();
+  });
+
   it('round-trips an upsampling2d block', () => {
     const net = createEmptyNetwork();
     const block = { id: 'u', kind: 'upsampling2d', size: 3 };

@@ -168,6 +168,19 @@ describe('findProblems errors', () => {
     expect(issue?.blockId).toBe('flat');
   });
 
+  it('reports a reshape whose element count does not match', () => {
+    const network = net([
+      { id: 'in', kind: 'input', shape: [4, 4, 1] },
+      { id: 'r', kind: 'reshape', shape: [10] },
+      OUTPUT
+    ]);
+    const issue = errors(network).find((i) => i.title === 'Reshape size does not match');
+    expect(issue).toBeDefined();
+    expect(issue?.blockId).toBe('r');
+    expect(issue?.message).toContain('16');
+    expect(issue?.message).toContain('10');
+  });
+
   it('reports an unrecognised block kind', () => {
     const bogus = { id: 'x', kind: 'dropout' } as unknown as Block;
     const issue = errors(net([INPUT, bogus, OUTPUT])).find((i) => i.title === 'Unrecognised block');
@@ -289,6 +302,7 @@ const ERROR_RULE_TITLES = [
   'Pool window is larger than the image',
   'Upsampling layer needs image data',
   'Nothing to flatten',
+  'Reshape size does not match',
   'Output must be a list of scores',
   'Last layer size does not match the Output block'
 ];
@@ -393,6 +407,15 @@ const RULE_CASES: RuleCase[] = [
     title: 'Nothing to flatten',
     severity: 'error',
     network: net([INPUT, { id: 'flat', kind: 'flatten' }, OUTPUT])
+  },
+  {
+    title: 'Reshape size does not match',
+    severity: 'error',
+    network: net([
+      { id: 'in', kind: 'input', shape: [4, 4, 1] },
+      { id: 'r', kind: 'reshape', shape: [10] },
+      OUTPUT
+    ])
   },
   {
     title: 'Output must be a list of scores',

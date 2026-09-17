@@ -7,6 +7,7 @@ export const CNN_PALETTE: BlockKind[] = [
   'maxpool2d',
   'upsampling2d',
   'flatten',
+  'reshape',
   'linear',
   'relu',
   'sigmoid',

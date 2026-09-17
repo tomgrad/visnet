@@ -64,6 +64,8 @@ function outputShapeFor(block: Block, inShape: number[] | null): number[] | null
     case 'flatten':
       if (!inShape || inShape.length < 1) return null;
       return [product(inShape)];
+    case 'reshape':
+      return inShape ? [...block.shape] : null;
     case 'relu':
     case 'sigmoid':
     case 'tanh':

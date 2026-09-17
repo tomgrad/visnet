@@ -29,6 +29,10 @@ function shapeText(shape: number[] | null): string {
   return shape ? `[${shape.join(', ')}]` : 'an unknown shape';
 }
 
+function product(shape: number[]): number {
+  return shape.reduce((total, size) => total * size, 1);
+}
+
 export function findProblems(net: Network, options: ProblemOptions = {}): Problem[] {
   const problems: Problem[] = [];
   const { perBlock } = inferShapes(net);
@@ -194,6 +198,21 @@ export function findProblems(net: Network, options: ProblemOptions = {}): Proble
           blockId: block.id
         })
       );
+    }
+
+    if (block.kind === 'reshape' && info.inShape) {
+      const incoming = product(info.inShape);
+      const target = product(block.shape);
+      if (incoming !== target) {
+        problems.push(
+          error({
+            title: 'Reshape size does not match',
+            message: `This Reshape layer receives ${incoming} numbers, but the shape ${shapeText(block.shape)} holds ${target}.`,
+            fix: `Change the Reshape shape so it holds ${incoming} numbers, for example [${incoming}].`,
+            blockId: block.id
+          })
+        );
+      }
     }
   });
 

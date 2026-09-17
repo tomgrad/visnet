@@ -179,6 +179,22 @@ describe('buildModel', () => {
     expect(model.outputs[0].shape).toEqual([null, 4]);
   });
 
+  it('builds a reshape layer that changes the tensor shape', () => {
+    const network: Network = {
+      version: 2,
+      blocks: [
+        { id: 'in', kind: 'input', shape: [4, 4, 1] },
+        { id: 'r', kind: 'reshape', shape: [16] },
+        { id: 'out', kind: 'output', units: 16 }
+      ],
+      training: { loss: 'mse', optimizer: 'sgd', learningRate: 0.1, batchSize: 4 },
+      positions: {}
+    };
+    const model = build(network);
+    expect(model.layers[0].getClassName()).toBe('Reshape');
+    expect(model.outputs[0].shape).toEqual([null, 16]);
+  });
+
   it('builds an upsampling layer that enlarges the spatial dimensions', () => {
     const network: Network = {
       version: 2,

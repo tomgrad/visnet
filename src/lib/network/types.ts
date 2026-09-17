@@ -5,6 +5,7 @@ export type BlockKind =
   | 'maxpool2d'
   | 'upsampling2d'
   | 'flatten'
+  | 'reshape'
   | 'relu'
   | 'sigmoid'
   | 'tanh'
@@ -18,6 +19,7 @@ export const BLOCK_KINDS: readonly BlockKind[] = [
   'maxpool2d',
   'upsampling2d',
   'flatten',
+  'reshape',
   'relu',
   'sigmoid',
   'tanh',
@@ -63,6 +65,11 @@ export interface FlattenBlock extends BlockBase {
   kind: 'flatten';
 }
 
+export interface ReshapeBlock extends BlockBase {
+  kind: 'reshape';
+  shape: number[];
+}
+
 export interface ActivationBlock extends BlockBase {
   kind: 'relu' | 'sigmoid' | 'tanh' | 'softmax';
 }
@@ -79,6 +86,7 @@ export type Block =
   | MaxPool2dBlock
   | UpSampling2dBlock
   | FlattenBlock
+  | ReshapeBlock
   | ActivationBlock
   | OutputBlock;
 

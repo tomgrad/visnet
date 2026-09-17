@@ -55,6 +55,8 @@ function layerFor(block: Block, inputShape: number[] | undefined): tf.layers.Lay
       });
     case 'flatten':
       return tf.layers.flatten({ inputShape });
+    case 'reshape':
+      return tf.layers.reshape({ targetShape: block.shape, inputShape });
     case 'relu':
     case 'sigmoid':
     case 'tanh':

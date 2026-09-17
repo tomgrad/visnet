@@ -35,6 +35,8 @@ export function createBlock(kind: BlockKind): Block {
       return { id: newBlockId(), kind: 'upsampling2d', size: 2 };
     case 'flatten':
       return { id: newBlockId(), kind: 'flatten' };
+    case 'reshape':
+      return { id: newBlockId(), kind: 'reshape', shape: [1] };
     case 'relu':
     case 'sigmoid':
     case 'tanh':

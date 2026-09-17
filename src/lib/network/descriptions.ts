@@ -7,6 +7,7 @@ export const BLOCK_DESCRIPTIONS: Record<BlockKind, string> = {
   maxpool2d: 'Shrinks an image by keeping the largest value in each small window.',
   upsampling2d: 'Enlarges an image by repeating each pixel into a block.',
   flatten: 'Turns image-shaped data into a flat list so Linear layers can read it.',
+  reshape: 'Rearranges the numbers into a different shape without changing them.',
   relu: 'Keeps positive values and turns negative ones into zero. Helps the network learn curved patterns.',
   sigmoid: 'Squashes each value into the range 0 to 1.',
   tanh: 'Squashes each value into the range -1 to 1.',

@@ -23,6 +23,8 @@ function isBlock(value: unknown): value is Block {
       return typeof value.poolSize === 'number' && typeof value.stride === 'number';
     case 'upsampling2d':
       return typeof value.size === 'number';
+    case 'reshape':
+      return Array.isArray(value.shape) && value.shape.every((n) => typeof n === 'number');
     default:
       return true;
   }

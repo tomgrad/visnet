@@ -71,6 +71,32 @@ describe('inferShapes on a convolutional chain', () => {
   });
 });
 
+describe('inferShapes on a reshape', () => {
+  it('adopts the declared shape', () => {
+    const result = inferShapes(
+      net([
+        { id: 'in', kind: 'input', shape: [4, 4, 1] },
+        { id: 'r', kind: 'reshape', shape: [16] },
+        { id: 'out', kind: 'output', units: 16 }
+      ])
+    );
+    expect(result.perBlock[1].outShape).toEqual([16]);
+    expect(result.perBlock[1].paramCount).toBe(0);
+  });
+
+  it('returns a null output shape when the input is unknown', () => {
+    const result = inferShapes(
+      net([
+        { id: 'in', kind: 'input', shape: [28, 28, 1] },
+        { id: 'dense', kind: 'linear', units: 8 },
+        { id: 'r', kind: 'reshape', shape: [8] },
+        { id: 'out', kind: 'output', units: 8 }
+      ])
+    );
+    expect(result.perBlock[2].outShape).toBeNull();
+  });
+});
+
 describe('inferShapes error propagation', () => {
   const result = inferShapes(
     net([
