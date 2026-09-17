@@ -4,7 +4,7 @@
   import type { PointDataset } from '../data/points';
   import type { NetworkStore } from '../editor/networkStore.svelte';
   import { probeTargetFor } from '../network/probe';
-  import { BACKGROUND_RGB, classColour } from '../render/palette';
+  import { BACKGROUND_RGB, MESH_STROKE, classColour } from '../render/palette';
   import type { LatentBounds, LatentSample } from '../render/latent';
 
   let {
@@ -80,7 +80,7 @@
       context.fillRect(px - cell / 2, py - cell / 2, cell, cell);
     }
 
-    context.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+    context.strokeStyle = MESH_STROKE;
     context.lineWidth = 0.5;
     context.beginPath();
     for (let gy = 0; gy < GRID; gy++) {

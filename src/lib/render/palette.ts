@@ -13,3 +13,5 @@ export function classColour(index: number): ClassColour {
 }
 
 export const BACKGROUND_RGB: [number, number, number] = [248, 250, 252];
+
+export const MESH_STROKE = 'rgba(15, 23, 42, 0.4)';
