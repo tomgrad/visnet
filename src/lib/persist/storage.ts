@@ -1,6 +1,6 @@
 import type { PointDataset } from '../data/points';
 import type { Network } from '../network/types';
-import { fromJSON, toJSON } from '../network/serialize';
+import { decodeNetwork, encodeNetwork } from './networkCodec';
 
 export interface StorageKeys {
   network: string;
@@ -19,7 +19,6 @@ export interface NetworkStorage {
   hasStoredNetwork(): boolean;
   saveDataset(dataset: PointDataset): void;
   loadDataset(): PointDataset | null;
-  clear(): void;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -47,11 +46,11 @@ function parseDataset(raw: string): PointDataset | null {
 export function createStorage(backing: KeyValueStore, keys: StorageKeys): NetworkStorage {
   return {
     saveNetwork(net) {
-      backing.setItem(keys.network, toJSON(net));
+      backing.setItem(keys.network, encodeNetwork(net));
     },
     loadNetwork() {
       const raw = backing.getItem(keys.network);
-      return raw === null ? null : fromJSON(raw);
+      return raw === null ? null : decodeNetwork(raw);
     },
     hasStoredNetwork() {
       return backing.getItem(keys.network) !== null;
@@ -62,10 +61,6 @@ export function createStorage(backing: KeyValueStore, keys: StorageKeys): Networ
     loadDataset() {
       const raw = backing.getItem(keys.dataset);
       return raw === null ? null : parseDataset(raw);
-    },
-    clear() {
-      backing.removeItem(keys.network);
-      backing.removeItem(keys.dataset);
     }
   };
 }

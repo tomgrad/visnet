@@ -98,16 +98,6 @@ describe('dataset storage', () => {
   });
 });
 
-describe('clear', () => {
-  it('removes both entries', () => {
-    const storage = createStorage(backing, KEYS);
-    storage.saveNetwork(createEmptyNetwork());
-    storage.saveDataset({ points: [], numClasses: 2 });
-    storage.clear();
-    expect(backing.entries.size).toBe(0);
-  });
-});
-
 describe('key namespacing', () => {
   it('does not read another key set data', () => {
     const first = createStorage(backing, { network: 'a:network', dataset: 'a:dataset' });
@@ -118,22 +108,5 @@ describe('key namespacing', () => {
     expect(first.loadNetwork()).not.toBeNull();
     expect(second.loadNetwork()).toBeNull();
     expect(second.hasStoredNetwork()).toBe(false);
-  });
-
-  it('clears only its own keys', () => {
-    const first = createStorage(backing, { network: 'a:network', dataset: 'a:dataset' });
-    const second = createStorage(backing, { network: 'b:network', dataset: 'b:dataset' });
-    const dataset: PointDataset = { points: [{ x: 0, y: 0, label: 0 }], numClasses: 2 };
-
-    first.saveNetwork(createEmptyNetwork());
-    first.saveDataset(dataset);
-    second.saveNetwork(createEmptyNetwork());
-    second.saveDataset(dataset);
-    first.clear();
-
-    expect(first.loadNetwork()).toBeNull();
-    expect(first.loadDataset()).toBeNull();
-    expect(second.loadNetwork()).not.toBeNull();
-    expect(second.loadDataset()).not.toBeNull();
   });
 });
