@@ -101,7 +101,9 @@ export function featureMaps(
 - Runs `forwardActivations` inside one `tf.tidy` and selects the activation:
   `source === 'input'` uses the input tensor, otherwise `activations[source]`.
 - Rank-3 output `[H, W, C]` → `C` maps of `H×W`, each normalised **per map**
-  between its own min and max (min → 0, max → 255).
+  between its own min and max (min → 0, max → 255). TF.js convolution output is
+  channels-last, so pixel `p` of channel `ch` is `data[p * C + ch]` — not a
+  contiguous `H*W` slab.
 - Rank-1 output `[N]` → `N` maps of `1×1`, all normalised against the vector's
   **global** min and max, so the squares form a single white-to-black ramp.
   (A per-element min/max would be degenerate; the vector is one map split into

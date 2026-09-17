@@ -22,6 +22,13 @@
 
 `docs/superpowers/specs/2026-09-17-visnet-cnn-feature-maps-design.md`
 
+> **Correction (applied during execution):** Task 2's rank-3 code below indexes
+> channels as contiguous `height*width` slabs (`data[channel * plane + index]`).
+> That is wrong: TF.js convolution output is channels-last, so pixel `p` of
+> channel `ch` is `data[p * channels + ch]`. The implemented module uses the
+> strided index, with a deterministic synthetic-conv regression test. The spec's
+> §7 carries the corrected contract.
+
 ---
 
 ### Task 1: Shared forward pass
