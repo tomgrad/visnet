@@ -135,7 +135,15 @@ through each block, and whether it is valid. Everything else derives from it.
 
 ```ts
 export type BlockKind =
-  'input' | 'linear' | 'conv2d' | 'flatten' | 'relu' | 'sigmoid' | 'softmax' | 'output';
+  | 'input'
+  | 'linear'
+  | 'conv2d'
+  | 'maxpool2d'
+  | 'flatten'
+  | 'relu'
+  | 'sigmoid'
+  | 'softmax'
+  | 'output';
 
 interface BlockBase {
   id: string;
@@ -159,6 +167,13 @@ export interface Conv2dBlock extends BlockBase {
   padding: 'same' | 'valid';
 }
 
+export interface MaxPool2dBlock extends BlockBase {
+  kind: 'maxpool2d';
+  poolSize: number;
+  stride: number;
+  padding: 'same' | 'valid';
+}
+
 export interface FlattenBlock extends BlockBase {
   kind: 'flatten';
 }
@@ -173,7 +188,13 @@ export interface OutputBlock extends BlockBase {
 }
 
 export type Block =
-  InputBlock | LinearBlock | Conv2dBlock | FlattenBlock | ActivationBlock | OutputBlock;
+  | InputBlock
+  | LinearBlock
+  | Conv2dBlock
+  | MaxPool2dBlock
+  | FlattenBlock
+  | ActivationBlock
+  | OutputBlock;
 
 export interface TrainingConfig {
   loss: 'mse' | 'crossEntropy';
@@ -229,6 +250,7 @@ training fail at runtime, and an error blocks training before that can happen.
 | `input`                                    | `shape: [2]`                                            |
 | `linear`                                   | `units: 8`                                              |
 | `conv2d`                                   | `filters: 8, kernelSize: 3, stride: 1, padding: 'same'` |
+| `maxpool2d`                                | `poolSize: 2, stride: 2, padding: 'valid'`              |
 | `relu` / `sigmoid` / `softmax` / `flatten` | none                                                    |
 | `output`                                   | `units: 2`                                              |
 
@@ -252,21 +274,23 @@ Every block kind has a one-line plain-language description, defined once in
 `src/lib/network/descriptions.ts` and used by the palette, the inspector, and the
 canvas tooltip:
 
-| Kind      | Description                                                                                         |
-| --------- | --------------------------------------------------------------------------------------------------- |
-| `input`   | "Describes the shape of one example your network receives."                                         |
-| `linear`  | "Learns a weighted sum of its inputs. Also called a fully connected or dense layer."                |
-| `conv2d`  | "Slides small filters over an image to detect local patterns such as edges."                        |
-| `flatten` | "Turns image-shaped data into a flat list so Linear layers can read it."                            |
-| `relu`    | "Keeps positive values and turns negative ones into zero. Helps the network learn curved patterns." |
-| `sigmoid` | "Squashes each value into the range 0 to 1."                                                        |
-| `softmax` | "Turns raw scores into probabilities that add up to 1."                                             |
-| `output`  | "Declares what the network predicts and how many classes there are."                                |
+| Kind        | Description                                                                                         |
+| ----------- | --------------------------------------------------------------------------------------------------- |
+| `input`     | "Describes the shape of one example your network receives."                                         |
+| `linear`    | "Learns a weighted sum of its inputs. Also called a fully connected or dense layer."                |
+| `conv2d`    | "Slides small filters over an image to detect local patterns such as edges."                        |
+| `maxpool2d` | "Shrinks an image by keeping the largest value in each small window."                               |
+| `flatten`   | "Turns image-shaped data into a flat list so Linear layers can read it."                            |
+| `relu`      | "Keeps positive values and turns negative ones into zero. Helps the network learn curved patterns." |
+| `sigmoid`   | "Squashes each value into the range 0 to 1."                                                        |
+| `softmax`   | "Turns raw scores into probabilities that add up to 1."                                             |
+| `output`    | "Declares what the network predicts and how many classes there are."                                |
 
 Each parameter has a one-line description in the same module, e.g. `units`: "How
 many numbers this layer produces.", `kernelSize`: "How large the window sliding
-over the image is.", `learningRate`: "How big each learning step is. Smaller is
-slower but steadier.".
+over the image is.", `poolSize`: "How large the window is. The largest value in it
+survives.", `learningRate`: "How big each learning step is. Smaller is slower but
+steadier.".
 
 ## 6. Pure network modules
 
@@ -306,6 +330,7 @@ Shape rules:
 | `input`                        | `block.shape`                                                                                                 |
 | `linear`                       | `[units]`                                                                                                     |
 | `conv2d`                       | `[ceil(H/stride), ceil(W/stride), filters]` for `same`; `[floor((H - kernelSize)/stride) + 1, …]` for `valid` |
+| `maxpool2d`                    | `[ceil(H/stride), ceil(W/stride), channels]` for `same`; `[floor((H - poolSize)/stride) + 1, …]` for `valid`  |
 | `flatten`                      | `[product(shape)]`                                                                                            |
 | `relu` / `sigmoid` / `softmax` | unchanged                                                                                                     |
 | `output`                       | unchanged (marker)                                                                                            |
@@ -344,6 +369,8 @@ Errors (block training):
 | `conv2d` on non-rank-3 input         | "Convolution layer needs image data"              | "This Convolution layer receives {shape}. It expects image data shaped [height, width, channels]."      | "Give the Input block a 3D shape such as [28, 28, 1], or remove the Convolution layer." |
 | `flatten` on rank-1 input            | "Nothing to flatten"                              | "This Flatten layer receives {shape}, which is already a flat list."                                    | "Remove this Flatten layer, or move it after a Convolution layer."                      |
 | `conv2d` output dimension ≤ 0        | "Kernel is larger than the image"                 | "A {kernelSize}×{kernelSize} kernel with stride {stride} leaves no room to slide over a {H}×{W} image." | "Use a smaller kernel or stride, or set padding to 'same'."                             |
+| `maxpool2d` on non-rank-3 input      | "Pooling layer needs image data"                  | "This Pooling layer receives {shape}. It expects image data shaped [height, width, channels]."          | "Give the Input block a 3D shape such as [28, 28, 1], or remove the Pooling layer."     |
+| `maxpool2d` output dimension ≤ 0     | "Pool window is larger than the image"            | "A {poolSize}×{poolSize} pool with stride {stride} leaves no room to slide over a {H}×{W} image."       | "Use a smaller pool or stride, or set padding to 'same'."                               |
 | Unknown block kind                   | "Unrecognised block"                              | "This network contains a block type this version of VisNet does not understand ({kind})."               | "Delete the block, or reset the network to start fresh."                                |
 | Last real layer is not rank 1        | "Output must be a list of scores"                 | "The last layer before the Output produces {shape}, which is not a list of class scores."               | "End the network with a Linear layer so the Output is a list of numbers."               |
 | Last real layer width ≠ Output units | "Last layer size does not match the Output block" | "The last layer produces {n} numbers, but the Output block says {units} classes."                       | "Set the last layer to {units} units, or change the Output block to {n}."               |
@@ -517,6 +544,10 @@ block is invalid, the affected entries show `—` rather than a wrong value.
   - `conv2d` `stride`: choices from 1 to `min(H, W)`
   - `conv2d` `padding`: `same` and `valid`, each shown with the output size it
     would produce (e.g. "'same' — stays 28×28", "'valid' — becomes 26×26")
+  - `maxpool2d` `poolSize`: choices from 1 to `min(H, W)`
+  - `maxpool2d` `stride`: choices from 1 to `min(H, W)`
+  - `maxpool2d` `padding`: `same` and `valid`, each shown with the output size it
+    would produce
   - `linear` `units`: any positive integer, default 8
 - If a change upstream makes a stored parameter invalid, the value is clamped to
   the nearest valid option and the correction is **announced inline** in the
@@ -540,6 +571,7 @@ messages the Issues panel shows). Skips the `input` block and uses its `shape` a
 | ------------------------------ | ----------------------------------------------------------------------------------- |
 | `linear`                       | `tf.layers.dense({ units })`                                                        |
 | `conv2d`                       | `tf.layers.conv2d({ filters, kernelSize, strides, padding, activation: 'linear' })` |
+| `maxpool2d`                    | `tf.layers.maxPooling2d({ poolSize, strides, padding })`                            |
 | `flatten`                      | `tf.layers.flatten()`                                                               |
 | `relu` / `sigmoid` / `softmax` | `tf.layers.activation({ activation: kind })`                                        |
 | `output`                       | nothing                                                                             |
