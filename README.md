@@ -13,6 +13,7 @@ Examples:
 
 - classification with MLP (points in 2D space)
 - classification with CNN (MNIST images)
+- reconstruction with an autoencoder (MNIST images)
 
 Available modules:
 
@@ -59,6 +60,9 @@ Specifics:
   digits turn from wrong to right.
 - See the feature maps of the block selected on the canvas for a test digit, with
   a button to step through the sample digits.
+- Train a dense or convolutional autoencoder on handwritten digits, watch the
+  originals and their reconstructions side by side, and see the compressed code
+  of the selected layer as a scatter plot.
 
 ## Digit data
 
@@ -82,7 +86,8 @@ plain-language errors with a suggested fix. Persistence is a shallow codec:
 `src/lib/persist/weights.ts` saves and loads trained weights. TensorFlow.js is
 confined to `src/lib/tf/`, `src/lib/training/`, `src/lib/data/tensors.ts`,
 `src/lib/render/boundary.ts`, `src/lib/render/latent.ts`,
-`src/lib/render/activations.ts`, `src/lib/render/features.ts`, and
+`src/lib/render/activations.ts`, `src/lib/render/features.ts`,
+`src/lib/render/reconstruction.ts`, `src/lib/render/codes.ts`, and
 `src/lib/persist/weights.ts`.
 
 The editor is a projection of that model, never a second copy of it: the canvas

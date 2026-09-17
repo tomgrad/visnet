@@ -37,7 +37,6 @@ export function createExperiment(options: {
   store: NetworkStore;
   weightsId: string;
   storage: NetworkStorage | null;
-  task?: 'classification' | 'reconstruction';
 }): Experiment {
   const { store, storage } = options;
 
@@ -102,7 +101,7 @@ export function createExperiment(options: {
       batchSize,
       handleStats,
       handleError,
-      options.task !== 'reconstruction'
+      store.task !== 'reconstruction'
     );
   });
 

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NetworkStore } from '../editor/networkStore.svelte';
 import ExperimentHarness from './__stubs__/ExperimentHarness.svelte';
 import type { Experiment } from './experiment.svelte';
+import type { ModelData } from './runtime';
 
 const runtime = vi.hoisted(() => ({
   buildModel: vi.fn(() => ({ tag: 'model' })),
@@ -65,5 +66,23 @@ describe('createExperiment', () => {
     await vi.waitFor(() => expect(session.model).not.toBe(first));
     expect(runtime.buildModel).toHaveBeenCalledTimes(2);
     expect(runtime.disposeModel).toHaveBeenCalledWith(first);
+  });
+
+  it('reads accuracy tracking from the store task', async () => {
+    const store = new NetworkStore();
+    store.task = 'reconstruction';
+    let session: Experiment | null = null;
+    render(ExperimentHarness, {
+      props: { store, onready: (created: Experiment) => (session = created) }
+    });
+
+    await vi.waitFor(() => expect((session as unknown as Experiment).model).not.toBeNull());
+    (session as unknown as Experiment).setData({
+      xs: { shape: [2, 2] },
+      ys: {}
+    } as unknown as ModelData);
+
+    await vi.waitFor(() => expect(runtime.createTrainer).toHaveBeenCalled());
+    expect(runtime.createTrainer.mock.calls.at(-1)?.[5]).toBe(false);
   });
 });

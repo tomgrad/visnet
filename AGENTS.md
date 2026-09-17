@@ -49,7 +49,8 @@ the rest in Node. See `npm test`.
 - `@tensorflow/tfjs` may only be imported at runtime by `src/lib/tf/**`,
   `src/lib/training/**`, `src/lib/data/tensors.ts`, `src/lib/render/boundary.ts`,
   `src/lib/render/latent.ts`, `src/lib/render/activations.ts`,
-  `src/lib/render/features.ts`, `src/lib/persist/weights.ts`, and the test files
+  `src/lib/render/features.ts`, `src/lib/render/reconstruction.ts`,
+  `src/lib/render/codes.ts`, `src/lib/persist/weights.ts`, and the test files
   colocated with those modules.
   Other modules may import its types with `import type`; no other production
   module may reach it at runtime.

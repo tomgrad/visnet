@@ -7,7 +7,7 @@ import type * as tf from '@tensorflow/tfjs';
 export type Model = tf.LayersModel;
 export type ModelData = {
   xs: tf.Tensor;
-  ys: tf.Tensor2D;
+  ys: tf.Tensor;
 };
 export type TrainerHandle = import('../training/Trainer').Trainer;
 
@@ -16,6 +16,7 @@ export interface Runtime {
   compileModel(model: Model, training: TrainingConfig): void;
   toTensors(dataset: PointDataset): ModelData;
   imagesToTensors(dataset: ImageDataset, indices?: number[]): ModelData;
+  imagesToReconstruction(dataset: ImageDataset, indices?: number[]): ModelData;
   disposeData(data: ModelData | null): void;
   disposeModel(model: Model | null): void;
   createTrainer(
@@ -43,6 +44,7 @@ export async function loadRuntime(weightsId: string): Promise<Runtime> {
     compileModel: (model, training) => builder.compileModel(model, training),
     toTensors: (dataset) => tensors.toTensors(dataset),
     imagesToTensors: (dataset, indices) => tensors.imagesToTensors(dataset, indices),
+    imagesToReconstruction: (dataset, indices) => tensors.imagesToReconstruction(dataset, indices),
     disposeData: (data) => {
       data?.xs.dispose();
       data?.ys.dispose();

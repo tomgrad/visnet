@@ -15,6 +15,10 @@
       <a href={resolve('/examples/cnn')}>Handwritten digits</a>
       <span>Train a small convolutional network on handwritten digits.</span>
     </li>
+    <li>
+      <a href={resolve('/examples/autoencoder')}>Autoencoder</a>
+      <span>Compress a handwritten digit and watch the network rebuild it.</span>
+    </li>
   </ul>
 </main>
 
