@@ -83,6 +83,11 @@ export function clampBlockPatch(net: Network, id: string, patch: Partial<Block>)
       Object.assign(result, { kernelSize: next.value });
       if (announcement === null) announcement = next.announcement;
     }
+    if ('poolSize' in patch && typeof patch.poolSize === 'number') {
+      const next = clampDimension(patch.poolSize, 'Pool size', limit, inShape);
+      Object.assign(result, { poolSize: next.value });
+      if (announcement === null) announcement = next.announcement;
+    }
     if ('stride' in patch && typeof patch.stride === 'number') {
       const next = clampDimension(patch.stride, 'Stride', limit, inShape);
       Object.assign(result, { stride: next.value });
@@ -102,14 +107,18 @@ export function clampNetwork(net: Network): NetworkClampResult {
     const { perBlock } = inferShapes(current);
 
     current.blocks.forEach((block, index) => {
-      if (block.kind !== 'conv2d') return;
+      const patch: Partial<Block> | null =
+        block.kind === 'conv2d'
+          ? { kernelSize: block.kernelSize, stride: block.stride }
+          : block.kind === 'maxpool2d'
+            ? { poolSize: block.poolSize, stride: block.stride }
+            : null;
+      if (!patch) return;
+
       const bounds = parameterBounds(perBlock[index].inShape);
       if (!bounds) return;
 
-      const corrected = clampBlockPatch(current, block.id, {
-        kernelSize: block.kernelSize,
-        stride: block.stride
-      });
+      const corrected = clampBlockPatch(current, block.id, patch);
       if (!corrected.announcement) return;
 
       current = replaceBlock(current, block.id, corrected.patch);
