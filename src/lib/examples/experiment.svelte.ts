@@ -1,4 +1,4 @@
-import { onDestroy, onMount } from 'svelte';
+import { onDestroy, onMount, untrack } from 'svelte';
 import type { NetworkStore } from '../editor/networkStore.svelte';
 import type { NetworkStorage } from '../persist/storage';
 import type { TrainStats } from '../training/Trainer';
@@ -80,7 +80,8 @@ export function createExperiment(options: {
 
   function setData(next: ModelData | null): void {
     releaseTrainer();
-    runtime?.disposeData(data);
+    const previous = untrack(() => data);
+    runtime?.disposeData(previous);
     data = next;
   }
 
@@ -115,9 +116,13 @@ export function createExperiment(options: {
     } catch (error) {
       console.error(error);
       model = null;
-      void import('../tf/buildModel').then(({ describeBuildError }) => {
-        banner = describeBuildError(error).message;
-      });
+      void import('../tf/buildModel')
+        .then(({ describeBuildError }) => {
+          banner = describeBuildError(error).message;
+        })
+        .catch(() => {
+          banner = 'The network could not be built.';
+        });
     }
   });
 
