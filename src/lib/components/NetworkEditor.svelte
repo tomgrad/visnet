@@ -1,6 +1,5 @@
 <script lang="ts">
   import { onMount, type Component } from 'svelte';
-  import { BLOCK_DESCRIPTIONS } from '../network/descriptions';
   import type { BlockKind } from '../network/types';
   import type { NetworkStore } from '../editor/networkStore.svelte';
   import BlockPalette from './BlockPalette.svelte';
@@ -64,7 +63,7 @@
       <p class="drag-hint">
         {dragging
           ? `Drop ${dragging} onto the canvas to place it.`
-          : `Drag a block onto the canvas to add it. ${BLOCK_DESCRIPTIONS.linear}`}
+          : 'Drag a block onto the canvas to add it.'}
       </p>
     </aside>
 
