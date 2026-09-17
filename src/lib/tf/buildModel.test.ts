@@ -2,7 +2,12 @@ import * as tf from '@tensorflow/tfjs';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { createEmptyNetwork } from '../network/factory';
 import type { Network } from '../network/types';
-import { NetworkInvalidError, buildModel, compileModel } from './buildModel';
+import {
+  NetworkInvalidError,
+  buildModel,
+  compileModel,
+  describeBuildError
+} from './buildModel';
 
 let models: tf.Sequential[] = [];
 
@@ -143,6 +148,14 @@ describe('buildModel', () => {
     const before = tf.memory().numTensors;
     expect(() => buildModel(network)).toThrow();
     expect(tf.memory().numTensors).toBe(before);
+  });
+
+  it('turns an unexpected TF.js build failure into a plain-language problem', () => {
+    const problem = describeBuildError(new Error('Shape mismatch: expected 2, got 3'));
+    expect(problem.severity).toBe('error');
+    expect(problem.title.length).toBeGreaterThan(0);
+    expect(problem.message).toContain('Shape mismatch');
+    expect(problem.fix.length).toBeGreaterThan(0);
   });
 
   it('runs a forward pass with the shape the network describes', () => {

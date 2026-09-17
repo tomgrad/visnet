@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { validate } from '../../network/validate';
+import { findProblems } from '../../network/problems';
 import {
   CNN_PALETTE,
   CNN_STORAGE_KEYS,
@@ -48,7 +48,7 @@ describe('createCnnNetwork', () => {
       'softmax',
       'output'
     ]);
-    expect(validate(network, { expectedClasses: 10 })).toEqual([]);
+    expect(findProblems(network, { expectedClasses: 10 })).toEqual([]);
   });
 
   it('reads a 28 by 28 image and predicts ten classes', () => {

@@ -2,7 +2,7 @@ import { insertAt, moveBlock, removeBlock, replaceBlock } from '../network/chain
 import { cloneNetwork, createBlock, createEmptyNetwork } from '../network/factory';
 import { inferShapes } from '../network/inferShapes';
 import type { Block, BlockKind, Network, NodePosition, TrainingConfig } from '../network/types';
-import { validate } from '../network/validate';
+import { findProblems } from '../network/problems';
 import { positionFor } from './flow';
 import { History } from './history';
 import { insertionIndexFor } from './placement';
@@ -21,7 +21,7 @@ export class NetworkStore {
   #initial: Network;
 
   issues = $derived(
-    validate(this.network, {
+    findProblems(this.network, {
       expectedClasses: this.expectedClasses,
       expectedInputShape: this.expectedInputShape
     })

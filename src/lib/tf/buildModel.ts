@@ -1,6 +1,6 @@
 import * as tf from '@tensorflow/tfjs';
 import type { Block, Network, TrainingConfig } from '../network/types';
-import { validate, type Issue } from '../network/validate';
+import { findProblems, type Problem } from '../network/problems';
 
 const LOSSES: Record<TrainingConfig['loss'], string> = {
   mse: 'meanSquaredError',
@@ -8,13 +8,23 @@ const LOSSES: Record<TrainingConfig['loss'], string> = {
 };
 
 export class NetworkInvalidError extends Error {
-  readonly issues: Issue[];
+  readonly issues: Problem[];
 
-  constructor(issues: Issue[]) {
+  constructor(issues: Problem[]) {
     super('The network has errors and cannot be built.');
     this.name = 'NetworkInvalidError';
     this.issues = issues;
   }
+}
+
+export function describeBuildError(cause: unknown): Problem {
+  const detail = cause instanceof Error ? cause.message : String(cause);
+  return {
+    severity: 'error',
+    title: 'The network could not be built',
+    message: `TensorFlow.js rejected this network: ${detail}`,
+    fix: 'Check the layer sizes and the input shape, then try again.'
+  };
 }
 
 function layerFor(block: Block, inputShape: number[] | undefined): tf.layers.Layer {
@@ -58,8 +68,8 @@ export function compileModel(model: tf.LayersModel, training: TrainingConfig): v
 }
 
 export function buildModel(net: Network): tf.Sequential {
-  const errors = validate(net).filter((issue) => issue.severity === 'error');
-  if (errors.length > 0) throw new NetworkInvalidError(errors);
+  const problems = findProblems(net).filter((problem) => problem.severity === 'error');
+  if (problems.length > 0) throw new NetworkInvalidError(problems);
 
   const inputBlock = net.blocks.find((block) => block.kind === 'input');
   const inputShape = inputBlock && inputBlock.kind === 'input' ? inputBlock.shape : undefined;

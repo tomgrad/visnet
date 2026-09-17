@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { createEmptyNetwork } from './factory';
 import type { Block, Network } from './types';
-import { validate, type Issue, type Severity, type ValidateOptions } from './validate';
+import {
+  findProblems,
+  type Problem,
+  type ProblemOptions,
+  type Severity
+} from './problems';
 
 function net(blocks: Network['blocks'], training?: Partial<Network['training']>): Network {
   return {
@@ -18,8 +23,8 @@ function net(blocks: Network['blocks'], training?: Partial<Network['training']>)
   };
 }
 
-const errors = (network: Network): Issue[] =>
-  validate(network).filter((issue) => issue.severity === 'error');
+const errors = (network: Network): Problem[] =>
+  findProblems(network).filter((problem) => problem.severity === 'error');
 
 const titles = (network: Network): string[] => errors(network).map((issue) => issue.title);
 
@@ -45,7 +50,7 @@ function defaultWithLastLayerUnits(units: number): Network {
   };
 }
 
-describe('validate errors', () => {
+describe('findProblems errors', () => {
   it('accepts the default network', () => {
     expect(errors(createEmptyNetwork())).toEqual([]);
   });
@@ -179,13 +184,13 @@ describe('validate errors', () => {
   });
 });
 
-const warnings = (network: Network, options?: ValidateOptions): Issue[] =>
-  validate(network, options).filter((issue) => issue.severity === 'warning');
+const warnings = (network: Network, options?: ProblemOptions): Problem[] =>
+  findProblems(network, options).filter((problem) => problem.severity === 'warning');
 
 const warningTitles = (network: Network, options?: { expectedClasses?: number }): string[] =>
   warnings(network, options).map((issue) => issue.title);
 
-describe('validate warnings', () => {
+describe('findProblems warnings', () => {
   it('says nothing about the default network', () => {
     expect(warnings(createEmptyNetwork())).toEqual([]);
   });
@@ -298,7 +303,7 @@ interface RuleCase {
   title: string;
   severity: Severity;
   network: Network;
-  options?: ValidateOptions;
+  options?: ProblemOptions;
 }
 
 const RULE_CASES: RuleCase[] = [
@@ -463,7 +468,7 @@ describe('issue message contract', () => {
   it.each(RULE_CASES)(
     '$title produces issues with a title, message, and fix',
     ({ network, options, title }) => {
-      const issues = validate(network, options);
+      const issues = findProblems(network, options);
       expect(issues.map((issue) => issue.title)).toContain(title);
       for (const issue of issues) {
         expect(issue.title.length).toBeGreaterThan(0);
@@ -485,7 +490,7 @@ describe('issue message contract', () => {
 
     const produced = new Set(
       RULE_CASES.flatMap((entry) =>
-        validate(entry.network, entry.options).map((issue) => issue.title)
+        findProblems(entry.network, entry.options).map((issue) => issue.title)
       )
     );
     expect(produced).toEqual(new Set([...ERROR_RULE_TITLES, ...WARNING_RULE_TITLES]));
