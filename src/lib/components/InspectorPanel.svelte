@@ -17,7 +17,11 @@
   const inShape = $derived(info?.inShape ?? null);
   const bounds = $derived(parameterBounds(inShape));
   const spatialSize = $derived(
-    block?.kind === 'conv2d' ? block.kernelSize : block?.kind === 'maxpool2d' ? block.poolSize : null
+    block?.kind === 'conv2d'
+      ? block.kernelSize
+      : block?.kind === 'maxpool2d'
+        ? block.poolSize
+        : null
   );
   const spatialStride = $derived(
     block?.kind === 'conv2d' || block?.kind === 'maxpool2d' ? block.stride : null
