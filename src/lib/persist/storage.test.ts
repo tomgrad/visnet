@@ -51,7 +51,7 @@ describe('network storage', () => {
     expect(storage.loadNetwork()).toBeNull();
   });
 
-  it('returns null for an unsupported version', () => {
+  it('rejects a legacy versioned envelope', () => {
     backing.setItem(KEYS.network, JSON.stringify({ version: 99, network: createEmptyNetwork() }));
     expect(createStorage(backing, KEYS).loadNetwork()).toBeNull();
   });
