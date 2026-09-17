@@ -122,6 +122,13 @@ describe('updateBlock', () => {
     store.updateBlock(id, { units: 4 });
     expect(store.network.blocks[1]).toMatchObject({ units: 4 });
   });
+
+  it('stores an invalid patch without correcting it', () => {
+    const store = new NetworkStore();
+    const id = store.network.blocks[1].id;
+    store.updateBlock(id, { units: 0 });
+    expect(store.network.blocks[1]).toMatchObject({ units: 0 });
+  });
 });
 
 describe('updateTraining', () => {
