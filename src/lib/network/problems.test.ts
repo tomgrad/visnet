@@ -298,6 +298,14 @@ describe('findProblems warnings', () => {
     expect(issue?.blockId).toBe('in');
   });
 
+  it('skips the image-without-convolution warning for reconstruction', () => {
+    const network = net([IMAGE_INPUT, { id: 'dense', kind: 'linear', units: 2 }, OUTPUT]);
+    const titles = (task: 'classification' | 'reconstruction') =>
+      findProblems(network, { task }).map((problem) => problem.title);
+    expect(titles('classification')).toContain('Image input without a Convolution layer');
+    expect(titles('reconstruction')).not.toContain('Image input without a Convolution layer');
+  });
+
   it('flags a convolution layer with flat input', () => {
     const network = net([
       { id: 'in', kind: 'input', shape: [784] },

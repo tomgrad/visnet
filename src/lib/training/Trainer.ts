@@ -28,7 +28,8 @@ export class Trainer {
     private readonly batchSize: number,
     private readonly onStats: (stats: TrainStats) => void,
     private readonly yieldFn: YieldFn = nextFrame,
-    private readonly onError: (error: unknown) => void = () => {}
+    private readonly onError: (error: unknown) => void = () => {},
+    private readonly computeAccuracy: boolean = true
   ) {
     const examples = data.xs.shape[0];
     this.batchesPerEpochCount = Math.max(1, Math.ceil(examples / batchSize));
@@ -77,7 +78,7 @@ export class Trainer {
       if (this.batch >= this.batchesPerEpochCount) {
         const mean =
           this.batchLosses.reduce((total, value) => total + value, 0) / this.batchLosses.length;
-        const accuracy = this.accuracy();
+        const accuracy = this.computeAccuracy ? this.accuracy() : null;
         this.epoch += 1;
         this.batch = 0;
         this.batchLosses = [];

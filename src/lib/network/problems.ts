@@ -15,6 +15,7 @@ export interface Problem {
 export interface ProblemOptions {
   expectedClasses?: number;
   expectedInputShape?: number[];
+  task?: 'classification' | 'reconstruction';
 }
 
 function error(problem: Omit<Problem, 'severity'>): Problem {
@@ -311,7 +312,7 @@ export function findProblems(net: Network, options: ProblemOptions = {}): Proble
   const inputBlock = net.blocks.find((block) => block.kind === 'input');
   if (inputBlock && inputBlock.kind === 'input') {
     const inputKind = classifyInputShape(inputBlock.shape);
-    if (inputKind === 'image' && !hasConvolution) {
+    if (inputKind === 'image' && !hasConvolution && options.task !== 'reconstruction') {
       problems.push(
         warning({
           title: 'Image input without a Convolution layer',

@@ -108,6 +108,16 @@ describe('Trainer bookkeeping', () => {
     await trainer.step();
     expect(Number.isFinite(stats[0].batchLoss)).toBe(true);
   });
+
+  it('omits accuracy when computeAccuracy is false', async () => {
+    const model = buildModel(createEmptyNetwork());
+    models.push(model);
+    const stats: TrainStats[] = [];
+    const trainer = new Trainer(model, makeData(), 4, (s) => stats.push(s), undefined, undefined, false);
+    await trainer.step();
+    await trainer.step();
+    expect(stats[1].epochAccuracy).toBeNull();
+  });
 });
 
 describe('Trainer batch sampling', () => {

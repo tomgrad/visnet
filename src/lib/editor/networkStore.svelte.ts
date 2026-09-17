@@ -14,6 +14,7 @@ export class NetworkStore {
   selectedBlockId = $state<string | null>(null);
   expectedClasses = $state<number | undefined>(undefined);
   expectedInputShape = $state<number[] | undefined>(undefined);
+  task = $state<'classification' | 'reconstruction'>('classification');
   canUndo = $state(false);
   canRedo = $state(false);
 
@@ -23,7 +24,8 @@ export class NetworkStore {
   issues = $derived(
     findProblems(this.network, {
       expectedClasses: this.expectedClasses,
-      expectedInputShape: this.expectedInputShape
+      expectedInputShape: this.expectedInputShape,
+      task: this.task
     })
   );
   errors = $derived(this.issues.filter((issue) => issue.severity === 'error'));

@@ -147,6 +147,14 @@ describe('TrainingPanel', () => {
     expect(screen.getByTestId('stats-accuracy').textContent).toContain('90');
   });
 
+  it('hides the accuracy cell when showAccuracy is false', () => {
+    panel({
+      showAccuracy: false,
+      stats: { epoch: 1, batch: 0, batchLoss: 0.1, epochMeanLoss: 0.2, epochAccuracy: 0.9 }
+    });
+    expect(screen.queryByTestId('stats-accuracy')).toBeNull();
+  });
+
   it('prompts the user before training starts', () => {
     panel({ stats: null });
     expect(screen.getByTestId('stats-empty')).toBeTruthy();

@@ -214,6 +214,24 @@ describe('derived state', () => {
   });
 });
 
+describe('task', () => {
+  it('defaults to the classification task', () => {
+    expect(new NetworkStore().task).toBe('classification');
+  });
+
+  it('suppresses the image-without-convolution warning for reconstruction', () => {
+    const store = new NetworkStore();
+    store.updateBlock(store.network.blocks[0].id, { shape: [28, 28, 1] });
+    expect(store.warnings.some((w) => w.title === 'Image input without a Convolution layer')).toBe(
+      true
+    );
+    store.task = 'reconstruction';
+    expect(store.warnings.some((w) => w.title === 'Image input without a Convolution layer')).toBe(
+      false
+    );
+  });
+});
+
 describe('expected input shape', () => {
   it('surfaces a mismatch as a warning', () => {
     const instance = store();

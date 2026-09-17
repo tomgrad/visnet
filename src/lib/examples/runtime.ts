@@ -23,7 +23,8 @@ export interface Runtime {
     data: ModelData,
     batchSize: number,
     onStats: (stats: TrainStats) => void,
-    onError: (error: unknown) => void
+    onError: (error: unknown) => void,
+    computeAccuracy?: boolean
   ): TrainerHandle;
   saveWeights(model: Model): Promise<void>;
   loadWeightsInto(model: Model): Promise<boolean>;
@@ -49,8 +50,16 @@ export async function loadRuntime(weightsId: string): Promise<Runtime> {
     disposeModel: (model) => {
       model?.dispose();
     },
-    createTrainer: (model, data, batchSize, onStats, onError) =>
-      new trainerModule.Trainer(model, data, batchSize, onStats, undefined, onError),
+    createTrainer: (model, data, batchSize, onStats, onError, computeAccuracy) =>
+      new trainerModule.Trainer(
+        model,
+        data,
+        batchSize,
+        onStats,
+        undefined,
+        onError,
+        computeAccuracy
+      ),
     saveWeights: (model) => weights.saveWeights(model, weightsId),
     loadWeightsInto: (model) => weights.loadWeightsInto(model, weightsId)
   };

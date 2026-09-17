@@ -37,6 +37,7 @@ export function createExperiment(options: {
   store: NetworkStore;
   weightsId: string;
   storage: NetworkStorage | null;
+  task?: 'classification' | 'reconstruction';
 }): Experiment {
   const { store, storage } = options;
 
@@ -95,7 +96,14 @@ export function createExperiment(options: {
     if (!api || !currentModel || !currentData || !store.isValid || currentData.xs.shape[0] === 0) {
       return;
     }
-    trainer = api.createTrainer(currentModel, currentData, batchSize, handleStats, handleError);
+    trainer = api.createTrainer(
+      currentModel,
+      currentData,
+      batchSize,
+      handleStats,
+      handleError,
+      options.task !== 'reconstruction'
+    );
   });
 
   $effect(() => {

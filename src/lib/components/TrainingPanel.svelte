@@ -8,6 +8,7 @@
     playing,
     disabled,
     stats = null,
+    showAccuracy = true,
     onplay,
     onpause,
     onstep,
@@ -17,6 +18,7 @@
     playing: boolean;
     disabled: boolean;
     stats?: TrainStats | null;
+    showAccuracy?: boolean;
     onplay: () => void;
     onpause: () => void;
     onstep: () => void;
@@ -167,7 +169,9 @@
         Not training yet. Press play to start, or step to train one batch.
       </p>
     {:else}
-      <dl>
+      <dl
+        style="grid-template-columns: repeat({showAccuracy ? 3 : 2}, minmax(0, 1fr))"
+      >
         <div>
           <dt>Epoch</dt>
           <dd data-testid="stats-epoch">{stats.epoch}</dd>
@@ -178,13 +182,15 @@
           <dd data-testid="stats-loss">{loss?.toFixed(3) ?? '—'}</dd>
           <small><span data-testid="stats-loss-label">{lossLabel}</span>. Lower is better.</small>
         </div>
-        <div>
-          <dt>Accuracy</dt>
-          <dd data-testid="stats-accuracy">
-            {accuracy === null ? '—' : `${(accuracy * 100).toFixed(1)}%`}
-          </dd>
-          <small>Share of points classified correctly, over the last completed epoch.</small>
-        </div>
+        {#if showAccuracy}
+          <div>
+            <dt>Accuracy</dt>
+            <dd data-testid="stats-accuracy">
+              {accuracy === null ? '—' : `${(accuracy * 100).toFixed(1)}%`}
+            </dd>
+            <small>Share of points classified correctly, over the last completed epoch.</small>
+          </div>
+        {/if}
       </dl>
     {/if}
   </div>
