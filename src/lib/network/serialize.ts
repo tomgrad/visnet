@@ -29,6 +29,12 @@ function isBlock(value: unknown): value is Block {
         isFinitePositive(value.stride) &&
         (value.padding === 'same' || value.padding === 'valid')
       );
+    case 'maxpool2d':
+      return (
+        isFinitePositive(value.poolSize) &&
+        isFinitePositive(value.stride) &&
+        (value.padding === 'same' || value.padding === 'valid')
+      );
     case 'output':
       return isFinitePositive(value.units);
     case 'flatten':

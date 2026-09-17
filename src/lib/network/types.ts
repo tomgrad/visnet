@@ -1,10 +1,19 @@
 export type BlockKind =
-  'input' | 'linear' | 'conv2d' | 'flatten' | 'relu' | 'sigmoid' | 'softmax' | 'output';
+  | 'input'
+  | 'linear'
+  | 'conv2d'
+  | 'maxpool2d'
+  | 'flatten'
+  | 'relu'
+  | 'sigmoid'
+  | 'softmax'
+  | 'output';
 
 export const BLOCK_KINDS: readonly BlockKind[] = [
   'input',
   'linear',
   'conv2d',
+  'maxpool2d',
   'flatten',
   'relu',
   'sigmoid',
@@ -34,6 +43,13 @@ export interface Conv2dBlock extends BlockBase {
   padding: 'same' | 'valid';
 }
 
+export interface MaxPool2dBlock extends BlockBase {
+  kind: 'maxpool2d';
+  poolSize: number;
+  stride: number;
+  padding: 'same' | 'valid';
+}
+
 export interface FlattenBlock extends BlockBase {
   kind: 'flatten';
 }
@@ -48,7 +64,13 @@ export interface OutputBlock extends BlockBase {
 }
 
 export type Block =
-  InputBlock | LinearBlock | Conv2dBlock | FlattenBlock | ActivationBlock | OutputBlock;
+  | InputBlock
+  | LinearBlock
+  | Conv2dBlock
+  | MaxPool2dBlock
+  | FlattenBlock
+  | ActivationBlock
+  | OutputBlock;
 
 export interface TrainingConfig {
   loss: 'mse' | 'crossEntropy';

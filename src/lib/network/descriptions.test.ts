@@ -29,6 +29,7 @@ describe('PARAM_DESCRIPTIONS', () => {
         'loss',
         'optimizer',
         'padding',
+        'poolSize',
         'stride',
         'units'
       ].sort()

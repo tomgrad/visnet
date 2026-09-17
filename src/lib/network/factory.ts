@@ -29,6 +29,8 @@ export function createBlock(kind: BlockKind): Block {
         stride: 1,
         padding: 'same'
       };
+    case 'maxpool2d':
+      return { id: newBlockId(), kind: 'maxpool2d', poolSize: 2, stride: 2, padding: 'valid' };
     case 'flatten':
       return { id: newBlockId(), kind: 'flatten' };
     case 'relu':
