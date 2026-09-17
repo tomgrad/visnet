@@ -78,7 +78,9 @@ plain-language errors with a suggested fix. Persistence is a shallow codec:
 `src/lib/persist/networkCodec.ts` turns a network into plain data and back, and
 `src/lib/persist/weights.ts` saves and loads trained weights. TensorFlow.js is
 confined to `src/lib/tf/`, `src/lib/training/`, `src/lib/data/tensors.ts`,
-`src/lib/render/boundary.ts`, and `src/lib/persist/weights.ts`.
+`src/lib/render/boundary.ts`, `src/lib/render/latent.ts`,
+`src/lib/render/activations.ts`, `src/lib/render/features.ts`, and
+`src/lib/persist/weights.ts`.
 
 The editor is a projection of that model, never a second copy of it: the canvas
 draws the network and turns gestures back into operations on it.
