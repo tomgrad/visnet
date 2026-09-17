@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onDestroy, onMount } from 'svelte';
+  import { onMount } from 'svelte';
   import DecisionBoundary from '$lib/components/DecisionBoundary.svelte';
   import ExampleLayout from '$lib/components/ExampleLayout.svelte';
   import LossChart from '$lib/components/LossChart.svelte';
@@ -8,6 +8,7 @@
   import TrainingPanel from '$lib/components/TrainingPanel.svelte';
   import { GENERATOR_DESCRIPTIONS, GENERATOR_NAMES } from '$lib/data/points';
   import { NetworkStore } from '$lib/editor/networkStore.svelte';
+  import { createExperiment } from '$lib/examples/experiment.svelte';
   import { DatasetStore } from '$lib/examples/mlp/datasetStore.svelte';
   import {
     CLASS_LABELS,
@@ -15,219 +16,38 @@
     MLP_STORAGE_KEYS,
     MLP_WEIGHTS_ID
   } from '$lib/examples/mlp/example';
-  import { weightsDiscardedNotice } from '$lib/examples/notices';
-  import {
-    loadRuntime,
-    type Model,
-    type ModelData,
-    type Runtime,
-    type TrainerHandle
-  } from '$lib/examples/runtime';
-  import { createBrowserStorage, type NetworkStorage } from '$lib/persist/storage';
-  import type { TrainStats } from '$lib/training/Trainer';
+  import { createBrowserStorage } from '$lib/persist/storage';
 
   const store = new NetworkStore();
   const datasetStore = new DatasetStore();
   store.expectedClasses = 2;
+  const storage = createBrowserStorage(MLP_STORAGE_KEYS);
+  const session = createExperiment({ store, weightsId: MLP_WEIGHTS_ID, storage });
 
-  let runtime = $state.raw<Runtime | null>(null);
-  let model = $state.raw<Model | null>(null);
-  let playing = $state(false);
-  let redrawKey = $state(0);
-  let stats = $state<TrainStats | null>(null);
-  let lossPoints = $state<number[]>([]);
-  let banner = $state<string | null>(null);
-  let saving = $state(false);
-  let builtSignature = $state('');
-  let trained = $state(false);
-
-  let currentModel: Model | null = null;
-  let data: ModelData | null = null;
-  let trainer: TrainerHandle | null = null;
-  let storage: NetworkStorage | null = null;
-  let compiledTraining = '';
-
-  const architecture = $derived(JSON.stringify(store.network.blocks));
-  const trainingSignature = $derived(JSON.stringify(store.network.training));
-
-  function handleStats(next: TrainStats): void {
-    redrawKey += 1;
-    stats = next;
-    if (next.epochMeanLoss !== null) {
-      trained = true;
-      lossPoints = [...lossPoints, next.epochMeanLoss].slice(-200);
-    }
-  }
-
-  function handleError(error: unknown): void {
-    playing = false;
-    console.error(error);
-    banner = 'Training stopped because the model changed. Press Reset model and try again.';
-  }
-
-  function releaseTrainer(): void {
-    trainer?.dispose();
-    trainer = null;
-    playing = false;
-  }
-
-  onMount(async () => {
-    runtime = await loadRuntime(MLP_WEIGHTS_ID);
-    storage = createBrowserStorage(MLP_STORAGE_KEYS);
-    if (!storage) {
-      banner =
-        'This browser will not let the app save your work, so changes last only until you reload.';
-      return;
-    }
-    const savedNetwork = storage.loadNetwork();
-    if (savedNetwork) {
-      store.load(savedNetwork);
-    } else if (storage.hasStoredNetwork()) {
-      banner = 'The saved network could not be read, so a fresh one has been loaded.';
-    }
+  onMount(() => {
+    if (!storage) return;
     const savedDataset = storage.loadDataset();
     if (savedDataset) datasetStore.dataset = savedDataset;
   });
 
-  onDestroy(() => {
-    releaseTrainer();
-    runtime?.disposeData(data);
-    runtime?.disposeModel(currentModel);
-    data = null;
-    currentModel = null;
-    model = null;
-  });
-
   $effect(() => {
-    const api = runtime;
+    const api = session.runtime;
     if (!api) return;
-    if (architecture === builtSignature) return;
-    builtSignature = architecture;
-    compiledTraining = trainingSignature;
-
-    releaseTrainer();
-    stats = null;
-    lossPoints = [];
-    const hadTrained = trained;
-    trained = false;
-    api.disposeModel(currentModel);
-    currentModel = null;
-    model = null;
-    if (hadTrained) banner = weightsDiscardedNotice(true);
-
-    if (!store.isValid) return;
-    try {
-      const built = api.buildModel(store.network);
-      currentModel = built;
-      model = built;
-    } catch (error) {
-      console.error(error);
-      api.disposeModel(currentModel);
-      currentModel = null;
-      model = null;
-      banner = 'This network could not be built. Check the problems listed in the editor.';
-    }
+    session.setData(api.toTensors(datasetStore.dataset));
   });
 
   $effect(() => {
-    const api = runtime;
-    const training = trainingSignature;
-    if (!api || !currentModel || training === compiledTraining) return;
-    compiledTraining = training;
-    api.compileModel(currentModel, store.network.training);
-  });
-
-  $effect(() => {
-    const api = runtime;
     const dataset = datasetStore.dataset;
-    const currentModelRef = model;
-    if (!api) return;
-
-    const next = api.toTensors(dataset);
-    releaseTrainer();
-    api.disposeData(data);
-    data = next;
-
-    if (!currentModelRef || !store.isValid || next.xs.shape[0] === 0) return;
-    trainer = api.createTrainer(
-      currentModelRef,
-      next,
-      store.network.training.batchSize,
-      handleStats,
-      handleError
-    );
-  });
-
-  $effect(() => {
-    const net = store.network;
-    const dataset = datasetStore.dataset;
-    const currentStorage = storage;
-    if (!currentStorage) return;
+    if (!storage) return;
     const timer = setTimeout(() => {
       try {
-        currentStorage.saveNetwork(net);
-        currentStorage.saveDataset(dataset);
+        storage.saveDataset(dataset);
       } catch {
-        banner = 'Your work could not be saved. The browser storage may be full.';
+        session.announce('Your work could not be saved. The browser storage may be full.');
       }
     }, 500);
     return () => clearTimeout(timer);
   });
-
-  async function play(): Promise<void> {
-    if (!trainer) return;
-    playing = true;
-    await trainer.play();
-    playing = false;
-  }
-
-  function pause(): void {
-    trainer?.pause();
-    playing = false;
-  }
-
-  function step(): void {
-    void trainer?.step();
-  }
-
-  function resetModel(): void {
-    releaseTrainer();
-    runtime?.disposeModel(currentModel);
-    currentModel = null;
-    model = null;
-    stats = null;
-    lossPoints = [];
-    trained = false;
-    builtSignature = '';
-  }
-
-  async function save(): Promise<void> {
-    const api = runtime;
-    if (!api || !currentModel) return;
-    saving = true;
-    try {
-      await api.saveWeights(currentModel);
-      banner = 'Model saved in this browser.';
-    } catch {
-      banner = 'The model could not be saved in this browser.';
-    } finally {
-      saving = false;
-    }
-  }
-
-  async function load(): Promise<void> {
-    const api = runtime;
-    if (!api || !currentModel) return;
-    saving = true;
-    try {
-      const loaded = await api.loadWeightsInto(currentModel);
-      banner = loaded
-        ? 'Saved weights loaded.'
-        : 'No saved weights match this network. Train and save again.';
-    } finally {
-      saving = false;
-    }
-  }
 </script>
 
 <ExampleLayout
@@ -235,12 +55,18 @@
   intro="Build a small network, train it on coloured points, and watch the boundary between the two classes take shape."
 >
   {#snippet editor()}
-    <NetworkEditor {store} palette={MLP_PALETTE} onsave={save} onload={load} {saving} />
+    <NetworkEditor
+      {store}
+      palette={MLP_PALETTE}
+      onsave={session.save}
+      onload={session.load}
+      saving={session.saving}
+    />
   {/snippet}
 
   {#snippet experiment()}
-    {#if banner}
-      <p class="banner" role="status">{banner}</p>
+    {#if session.banner}
+      <p class="banner" role="status">{session.banner}</p>
     {/if}
 
     <div class="dataset">
@@ -303,12 +129,12 @@
     </div>
 
     <DecisionBoundary
-      {model}
-      {redrawKey}
+      model={session.model}
+      redrawKey={session.redrawKey}
       dataset={datasetStore.dataset}
       selectedLabel={datasetStore.selectedLabel}
       onaddpoint={(x, y) => datasetStore.addPoint(x, y)}
-      caption={!runtime
+      caption={!session.runtime
         ? 'Loading the network. The boundary appears in a moment.'
         : store.isValid
           ? 'Each coloured area is the class the network predicts at that spot. Click to add a point.'
@@ -317,16 +143,16 @@
 
     <TrainingPanel
       {store}
-      {playing}
+      playing={session.playing}
       disabled={!store.isValid}
-      onplay={play}
-      onpause={pause}
-      onstep={step}
-      onreset={resetModel}
+      onplay={session.play}
+      onpause={session.pause}
+      onstep={session.step}
+      onreset={session.resetModel}
     />
 
-    <LossChart points={lossPoints} />
-    <StatsReadout {stats} />
+    <LossChart points={session.lossPoints} />
+    <StatsReadout stats={session.stats} />
   {/snippet}
 </ExampleLayout>
 
