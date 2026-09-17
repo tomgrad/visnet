@@ -47,10 +47,11 @@
     store.updateBlock(block.id, next);
   }
 
-  function currentNumber(key: 'units' | 'filters'): number | null {
+  function currentNumber(key: 'units' | 'filters' | 'size'): number | null {
     if (!block) return null;
     if (key === 'units' && (block.kind === 'linear' || block.kind === 'output')) return block.units;
     if (key === 'filters' && block.kind === 'conv2d') return block.filters;
+    if (key === 'size' && block.kind === 'upsampling2d') return block.size;
     return null;
   }
 
@@ -73,7 +74,7 @@
     patch({ shape: parsed } as Partial<InputBlock>);
   }
 
-  function commitNumber(event: Event, key: 'units' | 'filters'): void {
+  function commitNumber(event: Event, key: 'units' | 'filters' | 'size'): void {
     const input = event.currentTarget as HTMLInputElement;
     const value = Number(input.value);
     if (input.value.trim() === '' || !Number.isInteger(value) || value <= 0) {
@@ -227,6 +228,19 @@
         block.poolSize,
         PARAM_DESCRIPTIONS.poolSize
       )}
+    {:else if block.kind === 'upsampling2d'}
+      <label>
+        <span>Size</span>
+        <input
+          type="number"
+          min="1"
+          data-testid="param-upsample-size"
+          title={PARAM_DESCRIPTIONS.size}
+          value={block.size}
+          onchange={(event) => commitNumber(event, 'size')}
+        />
+        <small>{PARAM_DESCRIPTIONS.size}</small>
+      </label>
     {/if}
 
     {#if paramError}

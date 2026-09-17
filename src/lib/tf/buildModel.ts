@@ -47,6 +47,12 @@ function layerFor(block: Block, inputShape: number[] | undefined): tf.layers.Lay
         padding: block.padding,
         inputShape
       });
+    case 'upsampling2d':
+      return tf.layers.upSampling2d({
+        size: [block.size, block.size],
+        interpolation: 'nearest',
+        inputShape
+      });
     case 'flatten':
       return tf.layers.flatten({ inputShape });
     case 'relu':

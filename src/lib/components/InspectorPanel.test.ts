@@ -143,6 +143,16 @@ describe('InspectorPanel', () => {
     expect(store.network.blocks[1]).toMatchObject({ poolSize: 4 });
   });
 
+  it('changes the upsampling size', async () => {
+    const store = new NetworkStore();
+    store.updateBlock(store.network.blocks[0].id, { shape: [7, 7, 1] });
+    store.addBlock('upsampling2d', 1);
+    store.select(store.network.blocks[1].id);
+    render(InspectorPanel, { props: { store } });
+    await fireEvent.change(screen.getByTestId('param-upsample-size'), { target: { value: '3' } });
+    expect(store.network.blocks[1]).toMatchObject({ size: 3 });
+  });
+
   it('describes what each padding choice does to a pooled image', () => {
     const store = new NetworkStore();
     store.updateBlock(store.network.blocks[0].id, { shape: [28, 28, 1] });

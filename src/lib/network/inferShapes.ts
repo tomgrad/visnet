@@ -56,6 +56,11 @@ function outputShapeFor(block: Block, inShape: number[] | null): number[] | null
       if (outHeight <= 0 || outWidth <= 0) return null;
       return [outHeight, outWidth, channels];
     }
+    case 'upsampling2d': {
+      if (!inShape || inShape.length !== 3 || block.size < 1) return null;
+      const [height, width, channels] = inShape;
+      return [height * block.size, width * block.size, channels];
+    }
     case 'flatten':
       if (!inShape || inShape.length < 1) return null;
       return [product(inShape)];

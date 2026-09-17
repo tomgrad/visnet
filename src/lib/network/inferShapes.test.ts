@@ -158,6 +158,37 @@ describe('inferShapes with same-padded pooling', () => {
   });
 });
 
+describe('inferShapes on an upsampling chain', () => {
+  const result = inferShapes(
+    net([
+      { id: 'in', kind: 'input', shape: [7, 7, 3] },
+      { id: 'up', kind: 'upsampling2d', size: 2 },
+      { id: 'flat', kind: 'flatten' },
+      { id: 'dense', kind: 'linear', units: 10 },
+      { id: 'out', kind: 'output', units: 10 }
+    ])
+  );
+
+  it('doubles each spatial dimension and passes the channels through', () => {
+    expect(result.perBlock[1].outShape).toEqual([14, 14, 3]);
+  });
+
+  it('costs no trainable parameters', () => {
+    expect(result.perBlock[1].paramCount).toBe(0);
+  });
+
+  it('returns a null output shape for flat input', () => {
+    const flat = inferShapes(
+      net([
+        { id: 'in', kind: 'input', shape: [784] },
+        { id: 'up', kind: 'upsampling2d', size: 2 },
+        { id: 'out', kind: 'output', units: 2 }
+      ])
+    );
+    expect(flat.perBlock[1].outShape).toBeNull();
+  });
+});
+
 describe('inferShapes with an impossible pool', () => {
   it('returns a null output shape when the window does not fit', () => {
     const result = inferShapes(

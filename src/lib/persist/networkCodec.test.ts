@@ -56,6 +56,27 @@ describe('networkCodec', () => {
     ).toBeNull();
   });
 
+  it('rejects an upsampling2d block without a numeric size', () => {
+    const training = createEmptyNetwork().training;
+    expect(
+      decodeNetwork(JSON.stringify({ blocks: [{ id: 'u', kind: 'upsampling2d' }], training }))
+    ).toBeNull();
+    expect(
+      decodeNetwork(
+        JSON.stringify({ blocks: [{ id: 'u', kind: 'upsampling2d', size: 'big' }], training })
+      )
+    ).toBeNull();
+  });
+
+  it('round-trips an upsampling2d block', () => {
+    const net = createEmptyNetwork();
+    const block = { id: 'u', kind: 'upsampling2d', size: 3 };
+    const restored = decodeNetwork(
+      JSON.stringify({ blocks: [...net.blocks, block], training: net.training })
+    );
+    expect(restored?.blocks.at(-1)).toEqual(block);
+  });
+
   it('accepts a payload with no positions and defaults them to empty', () => {
     const net = createEmptyNetwork();
     const restored = decodeNetwork(JSON.stringify({ blocks: net.blocks, training: net.training }));

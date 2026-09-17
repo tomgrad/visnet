@@ -19,6 +19,7 @@ Available modules:
 - linear
 - convolutional
 - max pooling
+- upsampling
 - flatten
 - ReLU
 - Sigmoid

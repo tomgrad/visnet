@@ -15,6 +15,7 @@ describe('CNN_PALETTE', () => {
     expect(CNN_PALETTE).toEqual([
       'conv2d',
       'maxpool2d',
+      'upsampling2d',
       'flatten',
       'linear',
       'relu',

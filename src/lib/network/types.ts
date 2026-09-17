@@ -3,6 +3,7 @@ export type BlockKind =
   | 'linear'
   | 'conv2d'
   | 'maxpool2d'
+  | 'upsampling2d'
   | 'flatten'
   | 'relu'
   | 'sigmoid'
@@ -15,6 +16,7 @@ export const BLOCK_KINDS: readonly BlockKind[] = [
   'linear',
   'conv2d',
   'maxpool2d',
+  'upsampling2d',
   'flatten',
   'relu',
   'sigmoid',
@@ -52,6 +54,11 @@ export interface MaxPool2dBlock extends BlockBase {
   padding: 'same' | 'valid';
 }
 
+export interface UpSampling2dBlock extends BlockBase {
+  kind: 'upsampling2d';
+  size: number;
+}
+
 export interface FlattenBlock extends BlockBase {
   kind: 'flatten';
 }
@@ -70,6 +77,7 @@ export type Block =
   | LinearBlock
   | Conv2dBlock
   | MaxPool2dBlock
+  | UpSampling2dBlock
   | FlattenBlock
   | ActivationBlock
   | OutputBlock;

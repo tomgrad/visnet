@@ -21,6 +21,8 @@ function isBlock(value: unknown): value is Block {
       );
     case 'maxpool2d':
       return typeof value.poolSize === 'number' && typeof value.stride === 'number';
+    case 'upsampling2d':
+      return typeof value.size === 'number';
     default:
       return true;
   }

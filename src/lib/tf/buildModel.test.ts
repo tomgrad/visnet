@@ -178,6 +178,29 @@ describe('buildModel', () => {
     expect(model.layers.map((layer) => layer.getClassName())).toEqual(['Dense', 'Activation']);
     expect(model.outputs[0].shape).toEqual([null, 4]);
   });
+
+  it('builds an upsampling layer that enlarges the spatial dimensions', () => {
+    const network: Network = {
+      version: 2,
+      blocks: [
+        { id: 'in', kind: 'input', shape: [4, 4, 2] },
+        { id: 'up', kind: 'upsampling2d', size: 2 },
+        { id: 'flat', kind: 'flatten' },
+        { id: 'dense', kind: 'linear', units: 2 },
+        { id: 'out', kind: 'output', units: 2 }
+      ],
+      training: { loss: 'mse', optimizer: 'sgd', learningRate: 0.1, batchSize: 4 },
+      positions: {}
+    };
+    const model = build(network);
+    expect(model.layers[0].getClassName()).toBe('UpSampling2D');
+    expect((model.layers[0].getConfig() as { interpolation: string }).interpolation).toBe(
+      'nearest'
+    );
+    expect(model.inputs[0].shape).toEqual([null, 4, 4, 2]);
+    expect(model.layers[0].outputShape).toEqual([null, 8, 8, 2]);
+    expect(model.outputs[0].shape).toEqual([null, 2]);
+  });
 });
 
 describe('compileModel', () => {

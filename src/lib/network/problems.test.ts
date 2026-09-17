@@ -1,12 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createEmptyNetwork } from './factory';
 import type { Block, Network } from './types';
-import {
-  findProblems,
-  type Problem,
-  type ProblemOptions,
-  type Severity
-} from './problems';
+import { findProblems, type Problem, type ProblemOptions, type Severity } from './problems';
 
 function net(blocks: Network['blocks'], training?: Partial<Network['training']>): Network {
   return {
@@ -159,6 +154,14 @@ describe('findProblems errors', () => {
     expect(issue?.message).toContain('3');
   });
 
+  it('reports an upsampling layer receiving flat data', () => {
+    const network = net([INPUT, { id: 'up', kind: 'upsampling2d', size: 2 }, OUTPUT]);
+    const issue = errors(network).find((i) => i.title === 'Upsampling layer needs image data');
+    expect(issue).toBeDefined();
+    expect(issue?.blockId).toBe('up');
+    expect(issue?.message).toContain('[2]');
+  });
+
   it('reports a flatten layer receiving an already flat list', () => {
     const network = net([INPUT, { id: 'flat', kind: 'flatten' }, OUTPUT]);
     const issue = errors(network).find((i) => i.title === 'Nothing to flatten');
@@ -284,6 +287,7 @@ const ERROR_RULE_TITLES = [
   'Kernel is larger than the image',
   'Pooling layer needs image data',
   'Pool window is larger than the image',
+  'Upsampling layer needs image data',
   'Nothing to flatten',
   'Output must be a list of scores',
   'Last layer size does not match the Output block'
@@ -379,6 +383,11 @@ const RULE_CASES: RuleCase[] = [
       { id: 'pool', kind: 'maxpool2d', poolSize: 3, stride: 3, padding: 'valid' },
       OUTPUT
     ])
+  },
+  {
+    title: 'Upsampling layer needs image data',
+    severity: 'error',
+    network: net([INPUT, { id: 'up', kind: 'upsampling2d', size: 2 }, OUTPUT])
   },
   {
     title: 'Nothing to flatten',
