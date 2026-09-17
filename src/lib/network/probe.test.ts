@@ -43,7 +43,7 @@ describe('probeTargetFor', () => {
       blocks: [
         { id: 'in', kind: 'input', shape: [28, 28, 1] },
         { id: 'l', kind: 'linear', units: 8 },
-        { id: 'out', kind: 'output', units: 2 }
+        { id: 'out', kind: 'output', shape: [2] }
       ],
       training: TRAINING,
       positions: {}

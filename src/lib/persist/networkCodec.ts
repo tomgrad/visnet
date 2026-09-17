@@ -11,8 +11,9 @@ function isBlock(value: unknown): value is Block {
     case 'input':
       return Array.isArray(value.shape) && value.shape.every((n) => typeof n === 'number');
     case 'linear':
-    case 'output':
       return typeof value.units === 'number';
+    case 'output':
+      return Array.isArray(value.shape) && value.shape.every((n) => typeof n === 'number');
     case 'conv2d':
       return (
         typeof value.filters === 'number' &&
@@ -59,11 +60,20 @@ export function decodeNetwork(raw: string): Network | null {
   try {
     const parsed: unknown = JSON.parse(raw);
     if (!isRecord(parsed)) return null;
-    if (!Array.isArray(parsed.blocks) || !parsed.blocks.every(isBlock)) return null;
+    if (!Array.isArray(parsed.blocks)) return null;
+    const blocks = parsed.blocks.map((block) =>
+      isRecord(block) &&
+      block.kind === 'output' &&
+      block.shape === undefined &&
+      typeof block.units === 'number'
+        ? { ...block, shape: [block.units] }
+        : block
+    );
+    if (!blocks.every(isBlock)) return null;
     if (!isTraining(parsed.training)) return null;
     return {
       version: 2,
-      blocks: parsed.blocks,
+      blocks,
       training: parsed.training,
       positions: readPositions(parsed.positions)
     };

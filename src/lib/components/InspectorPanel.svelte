@@ -49,7 +49,7 @@
 
   function currentNumber(key: 'units' | 'filters' | 'size'): number | null {
     if (!block) return null;
-    if (key === 'units' && (block.kind === 'linear' || block.kind === 'output')) return block.units;
+    if (key === 'units' && block.kind === 'linear') return block.units;
     if (key === 'filters' && block.kind === 'conv2d') return block.filters;
     if (key === 'size' && block.kind === 'upsampling2d') return block.size;
     return null;
@@ -182,7 +182,7 @@
       </label>
     {/if}
 
-    {#if block.kind === 'linear' || block.kind === 'output'}
+    {#if block.kind === 'linear'}
       <label>
         <span>Units</span>
         <input

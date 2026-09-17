@@ -29,6 +29,10 @@ function shapeText(shape: number[] | null): string {
   return shape ? `[${shape.join(', ')}]` : 'an unknown shape';
 }
 
+function sameShape(a: number[], b: number[]): boolean {
+  return a.length === b.length && a.every((size, index) => size === b[index]);
+}
+
 function product(shape: number[]): number {
   return shape.reduce((total, size) => total * size, 1);
 }
@@ -225,21 +229,12 @@ export function findProblems(net: Network, options: ProblemOptions = {}): Proble
 
   if (outputBlock && outputBlock.kind === 'output' && lastRealIndex >= 0) {
     const lastShape = perBlock[lastRealIndex].outShape;
-    if (lastShape && lastShape.length !== 1) {
+    if (lastShape && !sameShape(lastShape, outputBlock.shape)) {
       problems.push(
         error({
-          title: 'Output must be a list of scores',
-          message: `The last layer produces ${shapeText(lastShape)}, which is not a list of numbers, so it cannot be compared with the ${outputBlock.units} scores the Output block expects.`,
-          fix: 'End the network with a Linear layer so the output is a list of numbers.',
-          blockId: net.blocks[lastRealIndex].id
-        })
-      );
-    } else if (lastShape && lastShape[0] !== outputBlock.units) {
-      problems.push(
-        error({
-          title: 'Last layer size does not match the Output block',
-          message: `The last layer produces ${lastShape[0]} numbers, but the Output block says ${outputBlock.units}.`,
-          fix: `Set the last layer to ${outputBlock.units} units, or change the Output block to ${lastShape[0]}.`,
+          title: 'Last layer shape does not match the Output block',
+          message: `The last layer produces ${shapeText(lastShape)}, but the Output block expects ${shapeText(outputBlock.shape)}.`,
+          fix: `Set the last layer to produce ${shapeText(outputBlock.shape)}, or change the Output block to ${shapeText(lastShape)}.`,
           blockId: net.blocks[lastRealIndex].id
         })
       );
@@ -285,17 +280,29 @@ export function findProblems(net: Network, options: ProblemOptions = {}): Proble
     }
   }
 
+  const finalShape = lastRealIndex >= 0 ? perBlock[lastRealIndex].outShape : null;
+  if (net.training.loss === 'crossEntropy' && finalShape && finalShape.length !== 1) {
+    problems.push(
+      warning({
+        title: 'Cross-entropy needs a flat output',
+        message: `Cross-entropy compares a flat list of scores with the labels, but the last layer produces ${shapeText(finalShape)}.`,
+        fix: 'End the network with a Flatten or Linear layer, or switch the loss to mean squared error.'
+      })
+    );
+  }
+
   if (
     options.expectedClasses !== undefined &&
     outputBlock &&
     outputBlock.kind === 'output' &&
-    outputBlock.units !== options.expectedClasses
+    outputBlock.shape.length === 1 &&
+    outputBlock.shape[0] !== options.expectedClasses
   ) {
     problems.push(
       warning({
         title: 'Output size does not match the data',
-        message: `The Output block says ${outputBlock.units} classes, but the dataset has ${options.expectedClasses}.`,
-        fix: `Make the last layer produce ${options.expectedClasses} numbers, and set the Output block to ${options.expectedClasses} units.`,
+        message: `The Output block says ${outputBlock.shape[0]} classes, but the dataset has ${options.expectedClasses}.`,
+        fix: `Make the last layer produce ${options.expectedClasses} numbers, and set the Output block to ${options.expectedClasses}.`,
         blockId: outputBlock.id
       })
     );

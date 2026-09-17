@@ -28,8 +28,10 @@ describe('PARAM_DESCRIPTIONS', () => {
         'learningRate',
         'loss',
         'optimizer',
+        'outputShape',
         'padding',
         'poolSize',
+        'reshapeShape',
         'size',
         'stride',
         'units'

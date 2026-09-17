@@ -76,7 +76,7 @@ export interface ActivationBlock extends BlockBase {
 
 export interface OutputBlock extends BlockBase {
   kind: 'output';
-  units: number;
+  shape: number[];
 }
 
 export type Block =

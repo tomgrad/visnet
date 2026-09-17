@@ -43,7 +43,7 @@ export function createBlock(kind: BlockKind): Block {
     case 'softmax':
       return { id: newBlockId(), kind };
     case 'output':
-      return { id: newBlockId(), kind: 'output', units: 2 };
+      return { id: newBlockId(), kind: 'output', shape: [2] };
   }
 }
 

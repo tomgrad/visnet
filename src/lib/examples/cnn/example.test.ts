@@ -58,7 +58,7 @@ describe('createCnnNetwork', () => {
     const network = createCnnNetwork();
     expect(network.blocks[0]).toMatchObject({ kind: 'input', shape: [28, 28, 1] });
     expect(network.blocks[4]).toMatchObject({ kind: 'linear', units: 10 });
-    expect(network.blocks[6]).toMatchObject({ kind: 'output', units: 10 });
+    expect(network.blocks[6]).toMatchObject({ kind: 'output', shape: [10] });
   });
 });
 

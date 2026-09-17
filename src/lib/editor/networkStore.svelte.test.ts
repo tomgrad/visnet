@@ -339,7 +339,7 @@ describe('initial network', () => {
       blocks: [
         { id: 'in', kind: 'input', shape: [4, 4, 1] },
         { id: 'conv', kind: 'conv2d', filters: 2, kernelSize: 2, stride: 1, padding: 'same' },
-        { id: 'out', kind: 'output', units: 3 }
+        { id: 'out', kind: 'output', shape: [3] }
       ],
       training: { loss: 'crossEntropy', optimizer: 'adam', learningRate: 0.01, batchSize: 32 },
       positions: {}

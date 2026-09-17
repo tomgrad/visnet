@@ -38,7 +38,7 @@ describe('domain types', () => {
       { id: 'f', kind: 'sigmoid' },
       { id: 'j', kind: 'tanh' },
       { id: 'g', kind: 'softmax' },
-      { id: 'h', kind: 'output', units: 2 }
+      { id: 'h', kind: 'output', shape: [2] }
     ];
 
     const network: Network = {

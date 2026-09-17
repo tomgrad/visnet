@@ -54,7 +54,7 @@ describe('inferShapes on a convolutional chain', () => {
       { id: 'conv', kind: 'conv2d', filters: 4, kernelSize: 3, stride: 1, padding: 'same' },
       { id: 'flat', kind: 'flatten' },
       { id: 'dense', kind: 'linear', units: 10 },
-      { id: 'out', kind: 'output', units: 10 }
+      { id: 'out', kind: 'output', shape: [10] }
     ])
   );
 
@@ -77,7 +77,7 @@ describe('inferShapes on a reshape', () => {
       net([
         { id: 'in', kind: 'input', shape: [4, 4, 1] },
         { id: 'r', kind: 'reshape', shape: [16] },
-        { id: 'out', kind: 'output', units: 16 }
+        { id: 'out', kind: 'output', shape: [16] }
       ])
     );
     expect(result.perBlock[1].outShape).toEqual([16]);
@@ -90,7 +90,7 @@ describe('inferShapes on a reshape', () => {
         { id: 'in', kind: 'input', shape: [28, 28, 1] },
         { id: 'dense', kind: 'linear', units: 8 },
         { id: 'r', kind: 'reshape', shape: [8] },
-        { id: 'out', kind: 'output', units: 8 }
+        { id: 'out', kind: 'output', shape: [8] }
       ])
     );
     expect(result.perBlock[2].outShape).toBeNull();
@@ -102,7 +102,7 @@ describe('inferShapes error propagation', () => {
     net([
       { id: 'in', kind: 'input', shape: [28, 28, 1] },
       { id: 'dense', kind: 'linear', units: 8 },
-      { id: 'out', kind: 'output', units: 2 }
+      { id: 'out', kind: 'output', shape: [2] }
     ])
   );
 
@@ -128,7 +128,7 @@ describe('inferShapes with an impossible convolution', () => {
       net([
         { id: 'in', kind: 'input', shape: [2, 2, 1] },
         { id: 'conv', kind: 'conv2d', filters: 4, kernelSize: 3, stride: 3, padding: 'valid' },
-        { id: 'out', kind: 'output', units: 2 }
+        { id: 'out', kind: 'output', shape: [2] }
       ])
     );
     expect(result.perBlock[1].inShape).toEqual([2, 2, 1]);
@@ -143,7 +143,7 @@ describe('inferShapes on a pooling chain', () => {
       { id: 'pool', kind: 'maxpool2d', poolSize: 2, stride: 2, padding: 'valid' },
       { id: 'flat', kind: 'flatten' },
       { id: 'dense', kind: 'linear', units: 10 },
-      { id: 'out', kind: 'output', units: 10 }
+      { id: 'out', kind: 'output', shape: [10] }
     ])
   );
 
@@ -166,7 +166,7 @@ describe('inferShapes with same-padded pooling', () => {
       net([
         { id: 'in', kind: 'input', shape: [28, 28, 1] },
         { id: 'pool', kind: 'maxpool2d', poolSize: 2, stride: 2, padding: 'same' },
-        { id: 'out', kind: 'output', units: 2 }
+        { id: 'out', kind: 'output', shape: [2] }
       ])
     );
     expect(result.perBlock[1].outShape).toEqual([14, 14, 1]);
@@ -177,7 +177,7 @@ describe('inferShapes with same-padded pooling', () => {
       net([
         { id: 'in', kind: 'input', shape: [27, 27, 1] },
         { id: 'pool', kind: 'maxpool2d', poolSize: 2, stride: 2, padding: 'same' },
-        { id: 'out', kind: 'output', units: 2 }
+        { id: 'out', kind: 'output', shape: [2] }
       ])
     );
     expect(result.perBlock[1].outShape).toEqual([14, 14, 1]);
@@ -191,7 +191,7 @@ describe('inferShapes on an upsampling chain', () => {
       { id: 'up', kind: 'upsampling2d', size: 2 },
       { id: 'flat', kind: 'flatten' },
       { id: 'dense', kind: 'linear', units: 10 },
-      { id: 'out', kind: 'output', units: 10 }
+      { id: 'out', kind: 'output', shape: [10] }
     ])
   );
 
@@ -208,7 +208,7 @@ describe('inferShapes on an upsampling chain', () => {
       net([
         { id: 'in', kind: 'input', shape: [784] },
         { id: 'up', kind: 'upsampling2d', size: 2 },
-        { id: 'out', kind: 'output', units: 2 }
+        { id: 'out', kind: 'output', shape: [2] }
       ])
     );
     expect(flat.perBlock[1].outShape).toBeNull();
@@ -221,7 +221,7 @@ describe('inferShapes with an impossible pool', () => {
       net([
         { id: 'in', kind: 'input', shape: [2, 2, 1] },
         { id: 'pool', kind: 'maxpool2d', poolSize: 3, stride: 3, padding: 'valid' },
-        { id: 'out', kind: 'output', units: 2 }
+        { id: 'out', kind: 'output', shape: [2] }
       ])
     );
     expect(result.perBlock[1].inShape).toEqual([2, 2, 1]);
@@ -233,7 +233,7 @@ describe('inferShapes with an impossible pool', () => {
       net([
         { id: 'in', kind: 'input', shape: [784] },
         { id: 'pool', kind: 'maxpool2d', poolSize: 2, stride: 2, padding: 'valid' },
-        { id: 'out', kind: 'output', units: 2 }
+        { id: 'out', kind: 'output', shape: [2] }
       ])
     );
     expect(result.perBlock[1].outShape).toBeNull();

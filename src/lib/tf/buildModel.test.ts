@@ -51,7 +51,7 @@ describe('buildModel', () => {
         { id: 'flat', kind: 'flatten' },
         { id: 'dense', kind: 'linear', units: 10 },
         { id: 'sm', kind: 'softmax' },
-        { id: 'out', kind: 'output', units: 10 }
+        { id: 'out', kind: 'output', shape: [10] }
       ],
       training: { loss: 'crossEntropy', optimizer: 'adam', learningRate: 0.01, batchSize: 32 },
       positions: {}
@@ -70,7 +70,7 @@ describe('buildModel', () => {
         { id: 'flat', kind: 'flatten' },
         { id: 'dense', kind: 'linear', units: 10 },
         { id: 'sm', kind: 'softmax' },
-        { id: 'out', kind: 'output', units: 10 }
+        { id: 'out', kind: 'output', shape: [10] }
       ],
       training: { loss: 'crossEntropy', optimizer: 'adam', learningRate: 0.01, batchSize: 32 },
       positions: {}
@@ -91,7 +91,7 @@ describe('buildModel', () => {
         { id: 'flat', kind: 'flatten' },
         { id: 'dense', kind: 'linear', units: 10 },
         { id: 'sm', kind: 'softmax' },
-        { id: 'out', kind: 'output', units: 10 }
+        { id: 'out', kind: 'output', shape: [10] }
       ],
       training: { loss: 'crossEntropy', optimizer: 'adam', learningRate: 0.01, batchSize: 32 },
       positions: {}
@@ -108,7 +108,7 @@ describe('buildModel', () => {
       blocks: [
         { id: 'in', kind: 'input', shape: [28, 28, 1] },
         { id: 'dense', kind: 'linear', units: 8 },
-        { id: 'out', kind: 'output', units: 2 }
+        { id: 'out', kind: 'output', shape: [2] }
       ],
       training: { loss: 'crossEntropy', optimizer: 'adam', learningRate: 0.01, batchSize: 32 },
       positions: {}
@@ -134,7 +134,7 @@ describe('buildModel', () => {
         { id: 'in', kind: 'input', shape: [2] },
         { id: 'good', kind: 'linear', units: 8 },
         { id: 'bad', kind: 'linear', units: -1 },
-        { id: 'out', kind: 'output', units: -1 }
+        { id: 'out', kind: 'output', shape: [-1] }
       ],
       training: { loss: 'crossEntropy', optimizer: 'adam', learningRate: 0.01, batchSize: 32 },
       positions: {}
@@ -169,7 +169,7 @@ describe('buildModel', () => {
         { id: 'in', kind: 'input', shape: [2] },
         { id: 'dense', kind: 'linear', units: 4 },
         { id: 'tanh', kind: 'tanh' },
-        { id: 'out', kind: 'output', units: 4 }
+        { id: 'out', kind: 'output', shape: [4] }
       ],
       training: { loss: 'mse', optimizer: 'sgd', learningRate: 0.1, batchSize: 4 },
       positions: {}
@@ -185,7 +185,7 @@ describe('buildModel', () => {
       blocks: [
         { id: 'in', kind: 'input', shape: [4, 4, 1] },
         { id: 'r', kind: 'reshape', shape: [16] },
-        { id: 'out', kind: 'output', units: 16 }
+        { id: 'out', kind: 'output', shape: [16] }
       ],
       training: { loss: 'mse', optimizer: 'sgd', learningRate: 0.1, batchSize: 4 },
       positions: {}
@@ -203,7 +203,7 @@ describe('buildModel', () => {
         { id: 'up', kind: 'upsampling2d', size: 2 },
         { id: 'flat', kind: 'flatten' },
         { id: 'dense', kind: 'linear', units: 2 },
-        { id: 'out', kind: 'output', units: 2 }
+        { id: 'out', kind: 'output', shape: [2] }
       ],
       training: { loss: 'mse', optimizer: 'sgd', learningRate: 0.1, batchSize: 4 },
       positions: {}

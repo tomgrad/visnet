@@ -75,6 +75,15 @@ describe('networkCodec', () => {
     ).toBeNull();
   });
 
+  it('loads a legacy output block that stores units', () => {
+    const net = createEmptyNetwork();
+    const blocks = net.blocks.map((block) =>
+      block.kind === 'output' ? { id: block.id, kind: 'output', units: 2 } : block
+    );
+    const restored = decodeNetwork(JSON.stringify({ blocks, training: net.training }));
+    expect(restored?.blocks.at(-1)).toMatchObject({ kind: 'output', shape: [2] });
+  });
+
   it('round-trips an upsampling2d block', () => {
     const net = createEmptyNetwork();
     const block = { id: 'u', kind: 'upsampling2d', size: 3 };

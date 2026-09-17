@@ -24,7 +24,7 @@ const errors = (network: Network): Problem[] =>
 const titles = (network: Network): string[] => errors(network).map((issue) => issue.title);
 
 const INPUT: Block = { id: 'in', kind: 'input', shape: [2] };
-const OUTPUT: Block = { id: 'out', kind: 'output', units: 2 };
+const OUTPUT: Block = { id: 'out', kind: 'output', shape: [2] };
 const IMAGE_INPUT: Block = { id: 'img', kind: 'input', shape: [28, 28, 1] };
 const CONV: Block = {
   id: 'conv',
@@ -66,7 +66,7 @@ describe('findProblems errors', () => {
   });
 
   it('reports more than one output block', () => {
-    const second: Block = { id: 'out2', kind: 'output', units: 2 };
+    const second: Block = { id: 'out2', kind: 'output', shape: [2] };
     expect(titles(net([INPUT, { id: 'a', kind: 'relu' }, OUTPUT, second]))).toContain(
       'More than one Output block'
     );
@@ -190,7 +190,7 @@ describe('findProblems errors', () => {
   it('reports when the last real layer does not match the Output block', () => {
     const network = defaultWithLastLayerUnits(3);
     const issue = errors(network).find(
-      (i) => i.title === 'Last layer size does not match the Output block'
+      (i) => i.title === 'Last layer shape does not match the Output block'
     );
     const lastReal = network.blocks.filter((block) => block.kind !== 'output');
     expect(issue).toBeDefined();
@@ -303,14 +303,14 @@ const ERROR_RULE_TITLES = [
   'Upsampling layer needs image data',
   'Nothing to flatten',
   'Reshape size does not match',
-  'Output must be a list of scores',
-  'Last layer size does not match the Output block'
+  'Last layer shape does not match the Output block'
 ];
 
 const WARNING_RULE_TITLES = [
   'Add a Softmax for probabilities',
   'Softmax is unusual with mean squared error',
   'Softmax is not the last layer',
+  'Cross-entropy needs a flat output',
   'Output size does not match the data',
   'Image input without a Convolution layer',
   'Convolution layer without image input',
@@ -352,7 +352,7 @@ const RULE_CASES: RuleCase[] = [
       INPUT,
       { id: 'a', kind: 'relu' },
       OUTPUT,
-      { id: 'out2', kind: 'output', units: 2 }
+      { id: 'out2', kind: 'output', shape: [2] }
     ])
   },
   { title: 'Nothing to learn', severity: 'error', network: net([INPUT, OUTPUT]) },
@@ -418,17 +418,13 @@ const RULE_CASES: RuleCase[] = [
     ])
   },
   {
-    title: 'Output must be a list of scores',
+    title: 'Last layer shape does not match the Output block',
     severity: 'error',
-    network: net(
-      [{ id: 'grid', kind: 'input', shape: [2, 2] }, { id: 'act', kind: 'relu' }, OUTPUT],
-      { loss: 'mse' }
-    )
-  },
-  {
-    title: 'Last layer size does not match the Output block',
-    severity: 'error',
-    network: defaultWithLastLayerUnits(3)
+    network: net([
+      { id: 'in', kind: 'input', shape: [2] },
+      { id: 'dense', kind: 'linear', units: 4 },
+      { id: 'out', kind: 'output', shape: [2] }
+    ])
   },
   {
     title: 'Add a Softmax for probabilities',
@@ -451,6 +447,15 @@ const RULE_CASES: RuleCase[] = [
       { id: 'sm', kind: 'softmax' },
       { id: 'dense', kind: 'linear', units: 2 },
       OUTPUT
+    ])
+  },
+  {
+    title: 'Cross-entropy needs a flat output',
+    severity: 'warning',
+    network: net([
+      { id: 'in', kind: 'input', shape: [4, 4, 1] },
+      { id: 'pool', kind: 'maxpool2d', poolSize: 2, stride: 2, padding: 'valid' },
+      { id: 'out', kind: 'output', shape: [2, 2, 1] }
     ])
   },
   {

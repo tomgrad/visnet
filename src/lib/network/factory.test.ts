@@ -28,7 +28,7 @@ describe('createBlock', () => {
       padding: 'valid'
     });
     expect(createBlock('reshape')).toMatchObject({ kind: 'reshape', shape: [1] });
-    expect(createBlock('output')).toMatchObject({ kind: 'output', units: 2 });
+    expect(createBlock('output')).toMatchObject({ kind: 'output', shape: [2] });
   });
 });
 

@@ -35,7 +35,7 @@ export function createCnnNetwork(): Network {
   const flatten = createBlock('flatten');
   const dense: LinearBlock = { ...(createBlock('linear') as LinearBlock), units: 10 };
   const softmax = createBlock('softmax');
-  const output: OutputBlock = { ...(createBlock('output') as OutputBlock), units: 10 };
+  const output: OutputBlock = { ...(createBlock('output') as OutputBlock), shape: [10] };
 
   return {
     version: 2,

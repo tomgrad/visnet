@@ -22,7 +22,7 @@ function net(): Network {
       { id: 'a', kind: 'linear', units: 8 },
       { id: 'b', kind: 'relu' },
       { id: 'c', kind: 'linear', units: 2 },
-      { id: 'out', kind: 'output', units: 2 }
+      { id: 'out', kind: 'output', shape: [2] }
     ],
     training: { loss: 'crossEntropy', optimizer: 'adam', learningRate: 0.01, batchSize: 32 },
     positions: {}

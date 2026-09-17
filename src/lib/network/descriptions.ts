@@ -12,11 +12,13 @@ export const BLOCK_DESCRIPTIONS: Record<BlockKind, string> = {
   sigmoid: 'Squashes each value into the range 0 to 1.',
   tanh: 'Squashes each value into the range -1 to 1.',
   softmax: 'Turns raw scores into probabilities that add up to 1.',
-  output: 'Declares what the network predicts and how many classes there are.'
+  output: 'Declares the shape the network predicts.'
 };
 
 export const PARAM_DESCRIPTIONS = {
   inputShape: 'The shape of one example, for example 2 numbers or a 28 by 28 image.',
+  outputShape: 'The shape the network should produce, for example 2 numbers or a 28 by 28 image.',
+  reshapeShape: 'The new shape for the same numbers.',
   units: 'How many numbers this layer produces.',
   filters: 'How many different patterns this layer looks for.',
   kernelSize: 'How large the window sliding over the image is.',
