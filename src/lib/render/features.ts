@@ -46,11 +46,16 @@ export function featureMaps(
       const plane = height * width;
       const result: FeatureMap[] = [];
       for (let channel = 0; channel < channels; channel++) {
-        const start = channel * plane;
-        const [min, max] = extent(data, start, plane);
+        let min = Infinity;
+        let max = -Infinity;
+        for (let pixel = 0; pixel < plane; pixel++) {
+          const value = data[pixel * channels + channel];
+          if (value < min) min = value;
+          if (value > max) max = value;
+        }
         const values = new Uint8ClampedArray(plane);
-        for (let index = 0; index < plane; index++) {
-          values[index] = shade(data[start + index], min, max);
+        for (let pixel = 0; pixel < plane; pixel++) {
+          values[pixel] = shade(data[pixel * channels + channel], min, max);
         }
         result.push({ width, height, values });
       }

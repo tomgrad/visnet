@@ -53,6 +53,27 @@ describe('featureMaps', () => {
     expect(Array.from(maps[0].values)).toEqual(new Array(28 * 28).fill(128));
   });
 
+  it('groups values by channel rather than contiguous memory', () => {
+    const model = tf.sequential();
+    model.add(
+      tf.layers.conv2d({
+        filters: 2,
+        kernelSize: 1,
+        inputShape: [2, 2, 1],
+        padding: 'same',
+        activation: 'linear'
+      })
+    );
+    model.layers[0].setWeights([tf.tensor4d([1, -1], [1, 1, 1, 2]), tf.tensor1d([0, 0])]);
+    models.push(model);
+
+    const pixels = Uint8Array.of(0, 85, 170, 255);
+    const maps = featureMaps(model, pixels, 2, 2, 0);
+
+    expect(Array.from(maps[0].values)).toEqual([0, 85, 170, 255]);
+    expect(Array.from(maps[1].values)).toEqual([255, 170, 85, 0]);
+  });
+
   it('does not leak tensors', () => {
     const model = cnn();
     const before = tf.memory().numTensors;
