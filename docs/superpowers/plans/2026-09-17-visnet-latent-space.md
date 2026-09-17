@@ -22,6 +22,14 @@
 
 `docs/superpowers/specs/2026-09-17-visnet-latent-space-design.md`
 
+> **Correction (applied during execution):** Task 3's code below uses
+> `dims.length` as the number of plottable dimensions. That is wrong: `dims` is
+> the output shape array, so for an 8-unit Linear layer `dims` is `[8]` and
+> `dims.length` is the rank (1), while the feature count is 8. The implemented
+> component uses the feature count (the product of `dims` for a rank-1 target)
+> everywhere the code below uses `dims.length`. The spec's §6 carries the
+> corrected contract.
+
 ---
 
 ### Task 1: Pure probe target mapping

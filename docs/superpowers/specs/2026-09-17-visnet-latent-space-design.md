@@ -106,8 +106,14 @@ Rules, matching the approved behaviour "every block's output":
 - When `inferShapes` reports a `null` output shape (an earlier block is
   invalid), `dims` is `[]`.
 
-`source` indexes `model.layers`; `dims` is the rank-1 output shape. A target
-with `dims.length < 2` cannot be plotted.
+`source` indexes `model.layers`; `dims` is the output shape array. The panel
+plots only rank-1 targets (`dims.length === 1`); for those, the number of
+plottable dimensions is the **feature count**, `dims[0]`. A target with a
+feature count below 2, or with rank other than 1, cannot be plotted.
+
+Note: `dims.length` is the rank, not the feature count. For an 8-unit Linear
+layer `dims` is `[8]`, so `dims.length` is 1 while the feature count is 8. The
+label and cycler must use the feature count.
 
 ## 7. Render module
 
@@ -174,9 +180,9 @@ interface Props {
   untouched and the model's lifecycle is unchanged.
 - `pair` is component state: the index of the first dimension, starting at 0.
   It resets to 0 when the selected block changes, and is clamped to
-  `dims.length - 2` when the dimensions shrink.
+  `featureCount - 2` when the dimensions shrink.
 - The "Next dimensions" button advances `pair` and wraps to 0.
-- The label reads `dimensions {pair+1} & {pair+2} of {dims.length}`.
+- The label reads `dimensions {pair+1} & {pair+2} of {featureCount}`.
 - A redraw effect depends on `redrawKey`, `model`, the selected target, and
   `pair`.
 
@@ -202,8 +208,9 @@ The canvas reuses the class colours and background from
 - `model` is null → "Fix the problems listed in the editor before the latent
   space can be drawn."
 - Nothing selected → "Select a block to see its latent space."
-- `probeTargetFor` returns null, or `dims.length < 2` → "This layer has fewer
-  than two dimensions, so there is nothing to plot."
+- `probeTargetFor` returns null, the target is not rank-1, or the feature count
+  is below 2 → "This layer has fewer than two dimensions, so there is nothing
+  to plot."
 - `projectLatent` throws → a plain-language message; the panel does not crash.
 
 ## 10. Performance
