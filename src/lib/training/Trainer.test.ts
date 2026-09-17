@@ -113,7 +113,15 @@ describe('Trainer bookkeeping', () => {
     const model = buildModel(createEmptyNetwork());
     models.push(model);
     const stats: TrainStats[] = [];
-    const trainer = new Trainer(model, makeData(), 4, (s) => stats.push(s), undefined, undefined, false);
+    const trainer = new Trainer(
+      model,
+      makeData(),
+      4,
+      (s) => stats.push(s),
+      undefined,
+      undefined,
+      false
+    );
     await trainer.step();
     await trainer.step();
     expect(stats[1].epochAccuracy).toBeNull();

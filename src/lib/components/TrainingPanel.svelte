@@ -169,9 +169,7 @@
         Not training yet. Press play to start, or step to train one batch.
       </p>
     {:else}
-      <dl
-        style="grid-template-columns: repeat({showAccuracy ? 3 : 2}, minmax(0, 1fr))"
-      >
+      <dl style="grid-template-columns: repeat({showAccuracy ? 3 : 2}, minmax(0, 1fr))">
         <div>
           <dt>Epoch</dt>
           <dd data-testid="stats-epoch">{stats.epoch}</dd>
