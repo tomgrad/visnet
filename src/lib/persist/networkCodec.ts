@@ -5,11 +5,35 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function isBlock(value: unknown): value is Block {
-  return isRecord(value) && typeof value.id === 'string' && typeof value.kind === 'string';
+  if (!isRecord(value)) return false;
+  if (typeof value.id !== 'string' || typeof value.kind !== 'string') return false;
+  switch (value.kind) {
+    case 'input':
+      return Array.isArray(value.shape) && value.shape.every((n) => typeof n === 'number');
+    case 'linear':
+    case 'output':
+      return typeof value.units === 'number';
+    case 'conv2d':
+      return (
+        typeof value.filters === 'number' &&
+        typeof value.kernelSize === 'number' &&
+        typeof value.stride === 'number'
+      );
+    case 'maxpool2d':
+      return typeof value.poolSize === 'number' && typeof value.stride === 'number';
+    default:
+      return true;
+  }
 }
 
 function isTraining(value: unknown): value is TrainingConfig {
-  return isRecord(value) && typeof value.loss === 'string' && typeof value.optimizer === 'string';
+  return (
+    isRecord(value) &&
+    (value.loss === 'mse' || value.loss === 'crossEntropy') &&
+    (value.optimizer === 'sgd' || value.optimizer === 'adam') &&
+    typeof value.learningRate === 'number' &&
+    typeof value.batchSize === 'number'
+  );
 }
 
 function readPositions(value: unknown): Record<string, NodePosition> {

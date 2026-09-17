@@ -14,9 +14,7 @@
   const info = $derived(index === -1 ? null : store.shapes.perBlock[index]);
   const previousKind = $derived(index > 0 ? store.network.blocks[index - 1].kind : null);
   const inShape = $derived(info?.inShape ?? null);
-  const limit = $derived(
-    inShape && inShape.length === 3 ? Math.min(inShape[0], inShape[1]) : null
-  );
+  const limit = $derived(inShape && inShape.length === 3 ? Math.min(inShape[0], inShape[1]) : null);
   const spatialSize = $derived(
     block?.kind === 'conv2d'
       ? block.kernelSize
@@ -30,20 +28,17 @@
   const paddingValue = $derived(
     block?.kind === 'conv2d' || block?.kind === 'maxpool2d' ? block.padding : 'valid'
   );
-  const sizeChoices = $derived(
-    spatialSize === null
-      ? []
-      : limit === null
-        ? [spatialSize]
-        : Array.from({ length: Math.floor(limit) }, (_, index) => index + 1)
-  );
-  const strideChoices = $derived(
-    spatialStride === null
-      ? []
-      : limit === null
-        ? [spatialStride]
-        : Array.from({ length: Math.floor(limit) }, (_, index) => index + 1)
-  );
+  function choicesFor(current: number | null, highestAllowed: number | null): number[] {
+    if (current === null) return [];
+    if (highestAllowed === null || !Number.isFinite(highestAllowed) || highestAllowed < 1) {
+      return [current];
+    }
+    const highest = Math.max(Math.floor(highestAllowed), Math.ceil(current));
+    return Array.from({ length: highest }, (_, index) => index + 1);
+  }
+
+  const sizeChoices = $derived(choicesFor(spatialSize, limit));
+  const strideChoices = $derived(choicesFor(spatialStride, limit));
   const canMove = $derived(block !== null && block.kind !== 'input' && block.kind !== 'output');
   let paramError = $state<string | null>(null);
 

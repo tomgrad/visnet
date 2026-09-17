@@ -76,6 +76,22 @@ describe('InspectorPanel', () => {
     expect(screen.getByTestId('param-kernel-size')).toBeTruthy();
   });
 
+  it('keeps a stored kernel size selectable when it exceeds the image', () => {
+    const store = new NetworkStore();
+    store.updateBlock(store.network.blocks[0].id, { shape: [4, 4, 1] });
+    store.addBlock('conv2d', 1);
+    store.updateBlock(store.network.blocks[1].id, { kernelSize: 5 });
+    render(InspectorPanel, { props: { store } });
+
+    const select = screen.getByTestId('param-kernel-size') as HTMLSelectElement;
+    const options = Array.from(select.querySelectorAll('option')).map((option) =>
+      option.getAttribute('value')
+    );
+    expect(options).toContain('5');
+    expect(select.value).toBe('5');
+    expect(store.network.blocks[1]).toMatchObject({ kernelSize: 5 });
+  });
+
   it('describes what each padding choice does to the image size', () => {
     const store = new NetworkStore();
     store.updateBlock(store.network.blocks[0].id, { shape: [28, 28, 1] });

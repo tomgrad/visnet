@@ -25,11 +25,40 @@ describe('networkCodec', () => {
     expect(decodeNetwork(JSON.stringify({ blocks: net.blocks }))).toBeNull();
   });
 
+  it('returns null when an input block lacks a numeric shape', () => {
+    const training = createEmptyNetwork().training;
+    expect(
+      decodeNetwork(JSON.stringify({ blocks: [{ id: 'a', kind: 'input' }], training }))
+    ).toBeNull();
+    expect(
+      decodeNetwork(
+        JSON.stringify({ blocks: [{ id: 'a', kind: 'input', shape: 'square' }], training })
+      )
+    ).toBeNull();
+    expect(
+      decodeNetwork(
+        JSON.stringify({ blocks: [{ id: 'a', kind: 'input', shape: [2, 'x'] }], training })
+      )
+    ).toBeNull();
+  });
+
+  it('returns null when a training field is not one of the known choices', () => {
+    const net = createEmptyNetwork();
+    expect(
+      decodeNetwork(
+        JSON.stringify({ blocks: net.blocks, training: { ...net.training, loss: 'x' } })
+      )
+    ).toBeNull();
+    expect(
+      decodeNetwork(
+        JSON.stringify({ blocks: net.blocks, training: { ...net.training, optimizer: 'y' } })
+      )
+    ).toBeNull();
+  });
+
   it('accepts a payload with no positions and defaults them to empty', () => {
     const net = createEmptyNetwork();
-    const restored = decodeNetwork(
-      JSON.stringify({ blocks: net.blocks, training: net.training })
-    );
+    const restored = decodeNetwork(JSON.stringify({ blocks: net.blocks, training: net.training }));
     expect(restored?.positions).toEqual({});
   });
 });
