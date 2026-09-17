@@ -1,4 +1,5 @@
 import * as tf from '@tensorflow/tfjs';
+import { forwardActivations } from './activations';
 
 export const LATENT_GRID_SIZE = 32;
 
@@ -62,12 +63,7 @@ export function projectLatent(
 
   const result = tf.tidy(() => {
     const input = tf.tensor2d(all, [cellCount + pointCount, 2]);
-    const activations: tf.Tensor[] = [];
-    let current: tf.Tensor = input;
-    for (const layer of model.layers) {
-      current = layer.apply(current) as tf.Tensor;
-      activations.push(current);
-    }
+    const activations = forwardActivations(model, input);
 
     const final = activations[activations.length - 1];
     const gridClasses = Int32Array.from(tf.argMax(final, 1).dataSync().slice(0, cellCount));
