@@ -130,6 +130,30 @@ describe('validate errors', () => {
     expect(issue?.message).toContain('3');
   });
 
+  it('reports a pooling layer receiving flat data', () => {
+    const network = net([
+      INPUT,
+      { id: 'pool', kind: 'maxpool2d', poolSize: 2, stride: 2, padding: 'valid' },
+      OUTPUT
+    ]);
+    const issue = errors(network).find((i) => i.title === 'Pooling layer needs image data');
+    expect(issue).toBeDefined();
+    expect(issue?.blockId).toBe('pool');
+    expect(issue?.message).toContain('[2]');
+  });
+
+  it('reports a pool window larger than the image', () => {
+    const network = net([
+      { id: 'in', kind: 'input', shape: [2, 2, 1] },
+      { id: 'pool', kind: 'maxpool2d', poolSize: 3, stride: 3, padding: 'valid' },
+      OUTPUT
+    ]);
+    const issue = errors(network).find((i) => i.title === 'Pool window is larger than the image');
+    expect(issue).toBeDefined();
+    expect(issue?.blockId).toBe('pool');
+    expect(issue?.message).toContain('3');
+  });
+
   it('reports a flatten layer receiving an already flat list', () => {
     const network = net([INPUT, { id: 'flat', kind: 'flatten' }, OUTPUT]);
     const issue = errors(network).find((i) => i.title === 'Nothing to flatten');
@@ -253,6 +277,8 @@ const ERROR_RULE_TITLES = [
   'Linear layer needs a flat list',
   'Convolution layer needs image data',
   'Kernel is larger than the image',
+  'Pooling layer needs image data',
+  'Pool window is larger than the image',
   'Nothing to flatten',
   'Output must be a list of scores',
   'Last layer size does not match the Output block'
@@ -328,6 +354,24 @@ const RULE_CASES: RuleCase[] = [
     network: net([
       { id: 'small', kind: 'input', shape: [2, 2, 1] },
       { id: 'conv', kind: 'conv2d', filters: 4, kernelSize: 3, stride: 3, padding: 'valid' },
+      OUTPUT
+    ])
+  },
+  {
+    title: 'Pooling layer needs image data',
+    severity: 'error',
+    network: net([
+      INPUT,
+      { id: 'pool', kind: 'maxpool2d', poolSize: 2, stride: 2, padding: 'valid' },
+      OUTPUT
+    ])
+  },
+  {
+    title: 'Pool window is larger than the image',
+    severity: 'error',
+    network: net([
+      { id: 'small', kind: 'input', shape: [2, 2, 1] },
+      { id: 'pool', kind: 'maxpool2d', poolSize: 3, stride: 3, padding: 'valid' },
       OUTPUT
     ])
   },
