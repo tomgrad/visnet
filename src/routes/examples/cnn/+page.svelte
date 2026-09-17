@@ -4,7 +4,6 @@
   import LossChart from '$lib/components/LossChart.svelte';
   import NetworkEditor from '$lib/components/NetworkEditor.svelte';
   import SampleGrid from '$lib/components/SampleGrid.svelte';
-  import StatsReadout from '$lib/components/StatsReadout.svelte';
   import TrainingPanel from '$lib/components/TrainingPanel.svelte';
   import type { ImageDataset } from '$lib/data/images';
   import { loadMnistData } from '$lib/data/mnist';
@@ -114,6 +113,7 @@
       {store}
       playing={session.playing}
       disabled={!store.isValid || loadState !== 'ready'}
+      stats={session.stats}
       onplay={session.play}
       onpause={session.pause}
       onstep={session.step}
@@ -121,7 +121,6 @@
     />
 
     <LossChart points={session.lossPoints} />
-    <StatsReadout stats={session.stats} />
   {/snippet}
 </ExampleLayout>
 

@@ -4,7 +4,6 @@
   import ExampleLayout from '$lib/components/ExampleLayout.svelte';
   import LossChart from '$lib/components/LossChart.svelte';
   import NetworkEditor from '$lib/components/NetworkEditor.svelte';
-  import StatsReadout from '$lib/components/StatsReadout.svelte';
   import TrainingPanel from '$lib/components/TrainingPanel.svelte';
   import { GENERATOR_DESCRIPTIONS, GENERATOR_NAMES } from '$lib/data/points';
   import { NetworkStore } from '$lib/editor/networkStore.svelte';
@@ -145,6 +144,7 @@
       {store}
       playing={session.playing}
       disabled={!store.isValid}
+      stats={session.stats}
       onplay={session.play}
       onpause={session.pause}
       onstep={session.step}
@@ -152,7 +152,6 @@
     />
 
     <LossChart points={session.lossPoints} />
-    <StatsReadout stats={session.stats} />
   {/snippet}
 </ExampleLayout>
 

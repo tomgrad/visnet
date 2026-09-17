@@ -121,4 +121,14 @@ describe('TrainingPanel', () => {
     expect((screen.getByTestId('training-play') as HTMLButtonElement).disabled).toBe(true);
     expect((screen.getByTestId('training-pause') as HTMLButtonElement).disabled).toBe(false);
   });
+
+  it('shows the epoch, loss and accuracy of the latest stats', () => {
+    panel({
+      stats: { epoch: 3, batch: 0, batchLoss: 0.12, epochMeanLoss: 0.2, epochAccuracy: 0.9 }
+    });
+    const text = screen.getByTestId('training-panel').textContent ?? '';
+    expect(text).toContain('3');
+    expect(text).toContain('0.20');
+    expect(text).toContain('90');
+  });
 });
