@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PointDataset } from '../data/points';
 import DecisionBoundary from './DecisionBoundary.svelte';
-import DecisionBoundaryHarness from './DecisionBoundaryHarness.svelte';
+import DecisionBoundaryHarness from './__stubs__/DecisionBoundaryHarness.svelte';
 
 const DATASET: PointDataset = {
   points: [

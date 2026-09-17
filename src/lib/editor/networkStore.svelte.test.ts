@@ -190,7 +190,6 @@ describe('derived state', () => {
     expect(instance.isValid).toBe(true);
     expect(instance.errors).toEqual([]);
     expect(instance.warnings).toEqual([]);
-    expect(instance.paramCount).toBe(42);
 
     instance.removeBlock(instance.network.blocks[4].id);
     expect(instance.isValid).toBe(true);

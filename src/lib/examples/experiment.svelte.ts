@@ -2,7 +2,6 @@ import { onDestroy, onMount, untrack } from 'svelte';
 import type { NetworkStore } from '../editor/networkStore.svelte';
 import type { NetworkStorage } from '../persist/storage';
 import type { TrainStats } from '../training/Trainer';
-import { weightsDiscardedNotice } from './notices';
 import {
   loadRuntime,
   type Model,
@@ -10,6 +9,8 @@ import {
   type Runtime,
   type TrainerHandle
 } from './runtime';
+
+const WEIGHTS_DISCARDED_NOTICE = 'The network changed, so training restarted with fresh weights.';
 
 export interface Experiment {
   runtime: Runtime | null;
@@ -109,7 +110,7 @@ export function createExperiment(options: {
     trained = false;
     api.disposeModel(model);
     model = null;
-    if (hadTrained) banner = weightsDiscardedNotice(true);
+    if (hadTrained) banner = WEIGHTS_DISCARDED_NOTICE;
     if (!store.isValid) return;
     try {
       model = api.buildModel(store.network);

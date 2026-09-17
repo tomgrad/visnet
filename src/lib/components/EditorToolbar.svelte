@@ -4,13 +4,11 @@
 
   let {
     store,
-    onfit,
     onsave,
     onload,
     saving = false
   }: {
     store: NetworkStore;
-    onfit?: () => void;
     onsave?: () => void;
     onload?: () => void;
     saving?: boolean;
@@ -56,10 +54,6 @@
   >
     Tidy up
   </button>
-
-  {#if onfit}
-    <button type="button" data-testid="fit-view" onclick={onfit}>Fit view</button>
-  {/if}
 
   {#if onsave}
     <button type="button" data-testid="save-model" disabled={saving} onclick={onsave}>

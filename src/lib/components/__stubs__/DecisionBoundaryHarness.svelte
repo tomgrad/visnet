@@ -1,7 +1,7 @@
 <script lang="ts">
   import type * as tf from '@tensorflow/tfjs';
-  import type { PointDataset } from '../data/points';
-  import DecisionBoundary from './DecisionBoundary.svelte';
+  import type { PointDataset } from '../../data/points';
+  import DecisionBoundary from '../DecisionBoundary.svelte';
 
   let {
     model = null,

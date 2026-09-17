@@ -30,7 +30,6 @@ export class NetworkStore {
   warnings = $derived(this.issues.filter((issue) => issue.severity === 'warning'));
   shapes = $derived(inferShapes(this.network));
   isValid = $derived(this.errors.length === 0);
-  paramCount = $derived(this.shapes.totalParamCount);
   selectedBlock = $derived(
     this.network.blocks.find((block) => block.id === this.selectedBlockId) ?? null
   );
