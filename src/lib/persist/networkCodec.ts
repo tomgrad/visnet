@@ -9,11 +9,19 @@ function isBlock(value: unknown): value is Block {
   if (typeof value.id !== 'string' || typeof value.kind !== 'string') return false;
   switch (value.kind) {
     case 'input':
-      return Array.isArray(value.shape) && value.shape.every((n) => typeof n === 'number');
+      return (
+        Array.isArray(value.shape) &&
+        value.shape.length > 0 &&
+        value.shape.every((n) => typeof n === 'number')
+      );
     case 'linear':
       return typeof value.units === 'number';
     case 'output':
-      return Array.isArray(value.shape) && value.shape.every((n) => typeof n === 'number');
+      return (
+        Array.isArray(value.shape) &&
+        value.shape.length > 0 &&
+        value.shape.every((n) => typeof n === 'number')
+      );
     case 'conv2d':
       return (
         typeof value.filters === 'number' &&
@@ -25,7 +33,11 @@ function isBlock(value: unknown): value is Block {
     case 'upsampling2d':
       return typeof value.size === 'number';
     case 'reshape':
-      return Array.isArray(value.shape) && value.shape.every((n) => typeof n === 'number');
+      return (
+        Array.isArray(value.shape) &&
+        value.shape.length > 0 &&
+        value.shape.every((n) => typeof n === 'number')
+      );
     default:
       return true;
   }

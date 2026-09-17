@@ -184,7 +184,7 @@ describe('InspectorPanel', () => {
     render(InspectorPanel, { props: { store } });
     await fireEvent.change(screen.getByTestId('param-shape'), { target: { value: '16' } });
     expect(store.network.blocks[1]).toMatchObject({ kind: 'reshape', shape: [16] });
-    expect(screen.getByTestId('inspector').textContent).toContain('16');
+    expect(screen.getByTestId('reshape-count').textContent).toContain('16');
   });
 
   it('shows no units field for the output block', () => {

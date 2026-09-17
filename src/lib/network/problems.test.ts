@@ -198,6 +198,21 @@ describe('findProblems errors', () => {
     expect(issue?.message).toContain('3');
     expect(issue?.message).toContain('2');
   });
+
+  it('reports a rank mismatch between the last layer and the Output block', () => {
+    const network = net([
+      { id: 'in', kind: 'input', shape: [4, 4, 1] },
+      { id: 'pool', kind: 'maxpool2d', poolSize: 2, stride: 2, padding: 'valid' },
+      { id: 'out', kind: 'output', shape: [2, 2] }
+    ]);
+    const issue = errors(network).find(
+      (i) => i.title === 'Last layer shape does not match the Output block'
+    );
+    expect(issue).toBeDefined();
+    expect(issue?.blockId).toBe('pool');
+    expect(issue?.message).toContain('[2, 2, 1]');
+    expect(issue?.message).toContain('[2, 2]');
+  });
 });
 
 const warnings = (network: Network, options?: ProblemOptions): Problem[] =>
@@ -256,6 +271,17 @@ describe('findProblems warnings', () => {
 
   it('does not flag matching output units', () => {
     expect(warningTitles(createEmptyNetwork(), { expectedClasses: 2 })).toEqual([]);
+  });
+
+  it('skips the expected-classes warning when the Output shape is not rank 1', () => {
+    const network = net([
+      { id: 'in', kind: 'input', shape: [4, 4, 1] },
+      { id: 'pool', kind: 'maxpool2d', poolSize: 2, stride: 2, padding: 'valid' },
+      { id: 'out', kind: 'output', shape: [2, 2, 1] }
+    ]);
+    expect(warningTitles(network, { expectedClasses: 10 })).not.toContain(
+      'Output size does not match the data'
+    );
   });
 
   it('flags image input without a convolution layer', () => {

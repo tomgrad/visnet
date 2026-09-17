@@ -75,6 +75,19 @@ describe('networkCodec', () => {
     ).toBeNull();
   });
 
+  it('rejects blocks with an empty shape array', () => {
+    const training = createEmptyNetwork().training;
+    expect(
+      decodeNetwork(JSON.stringify({ blocks: [{ id: 'a', kind: 'input', shape: [] }], training }))
+    ).toBeNull();
+    expect(
+      decodeNetwork(JSON.stringify({ blocks: [{ id: 'a', kind: 'output', shape: [] }], training }))
+    ).toBeNull();
+    expect(
+      decodeNetwork(JSON.stringify({ blocks: [{ id: 'r', kind: 'reshape', shape: [] }], training }))
+    ).toBeNull();
+  });
+
   it('loads a legacy output block that stores units', () => {
     const net = createEmptyNetwork();
     const blocks = net.blocks.map((block) =>

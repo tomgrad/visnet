@@ -84,7 +84,7 @@ describe('inferShapes on a reshape', () => {
     expect(result.perBlock[1].paramCount).toBe(0);
   });
 
-  it('returns a null output shape when the input is unknown', () => {
+  it('propagates null shapes through a broken chain', () => {
     const result = inferShapes(
       net([
         { id: 'in', kind: 'input', shape: [28, 28, 1] },
@@ -93,6 +93,7 @@ describe('inferShapes on a reshape', () => {
         { id: 'out', kind: 'output', shape: [8] }
       ])
     );
+    expect(result.perBlock[2].inShape).toBeNull();
     expect(result.perBlock[2].outShape).toBeNull();
   });
 });
