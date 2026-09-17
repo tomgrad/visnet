@@ -16,19 +16,20 @@
   const previousKind = $derived(index > 0 ? store.network.blocks[index - 1].kind : null);
   const inShape = $derived(info?.inShape ?? null);
   const bounds = $derived(parameterBounds(inShape));
-  const kernelChoices = $derived(
-    bounds && block?.kind === 'conv2d'
-      ? bounds.kernelSize
-      : block?.kind === 'conv2d'
-        ? [block.kernelSize]
-        : []
+  const spatialSize = $derived(
+    block?.kind === 'conv2d' ? block.kernelSize : block?.kind === 'maxpool2d' ? block.poolSize : null
+  );
+  const spatialStride = $derived(
+    block?.kind === 'conv2d' || block?.kind === 'maxpool2d' ? block.stride : null
+  );
+  const paddingValue = $derived(
+    block?.kind === 'conv2d' || block?.kind === 'maxpool2d' ? block.padding : 'valid'
+  );
+  const sizeChoices = $derived(
+    spatialSize === null ? [] : bounds ? bounds.kernelSize : [spatialSize]
   );
   const strideChoices = $derived(
-    bounds && block?.kind === 'conv2d'
-      ? bounds.stride
-      : block?.kind === 'conv2d'
-        ? [block.stride]
-        : []
+    spatialStride === null ? [] : bounds ? bounds.stride : [spatialStride]
   );
   const canMove = $derived(block !== null && block.kind !== 'input' && block.kind !== 'output');
   let shapeError = $state<string | null>(null);
@@ -64,16 +65,70 @@
   }
 
   function outputSizeFor(padding: 'same' | 'valid'): string {
-    if (!inShape || inShape.length !== 3 || !block || block.kind !== 'conv2d') return '';
+    if (!inShape || inShape.length !== 3 || spatialSize === null || spatialStride === null) {
+      return '';
+    }
     const [height, width] = inShape;
-    const { kernelSize, stride } = block;
     const compute = (dimension: number): number =>
-      spatialOutputSize(dimension, kernelSize, stride, padding);
+      spatialOutputSize(dimension, spatialSize, spatialStride, padding);
     const result = `${compute(height)}×${compute(width)}`;
     if (padding === 'same' && result === `${height}×${width}`) return `stays ${result}`;
     return `becomes ${result}`;
   }
 </script>
+
+{#snippet spatialControls(
+  testId: string,
+  label: string,
+  key: 'kernelSize' | 'poolSize',
+  value: number,
+  description: string
+)}
+  <label>
+    <span>{label}</span>
+    <select
+      data-testid={testId}
+      title={description}
+      value={String(value)}
+      onchange={(event) => patch({ [key]: Number(event.currentTarget.value) } as Partial<Block>)}
+    >
+      {#each sizeChoices as choice (choice)}
+        <option value={String(choice)}>{choice}×{choice}</option>
+      {/each}
+    </select>
+    <small>{description}</small>
+  </label>
+
+  <label>
+    <span>Stride</span>
+    <select
+      data-testid="param-stride"
+      title={PARAM_DESCRIPTIONS.stride}
+      value={String(spatialStride)}
+      onchange={(event) => patch({ stride: Number(event.currentTarget.value) } as Partial<Block>)}
+    >
+      {#each strideChoices as choice (choice)}
+        <option value={String(choice)}>{choice}</option>
+      {/each}
+    </select>
+    <small>{PARAM_DESCRIPTIONS.stride}</small>
+  </label>
+
+  <label>
+    <span>Padding</span>
+    <select
+      data-testid="param-padding"
+      title={PARAM_DESCRIPTIONS.padding}
+      value={paddingValue}
+      onchange={(event) =>
+        patch({ padding: event.currentTarget.value as 'same' | 'valid' } as Partial<Block>)}
+    >
+      <option value="same">same — {outputSizeFor('same')}</option>
+      <option value="valid">valid — {outputSizeFor('valid')}</option>
+    </select>
+    <small>{PARAM_DESCRIPTIONS.padding}</small>
+  </label>
+{/snippet}
 
 {#if !block}
   <div class="inspector" data-testid="inspector-empty">
@@ -133,53 +188,24 @@
         />
         <small>{PARAM_DESCRIPTIONS.filters}</small>
       </label>
+    {/if}
 
-      <label>
-        <span>Kernel size</span>
-        <select
-          data-testid="param-kernel-size"
-          title={PARAM_DESCRIPTIONS.kernelSize}
-          value={String(block.kernelSize)}
-          onchange={(event) =>
-            patch({ kernelSize: Number(event.currentTarget.value) } as Partial<Block>)}
-        >
-          {#each kernelChoices as choice (choice)}
-            <option value={String(choice)}>{choice}×{choice}</option>
-          {/each}
-        </select>
-        <small>{PARAM_DESCRIPTIONS.kernelSize}</small>
-      </label>
-
-      <label>
-        <span>Stride</span>
-        <select
-          data-testid="param-stride"
-          title={PARAM_DESCRIPTIONS.stride}
-          value={String(block.stride)}
-          onchange={(event) =>
-            patch({ stride: Number(event.currentTarget.value) } as Partial<Block>)}
-        >
-          {#each strideChoices as choice (choice)}
-            <option value={String(choice)}>{choice}</option>
-          {/each}
-        </select>
-        <small>{PARAM_DESCRIPTIONS.stride}</small>
-      </label>
-
-      <label>
-        <span>Padding</span>
-        <select
-          data-testid="param-padding"
-          title={PARAM_DESCRIPTIONS.padding}
-          value={block.padding}
-          onchange={(event) =>
-            patch({ padding: event.currentTarget.value as 'same' | 'valid' } as Partial<Block>)}
-        >
-          <option value="same">same — {outputSizeFor('same')}</option>
-          <option value="valid">valid — {outputSizeFor('valid')}</option>
-        </select>
-        <small>{PARAM_DESCRIPTIONS.padding}</small>
-      </label>
+    {#if block.kind === 'conv2d'}
+      {@render spatialControls(
+        'param-kernel-size',
+        'Kernel size',
+        'kernelSize',
+        block.kernelSize,
+        PARAM_DESCRIPTIONS.kernelSize
+      )}
+    {:else if block.kind === 'maxpool2d'}
+      {@render spatialControls(
+        'param-pool-size',
+        'Pool size',
+        'poolSize',
+        block.poolSize,
+        PARAM_DESCRIPTIONS.poolSize
+      )}
     {/if}
 
     <dl class="facts">

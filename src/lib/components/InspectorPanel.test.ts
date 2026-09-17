@@ -83,4 +83,41 @@ describe('InspectorPanel', () => {
     expect((screen.getByTestId('move-left') as HTMLButtonElement).disabled).toBe(true);
     expect((screen.getByTestId('move-right') as HTMLButtonElement).disabled).toBe(true);
   });
+
+  it('offers pool size choices limited to the incoming image', () => {
+    const store = new NetworkStore();
+    store.updateBlock(store.network.blocks[0].id, { shape: [6, 4, 1] });
+    store.addBlock('maxpool2d', 1);
+    store.updateBlock(store.network.blocks[1].id, { poolSize: 3 });
+    render(InspectorPanel, { props: { store } });
+
+    const options = Array.from(
+      screen.getByTestId('param-pool-size').querySelectorAll('option')
+    ).map((option) => option.getAttribute('value'));
+    expect(options).toEqual(['1', '2', '3', '4']);
+  });
+
+  it('changes the pool size', async () => {
+    const store = new NetworkStore();
+    store.updateBlock(store.network.blocks[0].id, { shape: [6, 4, 1] });
+    store.addBlock('maxpool2d', 1);
+    store.select(store.network.blocks[1].id);
+    render(InspectorPanel, { props: { store } });
+    await fireEvent.change(screen.getByTestId('param-pool-size'), { target: { value: '4' } });
+    expect(store.network.blocks[1]).toMatchObject({ poolSize: 4 });
+  });
+
+  it('describes what each padding choice does to a pooled image', () => {
+    const store = new NetworkStore();
+    store.updateBlock(store.network.blocks[0].id, { shape: [28, 28, 1] });
+    store.addBlock('maxpool2d', 1);
+    store.updateBlock(store.network.blocks[1].id, { poolSize: 3 });
+    render(InspectorPanel, { props: { store } });
+
+    const labels = Array.from(screen.getByTestId('param-padding').querySelectorAll('option')).map(
+      (option) => option.textContent ?? ''
+    );
+    expect(labels.some((label) => label.includes('14×14'))).toBe(true);
+    expect(labels.some((label) => label.includes('13×13'))).toBe(true);
+  });
 });
