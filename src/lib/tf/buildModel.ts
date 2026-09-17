@@ -51,6 +51,7 @@ function layerFor(block: Block, inputShape: number[] | undefined): tf.layers.Lay
       return tf.layers.flatten({ inputShape });
     case 'relu':
     case 'sigmoid':
+    case 'tanh':
     case 'softmax':
       return tf.layers.activation({ activation: block.kind, inputShape });
     default:

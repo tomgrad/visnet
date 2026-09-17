@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { BLOCK_KINDS, type Block, type Network } from './types';
 
 describe('BLOCK_KINDS', () => {
-  it('lists the nine block kinds in pipeline order', () => {
+  it('lists the ten block kinds in pipeline order', () => {
     expect([...BLOCK_KINDS]).toEqual([
       'input',
       'linear',
@@ -11,6 +11,7 @@ describe('BLOCK_KINDS', () => {
       'flatten',
       'relu',
       'sigmoid',
+      'tanh',
       'softmax',
       'output'
     ]);
@@ -31,6 +32,7 @@ describe('domain types', () => {
       { id: 'd', kind: 'flatten' },
       { id: 'e', kind: 'relu' },
       { id: 'f', kind: 'sigmoid' },
+      { id: 'j', kind: 'tanh' },
       { id: 'g', kind: 'softmax' },
       { id: 'h', kind: 'output', units: 2 }
     ];

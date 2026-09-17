@@ -22,6 +22,7 @@ Available modules:
 - flatten
 - ReLU
 - Sigmoid
+- Tanh
 - Softmax
 
 Available loss functions:

@@ -5,7 +5,7 @@ import { CLASS_LABELS, DEFAULT_GENERATOR, MLP_PALETTE } from './example';
 
 describe('example configuration', () => {
   it('offers only the blocks the MLP example teaches', () => {
-    expect(MLP_PALETTE).toEqual(['linear', 'relu', 'sigmoid', 'softmax']);
+    expect(MLP_PALETTE).toEqual(['linear', 'relu', 'sigmoid', 'tanh', 'softmax']);
   });
 
   it('names both classes', () => {

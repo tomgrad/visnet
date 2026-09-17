@@ -9,6 +9,7 @@ export const CNN_PALETTE: BlockKind[] = [
   'linear',
   'relu',
   'sigmoid',
+  'tanh',
   'softmax'
 ];
 

@@ -8,6 +8,7 @@ export const BLOCK_DESCRIPTIONS: Record<BlockKind, string> = {
   flatten: 'Turns image-shaped data into a flat list so Linear layers can read it.',
   relu: 'Keeps positive values and turns negative ones into zero. Helps the network learn curved patterns.',
   sigmoid: 'Squashes each value into the range 0 to 1.',
+  tanh: 'Squashes each value into the range -1 to 1.',
   softmax: 'Turns raw scores into probabilities that add up to 1.',
   output: 'Declares what the network predicts and how many classes there are.'
 };

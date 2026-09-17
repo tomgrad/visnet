@@ -61,6 +61,7 @@ function outputShapeFor(block: Block, inShape: number[] | null): number[] | null
       return [product(inShape)];
     case 'relu':
     case 'sigmoid':
+    case 'tanh':
     case 'softmax':
     case 'output':
       return inShape ? [...inShape] : null;

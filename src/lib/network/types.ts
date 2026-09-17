@@ -6,6 +6,7 @@ export type BlockKind =
   | 'flatten'
   | 'relu'
   | 'sigmoid'
+  | 'tanh'
   | 'softmax'
   | 'output';
 
@@ -17,6 +18,7 @@ export const BLOCK_KINDS: readonly BlockKind[] = [
   'flatten',
   'relu',
   'sigmoid',
+  'tanh',
   'softmax',
   'output'
 ];
@@ -55,7 +57,7 @@ export interface FlattenBlock extends BlockBase {
 }
 
 export interface ActivationBlock extends BlockBase {
-  kind: 'relu' | 'sigmoid' | 'softmax';
+  kind: 'relu' | 'sigmoid' | 'tanh' | 'softmax';
 }
 
 export interface OutputBlock extends BlockBase {

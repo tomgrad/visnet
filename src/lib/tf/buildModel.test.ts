@@ -2,12 +2,7 @@ import * as tf from '@tensorflow/tfjs';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { createEmptyNetwork } from '../network/factory';
 import type { Network } from '../network/types';
-import {
-  NetworkInvalidError,
-  buildModel,
-  compileModel,
-  describeBuildError
-} from './buildModel';
+import { NetworkInvalidError, buildModel, compileModel, describeBuildError } from './buildModel';
 
 let models: tf.Sequential[] = [];
 
@@ -165,6 +160,23 @@ describe('buildModel', () => {
     const values = Array.from(prediction.dataSync());
     expect(values[0] + values[1]).toBeCloseTo(1, 5);
     prediction.dispose();
+  });
+
+  it('builds a tanh activation layer', () => {
+    const network: Network = {
+      version: 2,
+      blocks: [
+        { id: 'in', kind: 'input', shape: [2] },
+        { id: 'dense', kind: 'linear', units: 4 },
+        { id: 'tanh', kind: 'tanh' },
+        { id: 'out', kind: 'output', units: 4 }
+      ],
+      training: { loss: 'mse', optimizer: 'sgd', learningRate: 0.1, batchSize: 4 },
+      positions: {}
+    };
+    const model = build(network);
+    expect(model.layers.map((layer) => layer.getClassName())).toEqual(['Dense', 'Activation']);
+    expect(model.outputs[0].shape).toEqual([null, 4]);
   });
 });
 

@@ -2,7 +2,7 @@ import { generate, type GeneratorName, type PointDataset } from '../../data/poin
 import type { BlockKind } from '../../network/types';
 import type { StorageKeys } from '../../persist/storage';
 
-export const MLP_PALETTE: BlockKind[] = ['linear', 'relu', 'sigmoid', 'softmax'];
+export const MLP_PALETTE: BlockKind[] = ['linear', 'relu', 'sigmoid', 'tanh', 'softmax'];
 export const DEFAULT_GENERATOR: GeneratorName = 'twoGaussians';
 export const DEFAULT_POINT_COUNT = 200;
 export const DEFAULT_SEED = 1;

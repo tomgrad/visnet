@@ -19,6 +19,7 @@ describe('CNN_PALETTE', () => {
       'linear',
       'relu',
       'sigmoid',
+      'tanh',
       'softmax'
     ]);
     expect(CNN_PALETTE).not.toContain('input');

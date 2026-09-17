@@ -35,6 +35,7 @@ export function createBlock(kind: BlockKind): Block {
       return { id: newBlockId(), kind: 'flatten' };
     case 'relu':
     case 'sigmoid':
+    case 'tanh':
     case 'softmax':
       return { id: newBlockId(), kind };
     case 'output':
