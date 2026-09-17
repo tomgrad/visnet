@@ -24,7 +24,7 @@
 
 ## Size reality check (read before starting)
 
-Production source is currently ~4,920 LOC (excluding tests, stubs, and CSS-only content). This moderate plan removes roughly **950–1,050 LOC**, landing at **~3.9–4.0k LOC** — about a 20% cut. It does **not** reach 2.5k.
+Production source is currently ~4,920 LOC (excluding tests, stubs, and CSS-only content). This moderate plan removes roughly **850–950 LOC**, landing at **~4.0k LOC** — about an 18% cut. It does **not** reach 2.5k.
 
 To get below 3k you must drop a headline feature. The levers, with measured sizes:
 
@@ -48,7 +48,7 @@ This plan performs the five cuts below and leaves those three levers to a follow
 | `src/routes/examples/mlp/+page.svelte` | **Slim** via shared controller | ~250 duplicated lines |
 | `src/routes/examples/cnn/+page.svelte` | **Slim** via shared controller | ~250 duplicated lines |
 | `src/lib/examples/experiment.svelte.ts` | **Create** | Owns model/trainer/data/persistence lifecycle |
-| `src/lib/components/ShapeTable.svelte` + test | **Merge** into `InspectorPanel.svelte` | Small panel, duplicates inspector data |
+| `src/lib/components/ShapeTable.svelte` + test | **Keep** | Must stay visible when nothing is selected |
 | `src/lib/components/StatsReadout.svelte` + test | **Merge** into `TrainingPanel.svelte` | Same panel concern |
 | `src/lib/components/DecisionBoundaryHarness.svelte` | **Delete** | Test-only; move to `__stubs__` |
 | `src/lib/examples/notices.ts` + test | **Delete** | Single constant; inline it |
@@ -799,19 +799,18 @@ git commit -m "refactor: extract a shared experiment controller from the example
 
 ---
 
-### Task 5: Merge the small UI panels
+### Task 5: Merge the stats readout into the training panel
 
 **Files:**
-- Delete: `src/lib/components/ShapeTable.svelte`, `ShapeTable.test.ts`
 - Delete: `src/lib/components/StatsReadout.svelte`, `StatsReadout.test.ts`
-- Modify: `src/lib/components/InspectorPanel.svelte`
 - Modify: `src/lib/components/TrainingPanel.svelte`
-- Modify: `src/lib/components/NetworkEditor.svelte`
 - Modify: `src/routes/examples/mlp/+page.svelte`, `src/routes/examples/cnn/+page.svelte`
 
 **Interfaces:**
-- Consumes: `store.shapes` (`ShapeResult`) from Task 3's `inferShapes`; `TrainStats` from `src/lib/training/Trainer.ts`.
-- Produces: `TrainingPanel` accepts a new required `stats: TrainStats | null` prop.
+- Consumes: `TrainStats` from `src/lib/training/Trainer.ts`.
+- Produces: `TrainingPanel` accepts an optional `stats?: TrainStats | null` prop (default `null`), so existing callers and the test helper keep compiling.
+
+Do **not** merge `ShapeTable` into `InspectorPanel`: the inspector only renders when a block is selected, so the shape table would disappear when nothing is selected. `ShapeTable` stays a standalone component.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -832,15 +831,13 @@ In `src/lib/components/TrainingPanel.test.ts`, add:
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run src/lib/components/TrainingPanel.test.ts`
-Expected: FAIL because `stats` is not a prop and no stats markup exists.
+Expected: FAIL because no stats markup exists.
 
 - [ ] **Step 3: Implement**
 
-Move the body of `StatsReadout.svelte` into `TrainingPanel.svelte` under the controls, guarded by `{#if stats}`. Add `stats` to the props type. Keep the fixed three-column grid and `tabular-nums` styling from `StatsReadout.svelte:65-92`.
+Move the body of `StatsReadout.svelte` into `TrainingPanel.svelte` under the controls, guarded by `{#if stats}`. Add `stats = null` to the props destructuring and type it `stats?: TrainStats | null`. Keep the fixed three-column grid and `tabular-nums` styling from `StatsReadout.svelte:65-92`.
 
-Move the body of `ShapeTable.svelte` into `InspectorPanel.svelte` below the facts list, using the same `data-testid="shape-table"` on the table so existing assertions keep working. Delete both source files and their tests.
-
-In `NetworkEditor.svelte`, remove the `ShapeTable` import and render, and pass `stats` down to `TrainingPanel`. The pages pass `stats={experiment.stats}`.
+Delete `StatsReadout.svelte` and `StatsReadout.test.ts`. In both example pages, remove the `StatsReadout` import and its `<StatsReadout ... />` render (the panel now shows the same numbers), and pass `stats={experiment.stats}` to `TrainingPanel`.
 
 - [ ] **Step 4: Run the tests**
 
@@ -851,7 +848,7 @@ Expected: PASS.
 
 ```bash
 git add -A src/lib/components src/routes
-git commit -m "refactor: merge shape table and stats readout into their panels"
+git commit -m "refactor: merge the stats readout into the training panel"
 ```
 
 ---
@@ -863,6 +860,7 @@ git commit -m "refactor: merge shape table and stats readout into their panels"
 - Delete: `src/lib/examples/notices.ts`, `notices.test.ts` (inline the constant in `experiment.svelte.ts`)
 - Modify: `src/lib/components/DecisionBoundary.test.ts` (import path)
 - Modify: `src/lib/editor/networkStore.svelte.ts` (delete unused `paramCount`)
+- Modify: `src/lib/editor/networkStore.svelte.test.ts` (drop the `paramCount` assertion)
 - Modify: `src/lib/components/EditorToolbar.svelte` (delete the never-passed `onfit` prop)
 
 **Interfaces:**
@@ -896,7 +894,7 @@ In `experiment.svelte.ts`, replace the `notices` import with the constant inline
 const WEIGHTS_DISCARDED_NOTICE = 'The network changed, so training restarted with fresh weights.';
 ```
 
-Delete `src/lib/examples/notices.ts` and `notices.test.ts`. In `src/lib/editor/networkStore.svelte.ts`, delete the unused `paramCount` derived. In `src/lib/components/EditorToolbar.svelte`, delete the `onfit` prop and its `{#if onfit}` button.
+Delete `src/lib/examples/notices.ts` and `notices.test.ts`. In `src/lib/editor/networkStore.svelte.ts`, delete the unused `paramCount` derived, and delete the `expect(instance.paramCount).toBe(42)` assertion in `src/lib/editor/networkStore.svelte.test.ts`. In `src/lib/components/EditorToolbar.svelte`, delete the `onfit` prop and its `{#if onfit}` button.
 
 - [ ] **Step 4: Run the tests, check, lint and build**
 
