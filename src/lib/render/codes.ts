@@ -20,7 +20,8 @@ function boundsOf(points: Float32Array): LatentBounds {
     if (y < minY) minY = y;
     if (y > maxY) maxY = y;
   }
-  if (!Number.isFinite(minX)) return { minX: -1, maxX: 1, minY: -1, maxY: 1 };
+  if (![minX, maxX, minY, maxY].every(Number.isFinite))
+    return { minX: -1, maxX: 1, minY: -1, maxY: 1 };
   return { minX, maxX, minY, maxY };
 }
 
@@ -30,15 +31,19 @@ export function codeScatter(
   rows: number,
   cols: number,
   count: number,
-  layerIndex: number,
+  source: 'input' | number,
   dimA: number
 ): CodeSample {
   const points = tf.tidy(() => {
     const normalised = new Float32Array(pixels.length);
     for (let index = 0; index < pixels.length; index++) normalised[index] = pixels[index] / 255;
-    const input = tf.tensor4d(normalised, [count, rows, cols, 1]);
+    const inputDims = (model.inputs[0].shape ?? []).slice(1);
+    const input =
+      inputDims.length === 1
+        ? tf.tensor2d(normalised, [count, rows * cols])
+        : tf.tensor4d(normalised, [count, rows, cols, 1]);
     const activations = forwardActivations(model, input);
-    const activation = activations[layerIndex];
+    const activation = source === 'input' ? input : activations[source];
     const a = activation.slice([0, dimA], [count, 1]);
     const b = activation.slice([0, dimA + 1], [count, 1]);
     return Float32Array.from(tf.concat([a, b], 1).dataSync());

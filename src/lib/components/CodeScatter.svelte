@@ -120,7 +120,7 @@
         data.rows,
         data.cols,
         indices.length,
-        currentTarget.source as number,
+        currentTarget.source,
         currentPair
       );
       draw(context, sample);

@@ -116,7 +116,9 @@
           {#each PRESETS as preset (preset.id)}
             <option value={preset.id}>{preset.label}</option>
           {/each}
-          <option value="custom">Custom</option>
+          {#if selectedPreset === null}
+            <option value="custom">Custom</option>
+          {/if}
         </select>
       </label>
 
