@@ -54,6 +54,8 @@ Specifics:
   on demand.
 - Train a small convolutional network on handwritten digits and watch a grid of test
   digits turn from wrong to right.
+- See the feature maps of the block selected on the canvas for a test digit, with
+  a button to step through the sample digits.
 
 ## Digit data
 
