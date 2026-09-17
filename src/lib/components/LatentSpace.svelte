@@ -4,7 +4,7 @@
   import type { PointDataset } from '../data/points';
   import type { NetworkStore } from '../editor/networkStore.svelte';
   import { probeTargetFor } from '../network/probe';
-  import { BACKGROUND_RGB, CLASS_COLOURS } from '../render/palette';
+  import { BACKGROUND_RGB, classColour } from '../render/palette';
   import type { LatentBounds, LatentSample } from '../render/latent';
 
   let {
@@ -29,14 +29,19 @@
   let error = $state<string | null>(null);
 
   const target = $derived(probeTargetFor(store.network, store.selectedBlockId));
-  const dims = $derived(target ? target.dims.reduce((total, size) => total * size, 1) : 0);
-  const pairCount = $derived(Math.max(1, dims - 1));
+  const featureCount = $derived(
+    target ? target.dims.reduce((total, size) => total * size, 1) : 0
+  );
+  const plottable = $derived(
+    target !== null && target.dims.length === 1 && featureCount >= 2
+  );
+  const pairCount = $derived(Math.max(1, featureCount - 1));
   const message = $derived(
     !model
       ? 'Fix the problems listed in the editor before the latent space can be drawn.'
       : !target
         ? 'Select a block to see its latent space.'
-        : dims < 2
+        : !plottable
           ? 'This layer has fewer than two dimensions, so there is nothing to plot.'
           : null
   );
@@ -71,7 +76,7 @@
     const cell = SIZE / GRID;
     for (let index = 0; index < GRID * GRID; index++) {
       const [px, py] = toCanvas(sample.grid[index * 2], sample.grid[index * 2 + 1], sample.bounds);
-      context.fillStyle = CLASS_COLOURS[sample.gridClasses[index]].hex;
+      context.fillStyle = classColour(sample.gridClasses[index]).hex;
       context.fillRect(px - cell / 2, py - cell / 2, cell, cell);
     }
 
@@ -114,7 +119,7 @@
       );
       context.beginPath();
       context.arc(px, py, POINT_RADIUS, 0, Math.PI * 2);
-      context.fillStyle = CLASS_COLOURS[dataset.points[index].label].hex;
+      context.fillStyle = classColour(dataset.points[index].label).hex;
       context.fill();
       context.lineWidth = 1.5;
       context.strokeStyle = '#ffffff';
@@ -128,15 +133,18 @@
     const element = canvas;
     const currentModel = model;
     const currentTarget = target;
+    const currentPlottable = plottable;
     const currentPair = pair;
-    const currentDims = dims;
     if (!module || !element) return;
     const context = element.getContext('2d');
     if (!context) return;
 
     context.fillStyle = `rgb(${BACKGROUND_RGB.join(',')})`;
     context.fillRect(0, 0, SIZE, SIZE);
-    if (!currentModel || !currentTarget || currentDims < 2) return;
+    if (!currentModel || !currentTarget || !currentPlottable) {
+      error = null;
+      return;
+    }
 
     try {
       const cells = module.gridInputs(GRID);
@@ -150,8 +158,7 @@
       );
       draw(context, sample);
       error = null;
-    } catch (cause) {
-      console.error(cause);
+    } catch {
       error = 'The latent space could not be drawn.';
     }
   });
@@ -167,8 +174,8 @@
     >
       Next dimensions
     </button>
-    {#if target && dims >= 2}
-      <span data-testid="latent-label">dimensions {pair + 1} & {pair + 2} of {dims}</span>
+    {#if plottable}
+      <span data-testid="latent-label">dimensions {pair + 1} & {pair + 2} of {featureCount}</span>
     {/if}
   </div>
 

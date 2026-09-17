@@ -1,19 +1,15 @@
 import { render, screen, waitFor } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PointDataset } from '../data/points';
 import { NetworkStore } from '../editor/networkStore.svelte';
+import { projectLatent } from '../render/latent';
 import LatentSpace from './LatentSpace.svelte';
 
 vi.mock('../render/latent', () => ({
   LATENT_GRID_SIZE: 32,
   gridInputs: (size: number) => new Float32Array(size * size * 2),
-  projectLatent: () => ({
-    grid: new Float32Array(32 * 32 * 2),
-    gridClasses: new Int32Array(32 * 32),
-    points: new Float32Array(4),
-    bounds: { minX: -1, maxX: 1, minY: -1, maxY: 1 }
-  })
+  projectLatent: vi.fn()
 }));
 
 const DATASET: PointDataset = {
@@ -23,6 +19,47 @@ const DATASET: PointDataset = {
   ],
   numClasses: 2
 };
+
+function sample() {
+  return {
+    grid: new Float32Array(32 * 32 * 2),
+    gridClasses: new Int32Array(32 * 32),
+    points: new Float32Array(4),
+    bounds: { minX: -1, maxX: 1, minY: -1, maxY: 1 }
+  };
+}
+
+function fakeContext() {
+  return {
+    fillRect: vi.fn(),
+    beginPath: vi.fn(),
+    moveTo: vi.fn(),
+    lineTo: vi.fn(),
+    stroke: vi.fn(),
+    arc: vi.fn(),
+    fill: vi.fn(),
+    fillStyle: '',
+    strokeStyle: '',
+    lineWidth: 0
+  };
+}
+
+let context: ReturnType<typeof fakeContext>;
+let originalGetContext: typeof HTMLCanvasElement.prototype.getContext;
+
+beforeEach(() => {
+  originalGetContext = HTMLCanvasElement.prototype.getContext;
+  context = fakeContext();
+  vi.mocked(projectLatent).mockReturnValue(sample());
+  HTMLCanvasElement.prototype.getContext = vi.fn(
+    () => context as unknown as CanvasRenderingContext2D
+  ) as unknown as typeof HTMLCanvasElement.prototype.getContext;
+});
+
+afterEach(() => {
+  HTMLCanvasElement.prototype.getContext = originalGetContext;
+  vi.restoreAllMocks();
+});
 
 function selectedStore(index = 1): NetworkStore {
   const store = new NetworkStore();
@@ -66,6 +103,32 @@ describe('LatentSpace', () => {
   it('explains when the layer has fewer than two dimensions', async () => {
     const store = new NetworkStore();
     store.updateBlock(store.network.blocks[1].id, { units: 1 });
+    store.select(store.network.blocks[1].id);
+    show(store);
+    await waitFor(() =>
+      expect(screen.getByTestId('latent-message').textContent).toContain('fewer than two')
+    );
+  });
+
+  it('draws the projected grid on the canvas', async () => {
+    show(selectedStore(1));
+    await waitFor(() => expect(context.fillRect).toHaveBeenCalled());
+    expect(projectLatent).toHaveBeenCalled();
+  });
+
+  it('falls back to a neutral colour for classes outside the palette', async () => {
+    const current = sample();
+    current.gridClasses.fill(2);
+    vi.mocked(projectLatent).mockReturnValue(current);
+    show(selectedStore(1));
+    await waitFor(() => expect(context.fillRect).toHaveBeenCalled());
+    expect(screen.queryByTestId('latent-error')).toBeNull();
+  });
+
+  it('rejects rank-3 targets', async () => {
+    const store = new NetworkStore();
+    store.updateBlock(store.network.blocks[0].id, { shape: [28, 28, 1] });
+    store.addBlock('conv2d', 1);
     store.select(store.network.blocks[1].id);
     show(store);
     await waitFor(() =>
