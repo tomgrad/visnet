@@ -56,7 +56,6 @@
     <aside class="left">
       <BlockPalette
         {palette}
-        onadd={(kind) => store.addBlock(kind)}
         ondragstart={(kind, event) => {
           dragging = kind;
           event.dataTransfer?.setData('application/visnet-block', kind);
@@ -65,7 +64,7 @@
       <p class="drag-hint">
         {dragging
           ? `Drop ${dragging} onto the canvas to place it.`
-          : `Click a block to add it, or drag it onto the canvas. ${BLOCK_DESCRIPTIONS.linear}`}
+          : `Drag a block onto the canvas to add it. ${BLOCK_DESCRIPTIONS.linear}`}
       </p>
     </aside>
 

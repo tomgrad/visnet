@@ -113,7 +113,7 @@ because `conv2d` is not in the MLP palette; it becomes reachable the moment the 
 palette exists.
 
 All four mutators route their result through `clampNetwork`, and every correction
-is announced. A block added by click or drop is clamped against its resolved
+is announced. A block added by drop is clamped against its resolved
 position in the chain, so adding a `conv2d` to a 2×2 input corrects the kernel
 immediately rather than leaving an error the user did not cause.
 

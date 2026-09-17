@@ -25,17 +25,18 @@ describe('NetworkEditor', () => {
     expect(screen.getByTestId('issues-panel')).toBeTruthy();
   });
 
-  it('adds a block when a palette entry is clicked', async () => {
+  it('does not add a block when a palette entry is clicked', async () => {
     const store = editor();
     const before = store.network.blocks.length;
     await userEvent.click(screen.getByTestId('palette-relu'));
-    expect(store.network.blocks.length).toBe(before + 1);
+    expect(store.network.blocks.length).toBe(before);
   });
 
   it('undoes and redoes through the toolbar', async () => {
     const store = editor();
     const before = store.network.blocks.length;
-    await userEvent.click(screen.getByTestId('palette-relu'));
+    store.addBlock('relu');
+    await tick();
     await userEvent.click(screen.getByTestId('undo'));
     expect(store.network.blocks.length).toBe(before);
     await userEvent.click(screen.getByTestId('redo'));
@@ -44,7 +45,8 @@ describe('NetworkEditor', () => {
 
   it('resets the network', async () => {
     const store = editor();
-    await userEvent.click(screen.getByTestId('palette-relu'));
+    store.addBlock('relu');
+    await tick();
     await userEvent.click(screen.getByTestId('reset-network'));
     expect(store.network.blocks.map((block) => block.kind)).toEqual([
       'input',

@@ -4,11 +4,9 @@
 
   let {
     palette,
-    onadd,
     ondragstart
   }: {
     palette: BlockKind[];
-    onadd: (kind: BlockKind) => void;
     ondragstart?: (kind: BlockKind, event: DragEvent) => void;
   } = $props();
 </script>
@@ -23,7 +21,6 @@
           draggable="true"
           data-testid={`palette-${kind}`}
           title={BLOCK_DESCRIPTIONS[kind]}
-          onclick={() => onadd(kind)}
           ondragstart={(event) => ondragstart?.(kind, event)}
         >
           <span class="kind">{kind}</span>

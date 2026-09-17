@@ -464,10 +464,11 @@ network. A wire is a gesture that reorders an array, not stored state.
   (section 9), plus a delete affordance hidden for input and output.
 - Hovering a block shows a tooltip with its description, all its parameters, its
   input and output shape, and its parameter count.
-- The palette adds a block by click (appends after the selection, or before the
-  output) or by dragging onto the canvas. A drag-drop is resolved to an index by
-  finding the gap between existing blocks whose centre is nearest the drop point;
-  drops outside the interior clamp to the first or last interior slot.
+- The palette adds a block **only by dragging onto the canvas**; clicking a palette
+  entry does nothing, so a click meant to read a description cannot change the
+  network. A drag-drop is resolved to an index by finding the gap between existing
+  blocks whose centre is nearest the drop point; drops outside the interior clamp to
+  the first or last interior slot.
 - While a palette block is dragged over the canvas, the **wire it will land on**
   is highlighted: accent-coloured, thicker, and animated. Inserting at interior
   index _k_ puts the block between the blocks that wire already connects, so the
