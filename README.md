@@ -21,6 +21,7 @@ Available modules:
 - max pooling
 - upsampling
 - flatten
+- reshape
 - ReLU
 - Sigmoid
 - Tanh
