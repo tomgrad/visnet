@@ -70,8 +70,10 @@ derivative of the NIST Special Database 19.
 
 The engine is framework-independent. `src/lib/network/` defines networks, infers
 the tensor shape flowing through every block, and reports validation problems as
-plain-language errors with a suggested fix. TensorFlow.js is confined to
-`src/lib/tf/`, `src/lib/training/`, `src/lib/data/tensors.ts`,
+plain-language errors with a suggested fix. Persistence is a shallow codec:
+`src/lib/persist/networkCodec.ts` turns a network into plain data and back, and
+`src/lib/persist/weights.ts` saves and loads trained weights. TensorFlow.js is
+confined to `src/lib/tf/`, `src/lib/training/`, `src/lib/data/tensors.ts`,
 `src/lib/render/boundary.ts`, and `src/lib/persist/weights.ts`.
 
 The editor is a projection of that model, never a second copy of it: the canvas
