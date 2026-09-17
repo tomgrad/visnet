@@ -80,7 +80,6 @@
     element.width = Math.round(width * ratio);
     element.height = Math.round(height * ratio);
     element.style.width = `${width}px`;
-    element.style.height = `${height}px`;
     context.scale(ratio, ratio);
     context.clearRect(0, 0, width, height);
 
@@ -147,6 +146,7 @@
 
   canvas {
     max-width: 100%;
+    height: auto;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
     background: var(--color-bg);
