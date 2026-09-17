@@ -7,7 +7,6 @@ import { codeScatter } from './codes';
 let models: tf.Sequential[] = [];
 
 const AUTOENCODER: Network = {
-  version: 2,
   blocks: [
     { id: 'in', kind: 'input', shape: [4, 4, 1] },
     { id: 'conv', kind: 'conv2d', filters: 1, kernelSize: 3, stride: 1, padding: 'same' },
@@ -20,7 +19,6 @@ const AUTOENCODER: Network = {
 };
 
 const FLAT_INPUT: Network = {
-  version: 2,
   blocks: [
     { id: 'in', kind: 'input', shape: [4] },
     { id: 'code', kind: 'linear', units: 2 },
@@ -61,7 +59,12 @@ describe('codeScatter', () => {
     const model = buildModel(FLAT_INPUT);
     models.push(model);
     const sample = codeScatter(model, new Uint8Array(2 * 4).fill(120), 1, 4, 2, 'input', 0);
-    const allFinite = [sample.bounds.minX, sample.bounds.maxX, sample.bounds.minY, sample.bounds.maxY];
+    const allFinite = [
+      sample.bounds.minX,
+      sample.bounds.maxX,
+      sample.bounds.minY,
+      sample.bounds.maxY
+    ];
     expect(sample.points).toHaveLength(4);
     expect(allFinite.every(Number.isFinite)).toBe(true);
   });

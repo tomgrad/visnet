@@ -93,5 +93,4 @@
     min-height: 480px;
     height: 640px;
   }
-
 </style>

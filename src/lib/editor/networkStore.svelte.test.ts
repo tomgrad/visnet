@@ -353,7 +353,6 @@ describe('initial network', () => {
 
   it('resets to the network it was constructed with', () => {
     const initial: Network = {
-      version: 2,
       blocks: [
         { id: 'in', kind: 'input', shape: [4, 4, 1] },
         { id: 'conv', kind: 'conv2d', filters: 2, kernelSize: 2, stride: 1, padding: 'same' },

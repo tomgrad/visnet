@@ -29,12 +29,8 @@
   let error = $state<string | null>(null);
 
   const target = $derived(probeTargetFor(store.network, store.selectedBlockId));
-  const featureCount = $derived(
-    target ? target.dims.reduce((total, size) => total * size, 1) : 0
-  );
-  const plottable = $derived(
-    target !== null && target.dims.length === 1 && featureCount >= 2
-  );
+  const featureCount = $derived(target ? target.dims.reduce((total, size) => total * size, 1) : 0);
+  const plottable = $derived(target !== null && target.dims.length === 1 && featureCount >= 2);
   const pairCount = $derived(Math.max(1, featureCount - 1));
   const message = $derived(
     !model
@@ -66,10 +62,7 @@
     const maxX = bounds.maxX + spanX * 0.05;
     const minY = bounds.minY - spanY * 0.05;
     const maxY = bounds.maxY + spanY * 0.05;
-    return [
-      ((x - minX) / (maxX - minX)) * SIZE,
-      SIZE - ((y - minY) / (maxY - minY)) * SIZE
-    ];
+    return [((x - minX) / (maxX - minX)) * SIZE, SIZE - ((y - minY) / (maxY - minY)) * SIZE];
   }
 
   function draw(context: CanvasRenderingContext2D, sample: LatentSample): void {
@@ -86,7 +79,11 @@
     for (let gy = 0; gy < GRID; gy++) {
       for (let gx = 0; gx < GRID; gx++) {
         const index = gy * GRID + gx;
-        const [x0, y0] = toCanvas(sample.grid[index * 2], sample.grid[index * 2 + 1], sample.bounds);
+        const [x0, y0] = toCanvas(
+          sample.grid[index * 2],
+          sample.grid[index * 2 + 1],
+          sample.bounds
+        );
         if (gx + 1 < GRID) {
           const right = index + 1;
           const [x1, y1] = toCanvas(

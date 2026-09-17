@@ -7,7 +7,6 @@ import { reconstruct } from './reconstruction';
 let models: tf.Sequential[] = [];
 
 const AUTOENCODER: Network = {
-  version: 2,
   blocks: [
     { id: 'in', kind: 'input', shape: [4, 4, 1] },
     { id: 'conv', kind: 'conv2d', filters: 1, kernelSize: 3, stride: 1, padding: 'same' },

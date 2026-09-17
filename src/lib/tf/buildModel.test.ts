@@ -44,7 +44,6 @@ describe('buildModel', () => {
 
   it('builds a convolutional chain with flattening', () => {
     const network: Network = {
-      version: 2,
       blocks: [
         { id: 'in', kind: 'input', shape: [28, 28, 1] },
         { id: 'conv', kind: 'conv2d', filters: 4, kernelSize: 3, stride: 1, padding: 'same' },
@@ -63,7 +62,6 @@ describe('buildModel', () => {
 
   it('builds a pooling chain and halves the spatial dimensions', () => {
     const network: Network = {
-      version: 2,
       blocks: [
         { id: 'in', kind: 'input', shape: [28, 28, 1] },
         { id: 'pool', kind: 'maxpool2d', poolSize: 2, stride: 2, padding: 'valid' },
@@ -84,7 +82,6 @@ describe('buildModel', () => {
 
   it('runs a forward pass through a pooling layer', () => {
     const network: Network = {
-      version: 2,
       blocks: [
         { id: 'in', kind: 'input', shape: [28, 28, 1] },
         { id: 'pool', kind: 'maxpool2d', poolSize: 2, stride: 2, padding: 'valid' },
@@ -104,7 +101,6 @@ describe('buildModel', () => {
 
   it('refuses to build an invalid network and carries the issues', () => {
     const network: Network = {
-      version: 2,
       blocks: [
         { id: 'in', kind: 'input', shape: [28, 28, 1] },
         { id: 'dense', kind: 'linear', units: 8 },
@@ -129,7 +125,6 @@ describe('buildModel', () => {
 
   it('disposes the partially built model when a layer cannot be created', () => {
     const network: Network = {
-      version: 2,
       blocks: [
         { id: 'in', kind: 'input', shape: [2] },
         { id: 'good', kind: 'linear', units: 8 },
@@ -164,7 +159,6 @@ describe('buildModel', () => {
 
   it('builds a tanh activation layer', () => {
     const network: Network = {
-      version: 2,
       blocks: [
         { id: 'in', kind: 'input', shape: [2] },
         { id: 'dense', kind: 'linear', units: 4 },
@@ -181,7 +175,6 @@ describe('buildModel', () => {
 
   it('builds a reshape layer that changes the tensor shape', () => {
     const network: Network = {
-      version: 2,
       blocks: [
         { id: 'in', kind: 'input', shape: [4, 4, 1] },
         { id: 'r', kind: 'reshape', shape: [16] },
@@ -197,7 +190,6 @@ describe('buildModel', () => {
 
   it('builds an upsampling layer that enlarges the spatial dimensions', () => {
     const network: Network = {
-      version: 2,
       blocks: [
         { id: 'in', kind: 'input', shape: [4, 4, 2] },
         { id: 'up', kind: 'upsampling2d', size: 2 },

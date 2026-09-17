@@ -28,7 +28,6 @@ describe('probeTargetFor', () => {
 
   it('maps the input but returns null for the output when there are no real layers', () => {
     const bare: Network = {
-      version: 2,
       blocks: [net.blocks[0], net.blocks[5]],
       training: TRAINING,
       positions: {}
@@ -39,7 +38,6 @@ describe('probeTargetFor', () => {
 
   it('reports unknown dimensions when an earlier block is invalid', () => {
     const broken: Network = {
-      version: 2,
       blocks: [
         { id: 'in', kind: 'input', shape: [28, 28, 1] },
         { id: 'l', kind: 'linear', units: 8 },

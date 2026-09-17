@@ -5,7 +5,6 @@ import { findProblems, type Problem, type ProblemOptions, type Severity } from '
 
 function net(blocks: Network['blocks'], training?: Partial<Network['training']>): Network {
   return {
-    version: 2,
     blocks,
     training: {
       loss: 'crossEntropy',

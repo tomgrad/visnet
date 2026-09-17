@@ -5,7 +5,6 @@ import type { Network } from './types';
 
 function net(blocks: Network['blocks']): Network {
   return {
-    version: 2,
     blocks,
     training: { loss: 'crossEntropy', optimizer: 'adam', learningRate: 0.01, batchSize: 32 },
     positions: {}

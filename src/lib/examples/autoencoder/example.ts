@@ -1,15 +1,8 @@
-import { createBlock } from '../../network/factory';
-import type {
-  Block,
-  BlockKind,
-  Conv2dBlock,
-  InputBlock,
-  LinearBlock,
-  Network,
-  OutputBlock,
-  ReshapeBlock
-} from '../../network/types';
+import { cloneNetwork } from '../../network/factory';
+import type { Block, BlockKind, Network } from '../../network/types';
 import type { StorageKeys } from '../../persist/storage';
+import { CONV_AUTOENCODER_NETWORK } from './networks/conv';
+import { DENSE_AUTOENCODER_NETWORK } from './networks/dense';
 
 export const AUTOENCODER_PALETTE: BlockKind[] = [
   'conv2d',
@@ -33,7 +26,7 @@ export const AUTOENCODER_WEIGHTS_ID = 'autoencoder';
 
 export const TRAIN_COUNT = 5000;
 export const SCATTER_COUNT = 500;
-export const RECONSTRUCTION_COUNT = 40;
+export const RECONSTRUCTION_COUNT = 20;
 
 export type AutoencoderPresetId = 'dense' | 'conv';
 
@@ -43,90 +36,17 @@ export interface AutoencoderPreset {
   create(): Network;
 }
 
-const TRAINING = {
-  loss: 'mse' as const,
-  optimizer: 'adam' as const,
-  learningRate: 0.001,
-  batchSize: 32
-};
-
-function createDenseNetwork(): Network {
-  const input: InputBlock = { ...(createBlock('input') as InputBlock), shape: [28, 28, 1] };
-  const flatten = createBlock('flatten');
-  const encoder: LinearBlock = { ...(createBlock('linear') as LinearBlock), units: 32 };
-  const encodeRelu = createBlock('relu');
-  const code: LinearBlock = { ...(createBlock('linear') as LinearBlock), units: 2 };
-  const codeTanh = createBlock('tanh');
-  const decoder: LinearBlock = { ...(createBlock('linear') as LinearBlock), units: 32 };
-  const decodeRelu = createBlock('relu');
-  const pixels: LinearBlock = { ...(createBlock('linear') as LinearBlock), units: 784 };
-  const pixelsSigmoid = createBlock('sigmoid');
-  const reshape: ReshapeBlock = { ...(createBlock('reshape') as ReshapeBlock), shape: [28, 28, 1] };
-  const output: OutputBlock = { ...(createBlock('output') as OutputBlock), shape: [28, 28, 1] };
-
-  return {
-    version: 2,
-    blocks: [
-      input,
-      flatten,
-      encoder,
-      encodeRelu,
-      code,
-      codeTanh,
-      decoder,
-      decodeRelu,
-      pixels,
-      pixelsSigmoid,
-      reshape,
-      output
-    ],
-    training: { ...TRAINING },
-    positions: {}
-  };
-}
-
-function createConvNetwork(): Network {
-  const input: InputBlock = { ...(createBlock('input') as InputBlock), shape: [28, 28, 1] };
-  const encodeConv = createBlock('conv2d');
-  const encodeRelu = createBlock('relu');
-  const encodePool = createBlock('maxpool2d');
-  const deeperConv = createBlock('conv2d');
-  const deeperRelu = createBlock('relu');
-  const deeperPool = createBlock('maxpool2d');
-  const firstUpsample = createBlock('upsampling2d');
-  const decodeConv = createBlock('conv2d');
-  const decodeRelu = createBlock('relu');
-  const secondUpsample = createBlock('upsampling2d');
-  const finalConv: Conv2dBlock = { ...(createBlock('conv2d') as Conv2dBlock), filters: 1 };
-  const finalSigmoid = createBlock('sigmoid');
-  const output: OutputBlock = { ...(createBlock('output') as OutputBlock), shape: [28, 28, 1] };
-
-  return {
-    version: 2,
-    blocks: [
-      input,
-      encodeConv,
-      encodeRelu,
-      encodePool,
-      deeperConv,
-      deeperRelu,
-      deeperPool,
-      firstUpsample,
-      decodeConv,
-      decodeRelu,
-      secondUpsample,
-      finalConv,
-      finalSigmoid,
-      output
-    ],
-    training: { ...TRAINING },
-    positions: {}
-  };
-}
-
 export const PRESETS: AutoencoderPreset[] = [
-  { id: 'dense', label: 'Dense (2-neuron code)', create: createDenseNetwork },
-  { id: 'conv', label: 'Convolutional', create: createConvNetwork }
+  {
+    id: 'dense',
+    label: 'Dense (2-neuron code)',
+    create: () => cloneNetwork(DENSE_AUTOENCODER_NETWORK)
+  },
+  {
+    id: 'conv',
+    label: 'Convolutional (2-neuron code)',
+    create: () => cloneNetwork(CONV_AUTOENCODER_NETWORK)
+  }
 ];
 
 function blockSignature(block: Block): unknown {

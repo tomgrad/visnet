@@ -84,7 +84,6 @@ export function decodeNetwork(raw: string): Network | null {
     if (!blocks.every(isBlock)) return null;
     if (!isTraining(parsed.training)) return null;
     return {
-      version: 2,
       blocks,
       training: parsed.training,
       positions: readPositions(parsed.positions)

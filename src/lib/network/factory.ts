@@ -56,7 +56,6 @@ export function createEmptyNetwork(): Network {
   const output = createBlock('output');
 
   return {
-    version: 2,
     blocks: [input, hidden, activation, outputLayer, softmax, output],
     training: { ...DEFAULT_TRAINING },
     positions: {}
@@ -65,7 +64,6 @@ export function createEmptyNetwork(): Network {
 
 export function cloneNetwork(net: Network): Network {
   return {
-    version: net.version,
     blocks: net.blocks.map((block) => ({ ...block })),
     training: { ...net.training },
     positions: Object.fromEntries(

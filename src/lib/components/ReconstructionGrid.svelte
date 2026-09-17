@@ -73,9 +73,9 @@
     const context = element.getContext('2d');
     if (!context) return;
 
-    const columns = Math.max(1, samples.length);
+    const columns = Math.max(1, Math.ceil(samples.length / 2));
     const width = columns * CELL + (columns - 1) * GAP;
-    const height = 2 * CELL + GAP;
+    const height = 4 * CELL + 3 * GAP;
     const ratio = globalThis.devicePixelRatio ?? 1;
     element.width = Math.round(width * ratio);
     element.height = Math.round(height * ratio);
@@ -102,16 +102,28 @@
         samples.length
       );
       const imageSize = CELL - 2 * PADDING;
-      samples.forEach((imageIndex, column) => {
+      samples.forEach((imageIndex, index) => {
+        const block = Math.floor(index / columns);
+        const column = index % columns;
         const x = column * (CELL + GAP) + PADDING;
-        drawImage(context, imageAt(data, imageIndex), data.cols, data.rows, x, PADDING, imageSize);
+        const originalY = block * 2 * (CELL + GAP) + PADDING;
+        const reconstructionY = (block * 2 + 1) * (CELL + GAP) + PADDING;
         drawImage(
           context,
-          reconstructions.subarray(column * size, (column + 1) * size),
+          imageAt(data, imageIndex),
           data.cols,
           data.rows,
           x,
-          CELL + GAP + PADDING,
+          originalY,
+          imageSize
+        );
+        drawImage(
+          context,
+          reconstructions.subarray(index * size, (index + 1) * size),
+          data.cols,
+          data.rows,
+          x,
+          reconstructionY,
           imageSize
         );
       });
@@ -129,7 +141,7 @@
   {#if message}
     <figcaption data-testid="reconstruction-message">{message}</figcaption>
   {:else}
-    <figcaption>Originals on top, the network's reconstructions below.</figcaption>
+    <figcaption>Two pairs of rows: the originals, then the network's reconstructions.</figcaption>
   {/if}
   {#if error}
     <figcaption class="error" data-testid="reconstruction-error">{error}</figcaption>

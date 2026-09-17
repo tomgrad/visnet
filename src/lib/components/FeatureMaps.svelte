@@ -46,9 +46,7 @@
             ? 'The digit images are not loaded yet.'
             : null
   );
-  const label = $derived(
-    dataset && indices.length > 0 ? dataset.labels[indices[digit]] : null
-  );
+  const label = $derived(dataset && indices.length > 0 ? dataset.labels[indices[digit]] : null);
 
   $effect(() => {
     if (digit > indices.length - 1) digit = 0;
@@ -97,13 +95,7 @@
     const context = element.getContext('2d');
     if (!context) return;
 
-    if (
-      !currentModel ||
-      !currentTarget ||
-      !data ||
-      imageIndex === undefined ||
-      !supported
-    ) {
+    if (!currentModel || !currentTarget || !data || imageIndex === undefined || !supported) {
       context.clearRect(0, 0, element.width, element.height);
       error = null;
       return;
@@ -111,7 +103,13 @@
 
     try {
       const pixels = imageAt(data, imageIndex);
-      const maps = module.featureMaps(currentModel, pixels, data.rows, data.cols, currentTarget.source);
+      const maps = module.featureMaps(
+        currentModel,
+        pixels,
+        data.rows,
+        data.cols,
+        currentTarget.source
+      );
       const images = maps.length > 0 && maps[0].width > 1;
       const columns = images
         ? Math.min(MAP_COLUMNS, maps.length)

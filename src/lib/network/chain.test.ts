@@ -5,7 +5,6 @@ import type { Network } from './types';
 
 function net(): Network {
   return {
-    version: 2,
     blocks: [
       { id: 'in', kind: 'input', shape: [2] },
       { id: 'a', kind: 'linear', units: 8 },

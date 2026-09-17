@@ -42,7 +42,6 @@ describe('domain types', () => {
     ];
 
     const network: Network = {
-      version: 2,
       blocks,
       training: { loss: 'crossEntropy', optimizer: 'adam', learningRate: 0.01, batchSize: 32 },
       positions: {}

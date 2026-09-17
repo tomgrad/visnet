@@ -1,6 +1,7 @@
-import { createBlock } from '../../network/factory';
-import type { BlockKind, InputBlock, LinearBlock, Network, OutputBlock } from '../../network/types';
+import { cloneNetwork } from '../../network/factory';
+import type { BlockKind, Network } from '../../network/types';
 import type { StorageKeys } from '../../persist/storage';
+import { CNN_NETWORK } from './networks/cnn';
 
 export const CNN_PALETTE: BlockKind[] = [
   'conv2d',
@@ -29,20 +30,7 @@ export const SAMPLE_GRID_CELL_HEIGHT = 48;
 export const SAMPLE_GRID_GAP = 4;
 
 export function createCnnNetwork(): Network {
-  const input: InputBlock = { ...(createBlock('input') as InputBlock), shape: [28, 28, 1] };
-  const conv = createBlock('conv2d');
-  const relu = createBlock('relu');
-  const flatten = createBlock('flatten');
-  const dense: LinearBlock = { ...(createBlock('linear') as LinearBlock), units: 10 };
-  const softmax = createBlock('softmax');
-  const output: OutputBlock = { ...(createBlock('output') as OutputBlock), shape: [10] };
-
-  return {
-    version: 2,
-    blocks: [input, conv, relu, flatten, dense, softmax, output],
-    training: { loss: 'crossEntropy', optimizer: 'adam', learningRate: 0.01, batchSize: 32 },
-    positions: {}
-  };
+  return cloneNetwork(CNN_NETWORK);
 }
 
 export function defaultSampleIndices(count: number = SAMPLE_GRID_SIZE): number[] {

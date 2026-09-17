@@ -16,6 +16,15 @@ describe('autoencoder presets', () => {
     expect(AUTOENCODER_PALETTE).toContain('reshape');
     expect(AUTOENCODER_PALETTE).toContain('upsampling2d');
   });
+
+  it('gives both presets a two-number code layer for the scatter', () => {
+    for (const preset of PRESETS) {
+      const code = preset
+        .create()
+        .blocks.find((block) => block.kind === 'linear' && block.units === 2);
+      expect(code).toBeDefined();
+    }
+  });
 });
 
 describe('presetFor', () => {

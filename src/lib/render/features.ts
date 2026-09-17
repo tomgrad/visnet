@@ -68,7 +68,11 @@ export function featureMaps(
       const [min, max] = extent(data, 0, count);
       const result: FeatureMap[] = [];
       for (let index = 0; index < count; index++) {
-        result.push({ width: 1, height: 1, values: Uint8ClampedArray.of(shade(data[index], min, max)) });
+        result.push({
+          width: 1,
+          height: 1,
+          values: Uint8ClampedArray.of(shade(data[index], min, max))
+        });
       }
       maps = result;
       return;

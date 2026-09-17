@@ -103,7 +103,6 @@ export interface NodePosition {
 }
 
 export interface Network {
-  version: 2;
   blocks: Block[];
   training: TrainingConfig;
   positions: Record<string, NodePosition>;

@@ -40,7 +40,6 @@ describe('CNN_STORAGE_KEYS', () => {
 describe('createCnnNetwork', () => {
   it('builds a convolutional network with no validation errors', () => {
     const network = createCnnNetwork();
-    expect(network.version).toBe(2);
     expect(network.positions).toEqual({});
     expect(network.blocks.map((block) => block.kind)).toEqual([
       'input',
