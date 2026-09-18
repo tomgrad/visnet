@@ -9,6 +9,9 @@ dist/
 # brainstorming companion sessions
 .superpowers/
 
+# internal design specs and plans
+docs/superpowers/
+
 # test / coverage
 coverage/
 
