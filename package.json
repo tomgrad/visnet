@@ -2,6 +2,7 @@
   "name": "visnet",
   "version": "1.0.0",
   "description": "Web app for teaching neural networks.",
+  "license": "MIT",
   "main": "index.js",
   "directories": {
     "doc": "docs"
