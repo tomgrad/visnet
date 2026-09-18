@@ -45,7 +45,7 @@ export const PRESETS: AutoencoderPreset[] = [
   },
   {
     id: 'conv',
-    label: 'Convolutional (2-neuron code)',
+    label: 'Convolutional (32-number code)',
     create: () => cloneNetwork(CONV_AUTOENCODER_NETWORK)
   }
 ];

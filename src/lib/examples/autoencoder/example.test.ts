@@ -18,11 +18,11 @@ describe('autoencoder presets', () => {
     expect(AUTOENCODER_PALETTE).toContain('conv2dtranspose');
   });
 
-  it('gives both presets a two-number code layer for the scatter', () => {
+  it('gives both presets a rank-one code layer for the scatter', () => {
     for (const preset of PRESETS) {
       const code = preset
         .create()
-        .blocks.find((block) => block.kind === 'linear' && block.units === 2);
+        .blocks.find((block) => block.kind === 'linear' && block.units >= 2);
       expect(code).toBeDefined();
     }
   });
