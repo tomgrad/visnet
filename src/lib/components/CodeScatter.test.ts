@@ -31,9 +31,17 @@ function fakeContext() {
     arc: vi.fn(),
     fill: vi.fn(),
     stroke: vi.fn(),
+    drawImage: vi.fn(),
+    putImageData: vi.fn(),
+    createImageData: vi.fn((width: number, height: number) => ({
+      data: new Uint8ClampedArray(width * height * 4),
+      width,
+      height
+    })),
     fillStyle: '',
     strokeStyle: '',
-    lineWidth: 0
+    lineWidth: 0,
+    imageSmoothingEnabled: false
   };
 }
 
@@ -105,9 +113,11 @@ describe('CodeScatter', () => {
     );
   });
 
-  it('draws the sample codes on the canvas', async () => {
+  it('draws the sample digits on the canvas by default', async () => {
     show(selectedStore(1));
-    await waitFor(() => expect(context.arc).toHaveBeenCalled());
+    await waitFor(() => expect(codeScatter).toHaveBeenCalled());
+    await waitFor(() => expect(context.drawImage).toHaveBeenCalled());
+    expect((screen.getByTestId('code-show-digits') as HTMLInputElement).checked).toBe(true);
     expect(codeScatter).toHaveBeenCalledWith(
       expect.anything(),
       expect.any(Uint8Array),
@@ -118,6 +128,14 @@ describe('CodeScatter', () => {
       0
     );
     expect(screen.queryByTestId('code-error')).toBeNull();
+  });
+
+  it('draws dots instead when the digits toggle is off', async () => {
+    show(selectedStore(1));
+    await waitFor(() => expect(codeScatter).toHaveBeenCalled());
+    context.arc.mockClear();
+    await userEvent.click(screen.getByTestId('code-show-digits'));
+    await waitFor(() => expect(context.arc).toHaveBeenCalled());
   });
 
   it('reports a render failure', async () => {

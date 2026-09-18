@@ -24,10 +24,13 @@
 
   const SIZE = 320;
   const POINT_RADIUS = 4;
+  const DIGIT = 16;
 
   let canvas = $state<HTMLCanvasElement | null>(null);
   let codes = $state<typeof import('../render/codes') | null>(null);
   let pair = $state(0);
+  let showDigits = $state(true);
+  let sprites = $state.raw<HTMLCanvasElement[]>([]);
   let error = $state<string | null>(null);
 
   const target = $derived(probeTargetFor(store.network, store.selectedBlockId));
@@ -69,22 +72,59 @@
     return [((x - minX) / (maxX - minX)) * SIZE, SIZE - ((y - minY) / (maxY - minY)) * SIZE];
   }
 
+  function buildSprites(data: ImageDataset, sampleIndices: number[]): HTMLCanvasElement[] {
+    const ink = document.createElement('canvas');
+    ink.width = data.cols;
+    ink.height = data.rows;
+    const inkContext = ink.getContext('2d');
+    if (!inkContext) return [];
+    return sampleIndices.map((imageIndex) => {
+      const source = imageAt(data, imageIndex);
+      const image = inkContext.createImageData(data.cols, data.rows);
+      for (let pixel = 0; pixel < source.length; pixel++) {
+        image.data[pixel * 4 + 3] = source[pixel];
+      }
+      inkContext.putImageData(image, 0, 0);
+      const sprite = document.createElement('canvas');
+      sprite.width = DIGIT;
+      sprite.height = DIGIT;
+      const spriteContext = sprite.getContext('2d');
+      if (spriteContext) {
+        spriteContext.imageSmoothingEnabled = true;
+        spriteContext.drawImage(ink, 0, 0, DIGIT, DIGIT);
+      }
+      return sprite;
+    });
+  }
+
+  $effect(() => {
+    const data = dataset;
+    const sampleIndices = indices;
+    sprites = data && sampleIndices.length > 0 ? buildSprites(data, sampleIndices) : [];
+  });
+
   function draw(context: CanvasRenderingContext2D, sample: CodeSample): void {
     context.fillStyle = `rgb(${BACKGROUND_RGB.join(',')})`;
     context.fillRect(0, 0, SIZE, SIZE);
+    const useSprites = showDigits && sprites.length === indices.length;
     for (let index = 0; index < indices.length; index++) {
       const [px, py] = toCanvas(
         sample.points[index * 2],
         sample.points[index * 2 + 1],
         sample.bounds
       );
-      context.beginPath();
-      context.arc(px, py, POINT_RADIUS, 0, Math.PI * 2);
-      context.fillStyle = classColour(dataset ? dataset.labels[indices[index]] : 0).hex;
-      context.fill();
-      context.lineWidth = 1.5;
-      context.strokeStyle = '#ffffff';
-      context.stroke();
+      const sprite = useSprites ? sprites[index] : null;
+      if (sprite) {
+        context.drawImage(sprite, px - DIGIT / 2, py - DIGIT / 2, DIGIT, DIGIT);
+      } else {
+        context.beginPath();
+        context.arc(px, py, POINT_RADIUS, 0, Math.PI * 2);
+        context.fillStyle = classColour(dataset ? dataset.labels[indices[index]] : 0).hex;
+        context.fill();
+        context.lineWidth = 1.5;
+        context.strokeStyle = '#ffffff';
+        context.stroke();
+      }
     }
   }
 
@@ -145,6 +185,16 @@
     {#if plottable}
       <span data-testid="code-label">dimensions {pair + 1} & {pair + 2} of {featureCount}</span>
     {/if}
+    <label class="toggle">
+      <input
+        type="checkbox"
+        data-testid="code-show-digits"
+        checked={showDigits}
+        disabled={!!message}
+        onchange={(event) => (showDigits = event.currentTarget.checked)}
+      />
+      Show digits
+    </label>
   </div>
 
   <canvas bind:this={canvas} width={SIZE} height={SIZE}></canvas>
@@ -184,6 +234,13 @@
   .controls button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+
+  .toggle {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    cursor: pointer;
   }
 
   canvas {
