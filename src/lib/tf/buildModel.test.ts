@@ -188,6 +188,31 @@ describe('buildModel', () => {
     expect(model.outputs[0].shape).toEqual([null, 16]);
   });
 
+  it('builds a transposed convolution that enlarges the spatial dimensions', () => {
+    const network: Network = {
+      blocks: [
+        { id: 'in', kind: 'input', shape: [7, 7, 2] },
+        {
+          id: 'ct',
+          kind: 'conv2dtranspose',
+          filters: 3,
+          kernelSize: 3,
+          stride: 2,
+          padding: 'same'
+        },
+        { id: 'flat', kind: 'flatten' },
+        { id: 'dense', kind: 'linear', units: 2 },
+        { id: 'out', kind: 'output', shape: [2] }
+      ],
+      training: { loss: 'mse', optimizer: 'sgd', learningRate: 0.1, batchSize: 4 },
+      positions: {}
+    };
+    const model = build(network);
+    expect(model.layers[0].getClassName()).toBe('Conv2DTranspose');
+    expect(model.inputs[0].shape).toEqual([null, 7, 7, 2]);
+    expect(model.layers[0].outputShape).toEqual([null, 14, 14, 3]);
+  });
+
   it('builds an upsampling layer that enlarges the spatial dimensions', () => {
     const network: Network = {
       blocks: [

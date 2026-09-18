@@ -143,6 +143,19 @@ describe('InspectorPanel', () => {
     expect(store.network.blocks[1]).toMatchObject({ poolSize: 4 });
   });
 
+  it('edits a transposed convolution', async () => {
+    const store = new NetworkStore();
+    store.updateBlock(store.network.blocks[0].id, { shape: [7, 7, 1] });
+    store.addBlock('conv2dtranspose', 1);
+    store.select(store.network.blocks[1].id);
+    render(InspectorPanel, { props: { store } });
+    await fireEvent.change(screen.getByTestId('param-filters'), { target: { value: '5' } });
+    expect(store.network.blocks[1]).toMatchObject({ kind: 'conv2dtranspose', filters: 5 });
+    expect(screen.getByTestId('param-kernel-size')).toBeTruthy();
+    expect(screen.getByTestId('param-stride')).toBeTruthy();
+    expect(screen.getByTestId('param-padding')).toBeTruthy();
+  });
+
   it('changes the upsampling size', async () => {
     const store = new NetworkStore();
     store.updateBlock(store.network.blocks[0].id, { shape: [7, 7, 1] });

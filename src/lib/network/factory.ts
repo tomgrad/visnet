@@ -33,6 +33,15 @@ export function createBlock(kind: BlockKind): Block {
       return { id: newBlockId(), kind: 'maxpool2d', poolSize: 2, stride: 2, padding: 'valid' };
     case 'upsampling2d':
       return { id: newBlockId(), kind: 'upsampling2d', size: 2 };
+    case 'conv2dtranspose':
+      return {
+        id: newBlockId(),
+        kind: 'conv2dtranspose',
+        filters: 8,
+        kernelSize: 3,
+        stride: 2,
+        padding: 'same'
+      };
     case 'flatten':
       return { id: newBlockId(), kind: 'flatten' };
     case 'reshape':

@@ -8,6 +8,7 @@ export const AUTOENCODER_PALETTE: BlockKind[] = [
   'conv2d',
   'maxpool2d',
   'upsampling2d',
+  'conv2dtranspose',
   'flatten',
   'reshape',
   'linear',
@@ -54,6 +55,7 @@ function blockSignature(block: Block): unknown {
     case 'linear':
       return [block.kind, block.units];
     case 'conv2d':
+    case 'conv2dtranspose':
       return [block.kind, block.filters, block.kernelSize, block.stride, block.padding];
     case 'maxpool2d':
       return [block.kind, block.poolSize, block.stride, block.padding];

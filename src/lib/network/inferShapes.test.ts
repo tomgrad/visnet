@@ -215,6 +215,80 @@ describe('inferShapes on an upsampling chain', () => {
   });
 });
 
+describe('inferShapes on a transposed convolution', () => {
+  it('multiplies the size by the stride with same padding', () => {
+    const result = inferShapes(
+      net([
+        { id: 'in', kind: 'input', shape: [7, 7, 8] },
+        {
+          id: 'ct',
+          kind: 'conv2dtranspose',
+          filters: 4,
+          kernelSize: 3,
+          stride: 2,
+          padding: 'same'
+        },
+        { id: 'out', kind: 'output', shape: [14, 14, 4] }
+      ])
+    );
+    expect(result.perBlock[1].outShape).toEqual([14, 14, 4]);
+  });
+
+  it('uses (size - 1) * stride + kernel with valid padding', () => {
+    const result = inferShapes(
+      net([
+        { id: 'in', kind: 'input', shape: [7, 7, 8] },
+        {
+          id: 'ct',
+          kind: 'conv2dtranspose',
+          filters: 4,
+          kernelSize: 3,
+          stride: 2,
+          padding: 'valid'
+        },
+        { id: 'out', kind: 'output', shape: [15, 15, 4] }
+      ])
+    );
+    expect(result.perBlock[1].outShape).toEqual([15, 15, 4]);
+  });
+
+  it('counts parameters like a convolution', () => {
+    const result = inferShapes(
+      net([
+        { id: 'in', kind: 'input', shape: [7, 7, 8] },
+        {
+          id: 'ct',
+          kind: 'conv2dtranspose',
+          filters: 4,
+          kernelSize: 3,
+          stride: 2,
+          padding: 'same'
+        },
+        { id: 'out', kind: 'output', shape: [14, 14, 4] }
+      ])
+    );
+    expect(result.perBlock[1].paramCount).toBe(3 * 3 * 8 * 4 + 4);
+  });
+
+  it('returns a null output shape for flat input', () => {
+    const result = inferShapes(
+      net([
+        { id: 'in', kind: 'input', shape: [784] },
+        {
+          id: 'ct',
+          kind: 'conv2dtranspose',
+          filters: 4,
+          kernelSize: 3,
+          stride: 2,
+          padding: 'same'
+        },
+        { id: 'out', kind: 'output', shape: [784] }
+      ])
+    );
+    expect(result.perBlock[1].outShape).toBeNull();
+  });
+});
+
 describe('inferShapes with an impossible pool', () => {
   it('returns a null output shape when the window does not fit', () => {
     const result = inferShapes(

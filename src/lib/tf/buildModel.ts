@@ -40,6 +40,14 @@ function layerFor(block: Block, inputShape: number[] | undefined): tf.layers.Lay
         activation: 'linear',
         inputShape
       });
+    case 'conv2dtranspose':
+      return tf.layers.conv2dTranspose({
+        filters: block.filters,
+        kernelSize: block.kernelSize,
+        strides: block.stride,
+        padding: block.padding,
+        inputShape
+      });
     case 'maxpool2d':
       return tf.layers.maxPooling2d({
         poolSize: block.poolSize,

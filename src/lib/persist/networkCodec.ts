@@ -23,6 +23,7 @@ function isBlock(value: unknown): value is Block {
         value.shape.every((n) => typeof n === 'number')
       );
     case 'conv2d':
+    case 'conv2dtranspose':
       return (
         typeof value.filters === 'number' &&
         typeof value.kernelSize === 'number' &&

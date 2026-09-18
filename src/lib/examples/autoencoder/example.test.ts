@@ -12,9 +12,10 @@ describe('autoencoder presets', () => {
     expect(findProblems(preset.create(), { task: 'reconstruction' })).toEqual([]);
   });
 
-  it('offers reshape and upsampling', () => {
+  it('offers reshape, upsampling and transposed convolution', () => {
     expect(AUTOENCODER_PALETTE).toContain('reshape');
     expect(AUTOENCODER_PALETTE).toContain('upsampling2d');
+    expect(AUTOENCODER_PALETTE).toContain('conv2dtranspose');
   });
 
   it('gives both presets a two-number code layer for the scatter', () => {

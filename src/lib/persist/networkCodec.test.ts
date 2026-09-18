@@ -97,6 +97,15 @@ describe('networkCodec', () => {
     expect(restored?.blocks.at(-1)).toMatchObject({ kind: 'output', shape: [2] });
   });
 
+  it('rejects a conv2dtranspose block without numeric fields', () => {
+    const training = createEmptyNetwork().training;
+    expect(
+      decodeNetwork(
+        JSON.stringify({ blocks: [{ id: 'ct', kind: 'conv2dtranspose', filters: 4 }], training })
+      )
+    ).toBeNull();
+  });
+
   it('round-trips an upsampling2d block', () => {
     const net = createEmptyNetwork();
     const block = { id: 'u', kind: 'upsampling2d', size: 3 };

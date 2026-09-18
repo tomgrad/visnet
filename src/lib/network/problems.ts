@@ -194,6 +194,17 @@ export function findProblems(net: Network, options: ProblemOptions = {}): Proble
       );
     }
 
+    if (block.kind === 'conv2dtranspose' && info.inShape && info.inShape.length !== 3) {
+      problems.push(
+        error({
+          title: 'Transposed convolution needs image data',
+          message: `This Transposed convolution layer receives ${shapeText(info.inShape)}. It expects image data shaped [height, width, channels].`,
+          fix: 'Give the Input block a 3D shape such as [28, 28, 1], or remove the Transposed convolution layer.',
+          blockId: block.id
+        })
+      );
+    }
+
     if (block.kind === 'flatten' && info.inShape && info.inShape.length === 1) {
       problems.push(
         error({

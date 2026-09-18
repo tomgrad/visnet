@@ -21,6 +21,7 @@ Available modules:
 - convolutional
 - max pooling
 - upsampling
+- transposed convolution
 - flatten
 - reshape
 - ReLU

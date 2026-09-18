@@ -161,6 +161,20 @@ describe('findProblems errors', () => {
     expect(issue?.message).toContain('[2]');
   });
 
+  it('reports a transposed convolution receiving flat data', () => {
+    const network = net([
+      INPUT,
+      { id: 'ct', kind: 'conv2dtranspose', filters: 4, kernelSize: 3, stride: 2, padding: 'same' },
+      OUTPUT
+    ]);
+    const issue = errors(network).find(
+      (i) => i.title === 'Transposed convolution needs image data'
+    );
+    expect(issue).toBeDefined();
+    expect(issue?.blockId).toBe('ct');
+    expect(issue?.message).toContain('[2]');
+  });
+
   it('reports a flatten layer receiving an already flat list', () => {
     const network = net([INPUT, { id: 'flat', kind: 'flatten' }, OUTPUT]);
     const issue = errors(network).find((i) => i.title === 'Nothing to flatten');
@@ -334,6 +348,7 @@ const ERROR_RULE_TITLES = [
   'Pooling layer needs image data',
   'Pool window is larger than the image',
   'Upsampling layer needs image data',
+  'Transposed convolution needs image data',
   'Nothing to flatten',
   'Reshape size does not match',
   'Last layer shape does not match the Output block'
@@ -435,6 +450,15 @@ const RULE_CASES: RuleCase[] = [
     title: 'Upsampling layer needs image data',
     severity: 'error',
     network: net([INPUT, { id: 'up', kind: 'upsampling2d', size: 2 }, OUTPUT])
+  },
+  {
+    title: 'Transposed convolution needs image data',
+    severity: 'error',
+    network: net([
+      INPUT,
+      { id: 'ct', kind: 'conv2dtranspose', filters: 4, kernelSize: 3, stride: 2, padding: 'same' },
+      OUTPUT
+    ])
   },
   {
     title: 'Nothing to flatten',

@@ -29,6 +29,16 @@ export function spatialOutputSize(
   return Math.floor((size - window) / stride) + 1;
 }
 
+export function transposedOutputSize(
+  size: number,
+  kernelSize: number,
+  stride: number,
+  padding: 'same' | 'valid'
+): number {
+  if (padding === 'same') return size * stride;
+  return (size - 1) * stride + kernelSize;
+}
+
 function product(shape: number[]): number {
   return shape.reduce((total, dimension) => total * dimension, 1);
 }
@@ -61,6 +71,14 @@ function outputShapeFor(block: Block, inShape: number[] | null): number[] | null
       const [height, width, channels] = inShape;
       return [height * block.size, width * block.size, channels];
     }
+    case 'conv2dtranspose': {
+      if (!inShape || inShape.length !== 3) return null;
+      const [height, width] = inShape;
+      const outHeight = transposedOutputSize(height, block.kernelSize, block.stride, block.padding);
+      const outWidth = transposedOutputSize(width, block.kernelSize, block.stride, block.padding);
+      if (outHeight <= 0 || outWidth <= 0) return null;
+      return [outHeight, outWidth, block.filters];
+    }
     case 'flatten':
       if (!inShape || inShape.length < 1) return null;
       return [product(inShape)];
@@ -83,6 +101,7 @@ function paramCountFor(block: Block, inShape: number[] | null): number | null {
       if (!inShape || inShape.length !== 1) return null;
       return inShape[0] * block.units + block.units;
     case 'conv2d':
+    case 'conv2dtranspose':
       if (!inShape || inShape.length !== 3) return null;
       return block.kernelSize * block.kernelSize * inShape[2] * block.filters + block.filters;
     default:

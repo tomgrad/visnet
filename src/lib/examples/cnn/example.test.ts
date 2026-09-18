@@ -16,6 +16,7 @@ describe('CNN_PALETTE', () => {
       'conv2d',
       'maxpool2d',
       'upsampling2d',
+      'conv2dtranspose',
       'flatten',
       'reshape',
       'linear',

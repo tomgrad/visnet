@@ -15,6 +15,9 @@ coverage/
 # downloaded MNIST subset (never committed)
 static/mnist/
 
+# scratch notebooks and their downloaded datasets
+ipynb/
+
 # env
 .env
 .env.*

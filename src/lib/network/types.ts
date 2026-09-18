@@ -4,6 +4,7 @@ export type BlockKind =
   | 'conv2d'
   | 'maxpool2d'
   | 'upsampling2d'
+  | 'conv2dtranspose'
   | 'flatten'
   | 'reshape'
   | 'relu'
@@ -18,6 +19,7 @@ export const BLOCK_KINDS: readonly BlockKind[] = [
   'conv2d',
   'maxpool2d',
   'upsampling2d',
+  'conv2dtranspose',
   'flatten',
   'reshape',
   'relu',
@@ -61,6 +63,14 @@ export interface UpSampling2dBlock extends BlockBase {
   size: number;
 }
 
+export interface Conv2dTransposeBlock extends BlockBase {
+  kind: 'conv2dtranspose';
+  filters: number;
+  kernelSize: number;
+  stride: number;
+  padding: 'same' | 'valid';
+}
+
 export interface FlattenBlock extends BlockBase {
   kind: 'flatten';
 }
@@ -85,6 +95,7 @@ export type Block =
   | Conv2dBlock
   | MaxPool2dBlock
   | UpSampling2dBlock
+  | Conv2dTransposeBlock
   | FlattenBlock
   | ReshapeBlock
   | ActivationBlock

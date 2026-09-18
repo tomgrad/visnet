@@ -1,6 +1,6 @@
 <script lang="ts">
   import { BLOCK_DESCRIPTIONS, PARAM_DESCRIPTIONS } from '../network/descriptions';
-  import { spatialOutputSize } from '../network/inferShapes';
+  import { spatialOutputSize, transposedOutputSize } from '../network/inferShapes';
   import { shapeLabel } from '../editor/flow';
   import type { NetworkStore } from '../editor/networkStore.svelte';
   import type { Block } from '../network/types';
@@ -16,17 +16,21 @@
   const inShape = $derived(info?.inShape ?? null);
   const limit = $derived(inShape && inShape.length === 3 ? Math.min(inShape[0], inShape[1]) : null);
   const spatialSize = $derived(
-    block?.kind === 'conv2d'
+    block?.kind === 'conv2d' || block?.kind === 'conv2dtranspose'
       ? block.kernelSize
       : block?.kind === 'maxpool2d'
         ? block.poolSize
         : null
   );
   const spatialStride = $derived(
-    block?.kind === 'conv2d' || block?.kind === 'maxpool2d' ? block.stride : null
+    block?.kind === 'conv2d' || block?.kind === 'conv2dtranspose' || block?.kind === 'maxpool2d'
+      ? block.stride
+      : null
   );
   const paddingValue = $derived(
-    block?.kind === 'conv2d' || block?.kind === 'maxpool2d' ? block.padding : 'valid'
+    block?.kind === 'conv2d' || block?.kind === 'conv2dtranspose' || block?.kind === 'maxpool2d'
+      ? block.padding
+      : 'valid'
   );
   function choicesFor(current: number | null, highestAllowed: number | null): number[] {
     if (current === null) return [];
@@ -50,7 +54,9 @@
   function currentNumber(key: 'units' | 'filters' | 'size'): number | null {
     if (!block) return null;
     if (key === 'units' && block.kind === 'linear') return block.units;
-    if (key === 'filters' && block.kind === 'conv2d') return block.filters;
+    if (key === 'filters' && (block.kind === 'conv2d' || block.kind === 'conv2dtranspose')) {
+      return block.filters;
+    }
     if (key === 'size' && block.kind === 'upsampling2d') return block.size;
     return null;
   }
@@ -92,10 +98,15 @@
       return '';
     }
     const [height, width] = inShape;
+    const transposed = block?.kind === 'conv2dtranspose';
     const compute = (dimension: number): number =>
-      spatialOutputSize(dimension, spatialSize, spatialStride, padding);
+      transposed
+        ? transposedOutputSize(dimension, spatialSize, spatialStride, padding)
+        : spatialOutputSize(dimension, spatialSize, spatialStride, padding);
     const result = `${compute(height)}×${compute(width)}`;
-    if (padding === 'same' && result === `${height}×${width}`) return `stays ${result}`;
+    if (!transposed && padding === 'same' && result === `${height}×${width}`) {
+      return `stays ${result}`;
+    }
     return `becomes ${result}`;
   }
 </script>
@@ -208,7 +219,7 @@
       </label>
     {/if}
 
-    {#if block.kind === 'conv2d'}
+    {#if block.kind === 'conv2d' || block.kind === 'conv2dtranspose'}
       <label>
         <span>Filters</span>
         <input
@@ -223,7 +234,7 @@
       </label>
     {/if}
 
-    {#if block.kind === 'conv2d'}
+    {#if block.kind === 'conv2d' || block.kind === 'conv2dtranspose'}
       {@render spatialControls(
         'param-kernel-size',
         'Kernel size',

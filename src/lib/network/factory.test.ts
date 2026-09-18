@@ -27,6 +27,13 @@ describe('createBlock', () => {
       stride: 2,
       padding: 'valid'
     });
+    expect(createBlock('conv2dtranspose')).toMatchObject({
+      kind: 'conv2dtranspose',
+      filters: 8,
+      kernelSize: 3,
+      stride: 2,
+      padding: 'same'
+    });
     expect(createBlock('reshape')).toMatchObject({ kind: 'reshape', shape: [1] });
     expect(createBlock('output')).toMatchObject({ kind: 'output', shape: [2] });
   });
