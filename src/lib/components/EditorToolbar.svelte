@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import type { NetworkStore } from '../editor/networkStore.svelte';
+  import { toTypeScriptModule } from '../persist/exportNetwork';
 
   let {
     store,
@@ -29,6 +30,16 @@
     else store.undo();
   }
 
+  function exportModel(): void {
+    const blob = new Blob([toTypeScriptModule(store.network)], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = 'visnet-network.ts';
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
   onMount(() => {
     window.addEventListener('keydown', handleKeydown);
     return () => window.removeEventListener('keydown', handleKeydown);
@@ -54,6 +65,8 @@
   >
     Tidy up
   </button>
+
+  <button type="button" data-testid="export-model" onclick={exportModel}>Export model</button>
 
   {#if onsave}
     <button type="button" data-testid="save-model" disabled={saving} onclick={onsave}>

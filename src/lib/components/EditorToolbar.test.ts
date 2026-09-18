@@ -1,6 +1,7 @@
-import { render } from '@testing-library/svelte';
+import { render, screen } from '@testing-library/svelte';
+import userEvent from '@testing-library/user-event';
 import { tick } from 'svelte';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { NetworkStore } from '../editor/networkStore.svelte';
 import EditorToolbar from './EditorToolbar.svelte';
 
@@ -46,5 +47,33 @@ describe('EditorToolbar keyboard shortcuts', () => {
 
     expect(store.network.blocks.length).toBe(before);
     expect(event.defaultPrevented).toBe(false);
+  });
+});
+
+describe('EditorToolbar export', () => {
+  const originalCreate = URL.createObjectURL;
+  const originalRevoke = URL.revokeObjectURL;
+
+  afterEach(() => {
+    URL.createObjectURL = originalCreate;
+    URL.revokeObjectURL = originalRevoke;
+    vi.restoreAllMocks();
+  });
+
+  it('downloads the network as a TS module', async () => {
+    const store = toolbar();
+    const createObjectURL = vi.fn((_blob: Blob) => 'blob:mock');
+    const revokeObjectURL = vi.fn();
+    URL.createObjectURL = createObjectURL;
+    URL.revokeObjectURL = revokeObjectURL;
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+
+    await userEvent.click(screen.getByTestId('export-model'));
+
+    expect(createObjectURL).toHaveBeenCalledTimes(1);
+    const blob = createObjectURL.mock.calls[0][0] as unknown as Blob;
+    expect(await blob.text()).toContain('satisfies Network');
+    expect(await blob.text()).toContain(store.network.blocks[0].id);
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:mock');
   });
 });
