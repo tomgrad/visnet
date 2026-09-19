@@ -59,4 +59,13 @@ describe('toTypeScriptModule', () => {
     expect(module).toContain("colour: 'blue'");
     expect(module.split("colour: 'blue'").length - 1).toBe(1);
   });
+
+  it('omits a colour that was explicitly cleared', () => {
+    const net = createEmptyNetwork();
+    const blocks = net.blocks.map((block, index) =>
+      index === 1 ? { ...block, colour: undefined } : block
+    );
+    const module = toTypeScriptModule({ ...net, blocks });
+    expect(module).not.toContain('colour');
+  });
 });
