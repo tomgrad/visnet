@@ -9,7 +9,7 @@ describe('BLOCK_CATEGORIES', () => {
     }
   });
 
-  it('places each palette kind in exactly one category', () => {
+  it('has no duplicate palette kind', () => {
     expect(new Set(PALETTE_KINDS).size).toBe(PALETTE_KINDS.length);
   });
 

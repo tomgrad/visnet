@@ -16,6 +16,7 @@
   import type { NetworkStore } from '../editor/networkStore.svelte';
   import { dropIndexFor } from '../editor/placement';
   import { PALETTE_KINDS } from '../network/categories';
+  import type { BlockKind } from '../network/types';
   import BlockNode from './BlockNode.svelte';
   import CanvasViewport from './CanvasViewport.svelte';
 
@@ -112,8 +113,7 @@
 
   function handleDrop(event: DragEvent): void {
     event.preventDefault();
-    const kind = event.dataTransfer?.getData(DRAG_TYPE) as
-      (typeof PALETTE_KINDS)[number] | undefined;
+    const kind = event.dataTransfer?.getData(DRAG_TYPE) as BlockKind | undefined;
     const point = dropPoint(event);
     const index = dropIndex ?? dropIndexFor(point, centres);
     dropIndex = null;

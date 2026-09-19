@@ -45,7 +45,7 @@ function canvas() {
 
 function blockDragEvent(
   type: string,
-  init: { clientY?: number; relatedTarget?: EventTarget | null } = {}
+  init: { clientY?: number; relatedTarget?: EventTarget | null; kind?: string } = {}
 ): Event {
   const event = new Event(type, { bubbles: true, cancelable: true });
   Object.assign(event, {
@@ -54,7 +54,7 @@ function blockDragEvent(
     relatedTarget: init.relatedTarget ?? null,
     dataTransfer: {
       types: ['application/visnet-block'],
-      getData: () => 'linear'
+      getData: () => init.kind ?? 'linear'
     }
   });
   return event;
@@ -114,6 +114,17 @@ describe('BlockCanvas', () => {
     await userEvent.click(screen.getAllByTestId('block-remove')[0]);
 
     expect(store.network.blocks.length).toBe(before - 1);
+  });
+
+  it('ignores a dropped kind that is not in the palette', async () => {
+    const store = canvas();
+    const before = store.network.blocks.length;
+    const addBlock = vi.spyOn(store, 'addBlock');
+    const event = blockDragEvent('drop', { kind: 'bogus' });
+    await fireEvent(screen.getByTestId('canvas'), event);
+    await tick();
+    expect(addBlock).not.toHaveBeenCalled();
+    expect(store.network.blocks.length).toBe(before);
   });
 
   it('hides the Svelte Flow attribution', async () => {
