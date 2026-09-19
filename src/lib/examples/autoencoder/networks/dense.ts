@@ -1,4 +1,4 @@
-import type { Network } from '../../../network/types';
+import type { Network } from '$lib/network/types';
 
 export const DENSE_AUTOENCODER_NETWORK = {
   blocks: [
