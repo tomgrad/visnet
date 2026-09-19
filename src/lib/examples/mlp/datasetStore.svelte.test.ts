@@ -1,13 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { GENERATOR_NAMES } from '../../data/points';
 import { DatasetStore } from './datasetStore.svelte';
-import { CLASS_LABELS, DEFAULT_GENERATOR, MLP_PALETTE } from './example';
+import { CLASS_LABELS, DEFAULT_GENERATOR } from './example';
 
 describe('example configuration', () => {
-  it('offers only the blocks the MLP example teaches', () => {
-    expect(MLP_PALETTE).toEqual(['linear', 'relu', 'sigmoid', 'tanh', 'softmax']);
-  });
-
   it('names both classes', () => {
     expect(CLASS_LABELS).toHaveLength(2);
     expect(CLASS_LABELS[0]).toBeTruthy();

@@ -1,6 +1,5 @@
 <script lang="ts">
   import { onMount, type Component } from 'svelte';
-  import type { BlockKind } from '../network/types';
   import type { NetworkStore } from '../editor/networkStore.svelte';
   import BlockPalette from './BlockPalette.svelte';
   import EditorToolbar from './EditorToolbar.svelte';
@@ -10,18 +9,15 @@
 
   type CanvasProps = {
     store: NetworkStore;
-    palette: BlockKind[];
   };
 
   let {
     store,
-    palette,
     onsave,
     onload,
     saving = false
   }: {
     store: NetworkStore;
-    palette: BlockKind[];
     onsave?: () => void;
     onload?: () => void;
     saving?: boolean;
@@ -41,7 +37,6 @@
   <div class="body">
     <aside class="left">
       <BlockPalette
-        {palette}
         ondragstart={(kind, event) => {
           event.dataTransfer?.setData('application/visnet-block', kind);
         }}
@@ -50,7 +45,7 @@
 
     <div class="middle">
       {#if Canvas}
-        <Canvas {store} {palette} />
+        <Canvas {store} />
       {/if}
     </div>
 

@@ -10,7 +10,6 @@
   import { loadMnistData } from '$lib/data/mnist';
   import { NetworkStore } from '$lib/editor/networkStore.svelte';
   import {
-    CNN_PALETTE,
     CNN_STORAGE_KEYS,
     CNN_WEIGHTS_ID,
     createCnnNetwork,
@@ -74,13 +73,7 @@
   intro="Build a small convolutional network, train it on handwritten digits, and watch it get them right."
 >
   {#snippet editor()}
-    <NetworkEditor
-      {store}
-      palette={CNN_PALETTE}
-      onsave={session.save}
-      onload={session.load}
-      saving={session.saving}
-    />
+    <NetworkEditor {store} onsave={session.save} onload={session.load} saving={session.saving} />
   {/snippet}
 
   {#snippet experiment()}

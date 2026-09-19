@@ -11,9 +11,7 @@ vi.mock('./BlockCanvas.svelte', () => ({
 
 function editor() {
   const store = new NetworkStore();
-  render(NetworkEditor, {
-    props: { store, palette: ['linear', 'relu', 'sigmoid', 'softmax'] }
-  });
+  render(NetworkEditor, { props: { store } });
   return store;
 }
 

@@ -1,21 +1,7 @@
 import { cloneNetwork } from '../../network/factory';
-import type { BlockKind, Network } from '../../network/types';
+import type { Network } from '../../network/types';
 import type { StorageKeys } from '../../persist/storage';
 import { CNN_NETWORK } from './networks/cnn';
-
-export const CNN_PALETTE: BlockKind[] = [
-  'conv2d',
-  'maxpool2d',
-  'upsampling2d',
-  'conv2dtranspose',
-  'flatten',
-  'reshape',
-  'linear',
-  'relu',
-  'sigmoid',
-  'tanh',
-  'softmax'
-];
 
 export const CNN_STORAGE_KEYS: StorageKeys = {
   network: 'visnet:cnn:network:v1',

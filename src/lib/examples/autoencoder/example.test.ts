@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { findProblems } from '../../network/problems';
-import { AUTOENCODER_PALETTE, PRESETS, presetFor } from './example';
+import { PRESETS, presetFor } from './example';
 
 describe('autoencoder presets', () => {
   it('offers a dense and a convolutional preset', () => {
@@ -10,12 +10,6 @@ describe('autoencoder presets', () => {
   it.each(PRESETS.map((preset) => preset.id))('%s builds with no errors', (id) => {
     const preset = PRESETS.find((candidate) => candidate.id === id)!;
     expect(findProblems(preset.create(), { task: 'reconstruction' })).toEqual([]);
-  });
-
-  it('offers reshape, upsampling and transposed convolution', () => {
-    expect(AUTOENCODER_PALETTE).toContain('reshape');
-    expect(AUTOENCODER_PALETTE).toContain('upsampling2d');
-    expect(AUTOENCODER_PALETTE).toContain('conv2dtranspose');
   });
 
   it('gives both presets a rank-one code layer for the scatter', () => {

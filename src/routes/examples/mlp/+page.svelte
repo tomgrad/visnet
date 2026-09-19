@@ -10,12 +10,7 @@
   import { NetworkStore } from '$lib/editor/networkStore.svelte';
   import { createExperiment } from '$lib/examples/experiment.svelte';
   import { DatasetStore } from '$lib/examples/mlp/datasetStore.svelte';
-  import {
-    CLASS_LABELS,
-    MLP_PALETTE,
-    MLP_STORAGE_KEYS,
-    MLP_WEIGHTS_ID
-  } from '$lib/examples/mlp/example';
+  import { CLASS_LABELS, MLP_STORAGE_KEYS, MLP_WEIGHTS_ID } from '$lib/examples/mlp/example';
   import { createBrowserStorage } from '$lib/persist/storage';
 
   const store = new NetworkStore();
@@ -55,13 +50,7 @@
   intro="Build a small network, train it on coloured points, and watch the boundary between the two classes take shape."
 >
   {#snippet editor()}
-    <NetworkEditor
-      {store}
-      palette={MLP_PALETTE}
-      onsave={session.save}
-      onload={session.load}
-      saving={session.saving}
-    />
+    <NetworkEditor {store} onsave={session.save} onload={session.load} saving={session.saving} />
   {/snippet}
 
   {#snippet experiment()}

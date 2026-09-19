@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { findProblems } from '../../network/problems';
 import {
-  CNN_PALETTE,
   CNN_STORAGE_KEYS,
   CNN_WEIGHTS_ID,
   SAMPLE_GRID_COLUMNS,
@@ -9,26 +8,6 @@ import {
   createCnnNetwork,
   defaultSampleIndices
 } from './example';
-
-describe('CNN_PALETTE', () => {
-  it('offers convolution, pooling and flatten, and no pinned blocks', () => {
-    expect(CNN_PALETTE).toEqual([
-      'conv2d',
-      'maxpool2d',
-      'upsampling2d',
-      'conv2dtranspose',
-      'flatten',
-      'reshape',
-      'linear',
-      'relu',
-      'sigmoid',
-      'tanh',
-      'softmax'
-    ]);
-    expect(CNN_PALETTE).not.toContain('input');
-    expect(CNN_PALETTE).not.toContain('output');
-  });
-});
 
 describe('CNN_STORAGE_KEYS', () => {
   it('is namespaced away from the MLP', () => {

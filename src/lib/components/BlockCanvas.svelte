@@ -15,17 +15,11 @@
   import { connectionToIntent, nodeCentre, toFlow } from '../editor/flow';
   import type { NetworkStore } from '../editor/networkStore.svelte';
   import { dropIndexFor } from '../editor/placement';
-  import type { BlockKind } from '../network/types';
+  import { PALETTE_KINDS } from '../network/categories';
   import BlockNode from './BlockNode.svelte';
   import CanvasViewport from './CanvasViewport.svelte';
 
-  let {
-    store,
-    palette
-  }: {
-    store: NetworkStore;
-    palette: BlockKind[];
-  } = $props();
+  let { store }: { store: NetworkStore } = $props();
 
   setContext<EditorNodeActions>(EDITOR_NODE_ACTIONS, {
     removeBlock: (id) => store.removeBlock(id)
@@ -118,11 +112,12 @@
 
   function handleDrop(event: DragEvent): void {
     event.preventDefault();
-    const kind = event.dataTransfer?.getData(DRAG_TYPE) as BlockKind | undefined;
+    const kind = event.dataTransfer?.getData(DRAG_TYPE) as
+      (typeof PALETTE_KINDS)[number] | undefined;
     const point = dropPoint(event);
     const index = dropIndex ?? dropIndexFor(point, centres);
     dropIndex = null;
-    if (!kind || !palette.includes(kind)) return;
+    if (!kind || !PALETTE_KINDS.includes(kind)) return;
 
     store.addBlock(kind, index, point);
   }

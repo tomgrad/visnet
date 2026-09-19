@@ -11,7 +11,6 @@
   import { loadMnistData } from '$lib/data/mnist';
   import { NetworkStore } from '$lib/editor/networkStore.svelte';
   import {
-    AUTOENCODER_PALETTE,
     AUTOENCODER_STORAGE_KEYS,
     AUTOENCODER_WEIGHTS_ID,
     PRESETS,
@@ -79,13 +78,7 @@
   intro="Build a network that compresses a handwritten digit and rebuilds it, then watch the reconstructions sharpen as it trains."
 >
   {#snippet editor()}
-    <NetworkEditor
-      {store}
-      palette={AUTOENCODER_PALETTE}
-      onsave={session.save}
-      onload={session.load}
-      saving={session.saving}
-    />
+    <NetworkEditor {store} onsave={session.save} onload={session.load} saving={session.saving} />
   {/snippet}
 
   {#snippet experiment()}

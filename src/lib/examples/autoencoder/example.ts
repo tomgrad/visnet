@@ -1,22 +1,8 @@
 import { cloneNetwork } from '../../network/factory';
-import type { Block, BlockKind, Network } from '../../network/types';
+import type { Block, Network } from '../../network/types';
 import type { StorageKeys } from '../../persist/storage';
 import { CONV_AUTOENCODER_NETWORK } from './networks/conv';
 import { DENSE_AUTOENCODER_NETWORK } from './networks/dense';
-
-export const AUTOENCODER_PALETTE: BlockKind[] = [
-  'conv2d',
-  'maxpool2d',
-  'upsampling2d',
-  'conv2dtranspose',
-  'flatten',
-  'reshape',
-  'linear',
-  'relu',
-  'sigmoid',
-  'tanh',
-  'softmax'
-];
 
 export const AUTOENCODER_STORAGE_KEYS: StorageKeys = {
   network: 'visnet:autoencoder:network:v1',
