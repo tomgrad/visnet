@@ -70,11 +70,18 @@
     gap: var(--space-3);
     grid-template-columns: minmax(180px, 220px) minmax(320px, 1fr) minmax(260px, 300px);
     align-items: start;
+    --editor-height: 640px;
   }
 
   @container editor (max-width: 790px) {
     .body {
       grid-template-columns: 1fr;
+    }
+
+    .left,
+    .right {
+      max-height: none;
+      overflow: visible;
     }
   }
 
@@ -82,10 +89,12 @@
   .right {
     display: grid;
     gap: var(--space-3);
+    max-height: var(--editor-height);
+    overflow-y: auto;
   }
 
   .middle {
     min-height: 480px;
-    height: 640px;
+    height: var(--editor-height);
   }
 </style>
