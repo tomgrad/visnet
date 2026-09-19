@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { moveBlock } from '../network/chain';
+import { createEmptyNetwork } from '../network/factory';
 import { inferShapes } from '../network/inferShapes';
 import type { Network } from '../network/types';
 import {
@@ -72,6 +73,14 @@ describe('toFlow', () => {
       paramCount: 24,
       index: 1
     });
+  });
+
+  it('carries a block colour into the node data', () => {
+    const net = createEmptyNetwork();
+    net.blocks[1] = { ...net.blocks[1], colour: 'blue' };
+    const { nodes } = toFlow(net, inferShapes(net));
+    expect(nodes[1].data.colour).toBe('blue');
+    expect(nodes[0].data.colour).toBeUndefined();
   });
 
   it('creates one labelled edge per adjacent pair', () => {

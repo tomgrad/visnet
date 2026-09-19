@@ -1,13 +1,15 @@
 <script lang="ts">
   import { getContext } from 'svelte';
   import { Handle, Position, type NodeProps } from '@xyflow/svelte';
+  import { blockColourHex } from '../editor/colours';
   import { EDITOR_NODE_ACTIONS, type EditorNodeActions } from '../editor/context';
   import { NODE_HEIGHT, NODE_WIDTH, shapeLabel } from '../editor/flow';
   import { BLOCK_DESCRIPTIONS } from '../network/descriptions';
-  import type { BlockKind } from '../network/types';
+  import type { BlockColour, BlockKind } from '../network/types';
 
   interface NodeData {
     kind: BlockKind;
+    colour?: BlockColour;
     inShape: number[] | null;
     outShape: number[] | null;
     paramCount: number | null;
@@ -28,7 +30,7 @@
 <div
   class="block"
   class:selected
-  style="width: {NODE_WIDTH}px; min-height: {NODE_HEIGHT}px"
+  style="width: {NODE_WIDTH}px; min-height: {NODE_HEIGHT}px; background: {blockColourHex(info.colour)}"
   data-testid="block-node"
   title={tooltip}
 >

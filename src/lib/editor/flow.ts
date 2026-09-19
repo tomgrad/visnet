@@ -1,5 +1,5 @@
 import type { ShapeResult } from '../network/inferShapes';
-import type { BlockKind, Network, NodePosition } from '../network/types';
+import type { BlockColour, BlockKind, Network, NodePosition } from '../network/types';
 
 export const NODE_WIDTH = 200;
 export const NODE_HEIGHT = 90;
@@ -10,6 +10,7 @@ export interface FlowNode {
   position: { x: number; y: number };
   data: {
     kind: BlockKind;
+    colour?: BlockColour;
     inShape: number[] | null;
     outShape: number[] | null;
     paramCount: number | null;
@@ -59,6 +60,7 @@ export function toFlow(
       position: positionFor(net, index),
       data: {
         kind: block.kind,
+        colour: block.colour,
         inShape: info.inShape,
         outShape: info.outShape,
         paramCount: info.paramCount,
