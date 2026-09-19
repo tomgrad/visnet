@@ -206,4 +206,15 @@ describe('InspectorPanel', () => {
     render(InspectorPanel, { props: { store } });
     expect(screen.queryByTestId('param-units')).toBeNull();
   });
+
+  it('sets and clears a block colour', async () => {
+    const store = storeWithSelection(1);
+    render(InspectorPanel, { props: { store } });
+
+    await userEvent.click(screen.getByTestId('colour-blue'));
+    expect(store.network.blocks[1]).toMatchObject({ colour: 'blue' });
+
+    await userEvent.click(screen.getByTestId('colour-none'));
+    expect(store.network.blocks[1].colour).toBeUndefined();
+  });
 });

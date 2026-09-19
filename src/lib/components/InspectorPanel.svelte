@@ -2,6 +2,7 @@
   import { BLOCK_DESCRIPTIONS, PARAM_DESCRIPTIONS } from '../network/descriptions';
   import { spatialOutputSize, transposedOutputSize } from '../network/inferShapes';
   import { shapeLabel } from '../editor/flow';
+  import { BLOCK_COLOUR_OPTIONS, DEFAULT_BLOCK_COLOUR } from '../editor/colours';
   import type { NetworkStore } from '../editor/networkStore.svelte';
   import type { Block } from '../network/types';
 
@@ -187,6 +188,31 @@
     <h2>{block.kind}</h2>
     <p class="description">{BLOCK_DESCRIPTIONS[block.kind]}</p>
 
+    <div class="colours" data-testid="block-colours">
+      <button
+        type="button"
+        class="swatch"
+        data-testid="colour-none"
+        title="Default"
+        aria-label="Default"
+        aria-pressed={!block.colour}
+        style="background: {DEFAULT_BLOCK_COLOUR}"
+        onclick={() => patch({ colour: undefined })}
+      ></button>
+      {#each BLOCK_COLOUR_OPTIONS as option (option.id)}
+        <button
+          type="button"
+          class="swatch"
+          data-testid={`colour-${option.id}`}
+          title={option.label}
+          aria-label={option.label}
+          aria-pressed={block.colour === option.id}
+          style="background: {option.hex}"
+          onclick={() => patch({ colour: option.id })}
+        ></button>
+      {/each}
+    </div>
+
     {#if block.kind !== 'input'}
       <p class="incoming" data-testid="inspector-incoming">
         Input {shapeLabel(inShape) ?? '—'}{previousKind ? ` from ${previousKind}` : ''}
@@ -317,6 +343,26 @@
     margin: 0;
     color: var(--color-text-muted);
     font-size: var(--text-sm);
+  }
+
+  .colours {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+  }
+
+  .swatch {
+    width: 1.5rem;
+    height: 1.5rem;
+    padding: 0;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+  }
+
+  .swatch[aria-pressed='true'] {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent) 30%, transparent);
   }
 
   label {
