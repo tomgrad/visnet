@@ -259,6 +259,18 @@ describe('positions', () => {
     expect(Object.keys(store.network.positions)).toHaveLength(store.network.blocks.length);
   });
 
+  it('materializes positions on load and reset', () => {
+    const bare = { ...createEmptyNetwork(), positions: {} };
+    const store = new NetworkStore(bare);
+    expect(Object.keys(store.network.positions)).toHaveLength(store.network.blocks.length);
+
+    store.load({ ...createEmptyNetwork(), positions: {} });
+    expect(Object.keys(store.network.positions)).toHaveLength(store.network.blocks.length);
+
+    store.reset();
+    expect(Object.keys(store.network.positions)).toHaveLength(store.network.blocks.length);
+  });
+
   it('assigns an auto position to a block added without a point', () => {
     const store = new NetworkStore();
     const id = store.addBlock('relu', 1);

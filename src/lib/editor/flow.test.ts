@@ -173,6 +173,18 @@ describe('positionFor', () => {
     expect(positionFor(moved, 2)).toEqual({ x: 7, y: 8 });
     expect(positionFor(moved, 1)).toEqual(autoPosition(1));
   });
+
+  it('returns a copy of the stored position, not the stored object', () => {
+    const net = createEmptyNetwork();
+    const id = net.blocks[2].id;
+    const moved = { ...net, positions: { [id]: { x: 5, y: 6 } } };
+
+    const position = positionFor(moved, 2);
+
+    expect(position).not.toBe(moved.positions[id]);
+    position.x = 99;
+    expect(moved.positions[id].x).toBe(5);
+  });
 });
 
 describe('materializePositions', () => {

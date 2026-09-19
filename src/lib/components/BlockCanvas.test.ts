@@ -244,6 +244,7 @@ describe('free positioning', () => {
     await tick();
 
     expect(store.isTidy).toBe(true);
+    expect(store.canUndo).toBe(false);
   });
 
   it('places a dropped block at the point it was dropped', async () => {
