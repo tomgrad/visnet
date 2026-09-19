@@ -62,7 +62,7 @@ describe('EditorToolbar export', () => {
 
   it('downloads the network as a TS module', async () => {
     const store = toolbar();
-    const createObjectURL = vi.fn((_blob: Blob) => 'blob:mock');
+    const createObjectURL = vi.fn<(blob: Blob) => string>(() => 'blob:mock');
     const revokeObjectURL = vi.fn();
     URL.createObjectURL = createObjectURL;
     URL.revokeObjectURL = revokeObjectURL;
