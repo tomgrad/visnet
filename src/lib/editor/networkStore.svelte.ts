@@ -3,7 +3,7 @@ import { cloneNetwork, createBlock, createEmptyNetwork } from '../network/factor
 import { inferShapes } from '../network/inferShapes';
 import type { Block, BlockKind, Network, NodePosition, TrainingConfig } from '../network/types';
 import { findProblems } from '../network/problems';
-import { positionFor } from './flow';
+import { autoPosition, isTidyLayout, materializePositions, positionFor } from './flow';
 import { History } from './history';
 import { insertionIndexFor } from './placement';
 
@@ -32,12 +32,13 @@ export class NetworkStore {
   warnings = $derived(this.issues.filter((issue) => issue.severity === 'warning'));
   shapes = $derived(inferShapes(this.network));
   isValid = $derived(this.errors.length === 0);
+  isTidy = $derived(isTidyLayout(this.network));
   selectedBlock = $derived(
     this.network.blocks.find((block) => block.id === this.selectedBlockId) ?? null
   );
 
   constructor(initial: Network = createEmptyNetwork()) {
-    this.network = initial;
+    this.network = materializePositions(initial);
     this.#initial = cloneNetwork(initial);
   }
 
@@ -49,11 +50,10 @@ export class NetworkStore {
     const block = createBlock(kind);
     const target = index ?? insertionIndexFor(this.network, this.selectedBlockId);
     const inserted = insertAt(this.network, target, block);
-    this.#commit(
-      position
-        ? { ...inserted, positions: { ...inserted.positions, [block.id]: position } }
-        : inserted
-    );
+    this.#commit({
+      ...inserted,
+      positions: { ...inserted.positions, [block.id]: position ?? autoPosition(target) }
+    });
     this.selectedBlockId = block.id;
     return block.id;
   }
@@ -91,9 +91,9 @@ export class NetworkStore {
     this.#commit({ ...this.network, positions: { ...this.network.positions, [id]: position } });
   }
 
-  clearPositions(): void {
-    if (Object.keys(this.network.positions).length === 0) return;
-    this.#commit({ ...this.network, positions: {} });
+  tidyUp(): void {
+    if (this.isTidy) return;
+    this.#commit(materializePositions({ ...this.network, positions: {} }));
   }
 
   undo(): void {
@@ -112,7 +112,7 @@ export class NetworkStore {
 
   load(net: Network): void {
     this.#history.clear();
-    this.network = net;
+    this.network = materializePositions(net);
     this.selectedBlockId = null;
     this.#syncHistoryFlags();
   }

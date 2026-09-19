@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { tick } from 'svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NetworkStore } from '../editor/networkStore.svelte';
+import { autoPosition } from '../editor/flow';
 import BlockCanvas from './BlockCanvas.svelte';
 import {
   capturedEdges,
@@ -242,7 +243,7 @@ describe('free positioning', () => {
     capturedHandler('onnodedragstop')?.({ targetNode: null, nodes: [], event: null });
     await tick();
 
-    expect(store.network.positions).toEqual({});
+    expect(store.isTidy).toBe(true);
   });
 
   it('places a dropped block at the point it was dropped', async () => {
@@ -257,13 +258,14 @@ describe('free positioning', () => {
     expect(store.network.positions[added!.id]).toEqual({ x: 10, y: 400 });
   });
 
-  it('leaves a block added by click unpositioned', async () => {
+  it('gives a block added by click its auto slot', async () => {
     const store = canvas();
     await tick();
 
     const created = store.addBlock('linear');
     await tick();
 
-    expect(store.network.positions[created]).toBeUndefined();
+    const index = store.network.blocks.findIndex((block) => block.id === created);
+    expect(store.network.positions[created]).toEqual(autoPosition(index));
   });
 });

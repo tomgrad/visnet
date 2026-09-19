@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createEmptyNetwork } from '../network/factory';
 import type { Network } from '../network/types';
 import { NetworkStore } from './networkStore.svelte';
+import { autoPosition } from './flow';
 
 function store(): NetworkStore {
   const instance = new NetworkStore();
@@ -253,18 +254,49 @@ describe('expected input shape', () => {
 });
 
 describe('positions', () => {
+  it('materializes a position for every block', () => {
+    const store = new NetworkStore();
+    expect(Object.keys(store.network.positions)).toHaveLength(store.network.blocks.length);
+  });
+
+  it('assigns an auto position to a block added without a point', () => {
+    const store = new NetworkStore();
+    const id = store.addBlock('relu', 1);
+    expect(store.network.positions[id]).toEqual(autoPosition(1));
+  });
+
+  it('reflows moved nodes to the auto layout', () => {
+    const store = new NetworkStore();
+    const id = store.network.blocks[1].id;
+    store.setPosition(id, { x: 40, y: 90 });
+    expect(store.isTidy).toBe(false);
+
+    store.tidyUp();
+
+    expect(store.isTidy).toBe(true);
+    expect(store.network.positions[id]).toEqual(autoPosition(1));
+  });
+
+  it('does not record a tidy-up when the layout is already tidy', () => {
+    const store = new NetworkStore();
+    expect(store.isTidy).toBe(true);
+    const before = store.canUndo;
+    store.tidyUp();
+    expect(store.canUndo).toBe(before);
+  });
+
   it('stores a moved position and undoes it', () => {
     const instance = store();
     const id = instance.network.blocks[1].id;
 
-    expect(instance.network.positions).toEqual({});
+    expect(instance.network.positions[id]).toEqual(autoPosition(1));
     instance.setPosition(id, { x: 40, y: 90 });
 
     expect(instance.network.positions[id]).toEqual({ x: 40, y: 90 });
     expect(instance.canUndo).toBe(true);
 
     instance.undo();
-    expect(instance.network.positions).toEqual({});
+    expect(instance.network.positions[id]).toEqual(autoPosition(1));
   });
 
   it('records nothing when the same position is set twice', () => {
@@ -277,7 +309,7 @@ describe('positions', () => {
     instance.setPosition(id, { x: 40, y: 90 });
     instance.undo();
 
-    expect(instance.network.positions).toEqual({});
+    expect(instance.network.positions[id]).toEqual(autoPosition(1));
     expect(instance.canUndo).toBe(false);
   });
 
@@ -287,32 +319,36 @@ describe('positions', () => {
 
     instance.setPosition(id, { x: 0, y: 170 });
     expect(instance.canUndo).toBe(false);
-    expect(instance.network.positions).toEqual({});
+    expect(instance.network.positions[id]).toEqual(autoPosition(1));
   });
 
   it('ignores an unknown block', () => {
     const instance = store();
     instance.setPosition('missing', { x: 1, y: 2 });
-    expect(instance.network.positions).toEqual({});
+    expect(instance.isTidy).toBe(true);
     expect(instance.canUndo).toBe(false);
   });
 
-  it('clears every position in one undoable step', () => {
+  it('tidies every moved position in one undoable step', () => {
     const instance = store();
-    instance.setPosition(instance.network.blocks[1].id, { x: 10, y: 10 });
-    instance.setPosition(instance.network.blocks[2].id, { x: 20, y: 20 });
-    expect(Object.keys(instance.network.positions)).toHaveLength(2);
+    const first = instance.network.blocks[1].id;
+    const second = instance.network.blocks[2].id;
+    instance.setPosition(first, { x: 10, y: 10 });
+    instance.setPosition(second, { x: 20, y: 20 });
 
-    instance.clearPositions();
-    expect(instance.network.positions).toEqual({});
+    instance.tidyUp();
+    expect(instance.network.positions[first]).toEqual(autoPosition(1));
+    expect(instance.network.positions[second]).toEqual(autoPosition(2));
+    expect(instance.isTidy).toBe(true);
 
     instance.undo();
-    expect(Object.keys(instance.network.positions)).toHaveLength(2);
+    expect(instance.network.positions[first]).toEqual({ x: 10, y: 10 });
+    expect(instance.network.positions[second]).toEqual({ x: 20, y: 20 });
   });
 
   it('records nothing when there is nothing to tidy', () => {
     const instance = store();
-    instance.clearPositions();
+    instance.tidyUp();
     expect(instance.canUndo).toBe(false);
   });
 
@@ -323,10 +359,11 @@ describe('positions', () => {
     expect(instance.network.blocks[2].id).toBe(created);
   });
 
-  it('leaves a clicked block unpositioned so it takes the auto slot', () => {
+  it('gives a clicked block its auto slot', () => {
     const instance = store();
     const created = instance.addBlock('sigmoid');
-    expect(instance.network.positions[created]).toBeUndefined();
+    const index = instance.network.blocks.findIndex((block) => block.id === created);
+    expect(instance.network.positions[created]).toEqual(autoPosition(index));
   });
 
   it('drops a removed block position', () => {
@@ -334,7 +371,7 @@ describe('positions', () => {
     const id = instance.network.blocks[1].id;
     instance.setPosition(id, { x: 5, y: 5 });
     instance.removeBlock(id);
-    expect(instance.network.positions).toEqual({});
+    expect(instance.network.positions[id]).toBeUndefined();
   });
 });
 

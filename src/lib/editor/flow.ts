@@ -42,7 +42,8 @@ export function autoPosition(index: number): NodePosition {
 
 export function positionFor(net: Network, index: number): NodePosition {
   const block = net.blocks[index];
-  return net.positions[block.id] ?? autoPosition(index);
+  const position = net.positions[block.id];
+  return position ? { x: position.x, y: position.y } : autoPosition(index);
 }
 
 export function materializePositions(net: Network): Network {

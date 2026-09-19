@@ -60,8 +60,8 @@
   <button
     type="button"
     data-testid="tidy-up"
-    disabled={Object.keys(store.network.positions).length === 0}
-    onclick={() => store.clearPositions()}
+    disabled={store.isTidy}
+    onclick={() => store.tidyUp()}
   >
     Tidy up
   </button>

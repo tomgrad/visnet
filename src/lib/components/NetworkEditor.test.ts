@@ -73,6 +73,6 @@ describe('NetworkEditor', () => {
 
     await userEvent.click(screen.getByTestId('tidy-up'));
 
-    expect(store.network.positions).toEqual({});
+    expect(store.isTidy).toBe(true);
   });
 });
