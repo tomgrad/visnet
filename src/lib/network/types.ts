@@ -29,8 +29,26 @@ export const BLOCK_KINDS: readonly BlockKind[] = [
   'output'
 ];
 
+export const BLOCK_COLOURS = [
+  'blue',
+  'green',
+  'amber',
+  'red',
+  'violet',
+  'teal',
+  'pink',
+  'slate'
+] as const;
+
+export type BlockColour = (typeof BLOCK_COLOURS)[number];
+
+export function isBlockColour(value: unknown): value is BlockColour {
+  return typeof value === 'string' && (BLOCK_COLOURS as readonly string[]).includes(value);
+}
+
 export interface BlockBase {
   id: string;
+  colour?: BlockColour;
 }
 
 export interface InputBlock extends BlockBase {

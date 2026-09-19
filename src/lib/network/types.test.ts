@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BLOCK_KINDS, type Block, type Network } from './types';
+import { BLOCK_COLOURS, BLOCK_KINDS, isBlockColour, type Block, type Network } from './types';
 
 describe('BLOCK_KINDS', () => {
   it('lists the thirteen block kinds in pipeline order', () => {
@@ -22,6 +22,21 @@ describe('BLOCK_KINDS', () => {
 
   it('contains no duplicates', () => {
     expect(new Set(BLOCK_KINDS).size).toBe(BLOCK_KINDS.length);
+  });
+});
+
+describe('BLOCK_COLOURS', () => {
+  it('has no duplicates', () => {
+    expect(new Set(BLOCK_COLOURS).size).toBe(BLOCK_COLOURS.length);
+  });
+
+  it('recognises each colour and rejects other values', () => {
+    for (const colour of BLOCK_COLOURS) {
+      expect(isBlockColour(colour)).toBe(true);
+    }
+    expect(isBlockColour('chartreuse')).toBe(false);
+    expect(isBlockColour(undefined)).toBe(false);
+    expect(isBlockColour(3)).toBe(false);
   });
 });
 
