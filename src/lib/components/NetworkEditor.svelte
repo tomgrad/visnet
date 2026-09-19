@@ -73,6 +73,14 @@
     --editor-height: 640px;
   }
 
+  .left,
+  .right {
+    display: grid;
+    gap: var(--space-3);
+    max-height: var(--editor-height);
+    overflow-y: auto;
+  }
+
   @container editor (max-width: 790px) {
     .body {
       grid-template-columns: 1fr;
@@ -83,14 +91,6 @@
       max-height: none;
       overflow: visible;
     }
-  }
-
-  .left,
-  .right {
-    display: grid;
-    gap: var(--space-3);
-    max-height: var(--editor-height);
-    overflow-y: auto;
   }
 
   .middle {
