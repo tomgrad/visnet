@@ -1,4 +1,5 @@
 import { render } from '@testing-library/svelte';
+import { tick } from 'svelte';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NetworkStore } from '../editor/networkStore.svelte';
 import ExperimentHarness from './__stubs__/ExperimentHarness.svelte';
@@ -66,6 +67,18 @@ describe('createExperiment', () => {
     await vi.waitFor(() => expect(session.model).not.toBe(first));
     expect(runtime.buildModel).toHaveBeenCalledTimes(2);
     expect(runtime.disposeModel).toHaveBeenCalledWith(first);
+  });
+
+  it('does not rebuild the model when only a colour changes', async () => {
+    const { store, session } = mountExperiment();
+    await vi.waitFor(() => expect(session.model).not.toBeNull());
+
+    store.updateBlock(store.network.blocks[1].id, { colour: 'blue' });
+    await tick();
+    expect(runtime.buildModel).toHaveBeenCalledTimes(1);
+
+    store.updateBlock(store.network.blocks[1].id, { units: 16 });
+    await vi.waitFor(() => expect(runtime.buildModel).toHaveBeenCalledTimes(2));
   });
 
   it('reads accuracy tracking from the store task', async () => {

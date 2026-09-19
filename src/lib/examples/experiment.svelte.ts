@@ -55,7 +55,9 @@ export function createExperiment(options: {
   let trainer: TrainerHandle | null = null;
   let compiledTraining = '';
 
-  const architecture = $derived(JSON.stringify(store.network.blocks));
+  const architecture = $derived(
+    JSON.stringify(store.network.blocks.map((block) => ({ ...block, colour: undefined })))
+  );
   const trainingSignature = $derived(JSON.stringify(store.network.training));
 
   function handleStats(next: TrainStats): void {
