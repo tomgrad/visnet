@@ -21,8 +21,12 @@ function inlineObject(entries: [string, unknown][]): string {
   return `{ ${fields.join(', ')} }`;
 }
 
+function definedEntries(value: object): [string, unknown][] {
+  return (Object.entries(value) as [string, unknown][]).filter(([, entry]) => entry !== undefined);
+}
+
 function blockLiteral(block: Block, indent: string): string {
-  const entries = Object.entries(block) as [string, unknown][];
+  const entries = definedEntries(block);
   const inline = inlineObject(entries);
   if (indent.length + inline.length + 1 <= 100) return inline;
   const fields = entries.map(([name, value]) => `${indent}  ${key(name)}: ${scalar(value)}`);
@@ -38,7 +42,7 @@ function positionsLiteral(positions: Network['positions']): string {
 
 export function toTypeScriptModule(net: Network): string {
   const blocks = net.blocks.map((block) => `    ${blockLiteral(block, '    ')}`).join(',\n');
-  const training = inlineObject(Object.entries(net.training) as [string, unknown][]);
+  const training = inlineObject(definedEntries(net.training));
   return [
     "import type { Network } from '$lib/network/types';",
     '',

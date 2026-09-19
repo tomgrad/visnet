@@ -49,4 +49,14 @@ describe('toTypeScriptModule', () => {
     expect(module).toContain("      id: 'conv-decode-first-layer'");
     expect(module).toContain('    }');
   });
+
+  it('includes a set colour and omits an unset one', () => {
+    const net = createEmptyNetwork();
+    const blocks = net.blocks.map((block, index) =>
+      index === 1 ? { ...block, colour: 'blue' as const } : block
+    );
+    const module = toTypeScriptModule({ ...net, blocks });
+    expect(module).toContain("colour: 'blue'");
+    expect(module.split("colour: 'blue'").length - 1).toBe(1);
+  });
 });

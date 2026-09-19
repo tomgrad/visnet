@@ -120,4 +120,18 @@ describe('networkCodec', () => {
     const restored = decodeNetwork(JSON.stringify({ blocks: net.blocks, training: net.training }));
     expect(restored?.positions).toEqual({});
   });
+
+  it('round-trips a block colour and rejects an unknown one', () => {
+    const net = createEmptyNetwork();
+    const blocks = net.blocks.map((block, index) =>
+      index === 1 ? { ...block, colour: 'blue' } : block
+    );
+    const restored = decodeNetwork(JSON.stringify({ blocks, training: net.training }));
+    expect(restored?.blocks[1]).toMatchObject({ colour: 'blue' });
+
+    const bogus = net.blocks.map((block, index) =>
+      index === 1 ? { ...block, colour: 'chartreuse' } : block
+    );
+    expect(decodeNetwork(JSON.stringify({ blocks: bogus, training: net.training }))).toBeNull();
+  });
 });

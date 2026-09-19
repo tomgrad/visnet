@@ -1,4 +1,10 @@
-import type { Block, Network, NodePosition, TrainingConfig } from '../network/types';
+import {
+  isBlockColour,
+  type Block,
+  type Network,
+  type NodePosition,
+  type TrainingConfig
+} from '../network/types';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -7,6 +13,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function isBlock(value: unknown): value is Block {
   if (!isRecord(value)) return false;
   if (typeof value.id !== 'string' || typeof value.kind !== 'string') return false;
+  if (value.colour !== undefined && !isBlockColour(value.colour)) return false;
   switch (value.kind) {
     case 'input':
       return (
