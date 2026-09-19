@@ -45,6 +45,23 @@ export function positionFor(net: Network, index: number): NodePosition {
   return net.positions[block.id] ?? autoPosition(index);
 }
 
+export function materializePositions(net: Network): Network {
+  const positions: Record<string, NodePosition> = {};
+  net.blocks.forEach((block, index) => {
+    positions[block.id] = net.positions[block.id] ?? autoPosition(index);
+  });
+  return { ...net, positions };
+}
+
+export function isTidyLayout(net: Network): boolean {
+  return net.blocks.every((block, index) => {
+    const position = net.positions[block.id];
+    if (!position) return true;
+    const auto = autoPosition(index);
+    return position.x === auto.x && position.y === auto.y;
+  });
+}
+
 export function nodeCentre(position: NodePosition): NodePosition {
   return { x: position.x + NODE_WIDTH / 2, y: position.y + NODE_HEIGHT / 2 };
 }

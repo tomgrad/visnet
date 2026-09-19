@@ -9,6 +9,8 @@ import {
   NODE_WIDTH,
   autoPosition,
   connectionToIntent,
+  isTidyLayout,
+  materializePositions,
   nodeCentre,
   positionFor,
   shapeLabel,
@@ -170,6 +172,32 @@ describe('positionFor', () => {
     const moved = { ...network, positions: { [id]: { x: 7, y: 8 } } };
     expect(positionFor(moved, 2)).toEqual({ x: 7, y: 8 });
     expect(positionFor(moved, 1)).toEqual(autoPosition(1));
+  });
+});
+
+describe('materializePositions', () => {
+  it('fills missing positions with the auto slot and keeps stored ones', () => {
+    const net = createEmptyNetwork();
+    const moved = net.blocks[1].id;
+    const result = materializePositions({ ...net, positions: { [moved]: { x: 5, y: 6 } } });
+
+    expect(result.positions[moved]).toEqual({ x: 5, y: 6 });
+    expect(result.positions[net.blocks[0].id]).toEqual(autoPosition(0));
+    expect(Object.keys(result.positions)).toHaveLength(net.blocks.length);
+  });
+});
+
+describe('isTidyLayout', () => {
+  it('is true for an empty or auto layout', () => {
+    const net = createEmptyNetwork();
+    expect(isTidyLayout(net)).toBe(true);
+    expect(isTidyLayout(materializePositions(net))).toBe(true);
+  });
+
+  it('is false once a node is moved', () => {
+    const net = createEmptyNetwork();
+    const moved = { ...net, positions: { [net.blocks[1].id]: { x: 5, y: 6 } } };
+    expect(isTidyLayout(moved)).toBe(false);
   });
 });
 
