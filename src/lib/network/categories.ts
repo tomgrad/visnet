@@ -11,7 +11,7 @@ export const BLOCK_CATEGORIES: readonly BlockCategory[] = [
   {
     id: 'image',
     label: 'Image',
-    kinds: ['conv2d', 'maxpool2d', 'upsampling2d', 'conv2dtranspose']
+    kinds: ['conv2d', 'conv2dtranspose', 'maxpool2d', 'upsampling2d']
   },
   { id: 'activation', label: 'Activations', kinds: ['relu', 'sigmoid', 'tanh', 'softmax'] }
 ];

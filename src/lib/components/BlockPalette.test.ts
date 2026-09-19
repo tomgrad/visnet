@@ -16,11 +16,11 @@ describe('BlockPalette', () => {
     }
   });
 
-  it('shows the plain-language description for each block', () => {
+  it('exposes the plain-language description as a tooltip', () => {
     render(BlockPalette);
     for (const category of BLOCK_CATEGORIES) {
       for (const kind of category.kinds) {
-        expect(screen.getByTestId(`palette-${kind}`).textContent).toContain(
+        expect(screen.getByTestId(`palette-${kind}`).getAttribute('title')).toBe(
           BLOCK_DESCRIPTIONS[kind]
         );
       }
