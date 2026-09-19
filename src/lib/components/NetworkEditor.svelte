@@ -68,7 +68,7 @@
   .body {
     display: grid;
     gap: var(--space-3);
-    grid-template-columns: minmax(180px, 220px) minmax(320px, 1fr) minmax(260px, 300px);
+    grid-template-columns: minmax(180px, 220px) minmax(320px, 1fr) minmax(320px, 420px);
     align-items: start;
     --editor-height: 640px;
   }

@@ -81,80 +81,7 @@
     <NetworkEditor {store} onsave={session.save} onload={session.load} saving={session.saving} />
   {/snippet}
 
-  {#snippet experiment()}
-    {#if session.banner}
-      <p class="banner" role="status">{session.banner}</p>
-    {/if}
-
-    {#if loadState === 'loading'}
-      <p class="note">Loading the digit images…</p>
-    {:else if loadState === 'unavailable'}
-      <div class="note">
-        <h2>The digit images are not prepared</h2>
-        <p>
-          Run <code>npm run data:mnist</code> in the project, then reload this page. The images are downloaded
-          locally and are never part of the repository.
-        </p>
-      </div>
-    {:else}
-      <p class="note">Training on the first {Math.min(trainCount, TRAIN_COUNT)} digits.</p>
-
-      <label class="preset">
-        <span>Network</span>
-        <select
-          data-testid="autoencoder-preset"
-          value={selectedPreset ?? 'custom'}
-          onchange={choosePreset}
-        >
-          {#each PRESETS as preset (preset.id)}
-            <option value={preset.id}>{preset.label}</option>
-          {/each}
-          {#if selectedPreset === null}
-            <option value="custom">Custom</option>
-          {/if}
-        </select>
-      </label>
-
-      <div class="scroll">
-        <ReconstructionGrid
-          model={session.model}
-          dataset={testData}
-          indices={reconstructionIndices}
-          redrawKey={session.redrawKey}
-        />
-      </div>
-
-      {#if !session.model}
-        <p class="note" data-testid="layer-message">
-          Fix the problems listed in the editor before the layer view can be drawn.
-        </p>
-      {:else if target === null}
-        <p class="note" data-testid="layer-message">
-          Select a block to see its code scatter or feature maps.
-        </p>
-      {:else if rank === 1}
-        <CodeScatter
-          model={session.model}
-          {store}
-          dataset={testData}
-          indices={scatterIndices}
-          redrawKey={session.redrawKey}
-        />
-      {:else if rank === 3}
-        <FeatureMaps
-          model={session.model}
-          {store}
-          dataset={testData}
-          indices={scatterIndices}
-          redrawKey={session.redrawKey}
-        />
-      {:else}
-        <p class="note" data-testid="layer-message">
-          This layer's output cannot be plotted here. Select the code layer or a convolution layer.
-        </p>
-      {/if}
-    {/if}
-
+  {#snippet training()}
     <TrainingPanel
       {store}
       playing={session.playing}
@@ -166,8 +93,87 @@
       onstep={session.step}
       onreset={session.resetModel}
     />
+  {/snippet}
 
-    <LossChart points={session.lossPoints} />
+  {#snippet focus()}
+    {#if !session.model}
+      <p class="note" data-testid="layer-message">
+        Fix the problems listed in the editor before the layer view can be drawn.
+      </p>
+    {:else if target === null}
+      <p class="note" data-testid="layer-message">
+        Select a block to see its code scatter or feature maps.
+      </p>
+    {:else if rank === 1}
+      <CodeScatter
+        model={session.model}
+        {store}
+        dataset={testData}
+        indices={scatterIndices}
+        redrawKey={session.redrawKey}
+      />
+    {:else if rank === 3}
+      <FeatureMaps
+        model={session.model}
+        {store}
+        dataset={testData}
+        indices={scatterIndices}
+        redrawKey={session.redrawKey}
+      />
+    {:else}
+      <p class="note" data-testid="layer-message">
+        This layer's output cannot be plotted here. Select the code layer or a convolution layer.
+      </p>
+    {/if}
+  {/snippet}
+
+  {#snippet experiment()}
+    <div class="rest">
+      {#if session.banner}
+        <p class="banner" role="status">{session.banner}</p>
+      {/if}
+
+      {#if loadState === 'loading'}
+        <p class="note">Loading the digit images…</p>
+      {:else if loadState === 'unavailable'}
+        <div class="note">
+          <h2>The digit images are not prepared</h2>
+          <p>
+            Run <code>npm run data:mnist</code> in the project, then reload this page. The images are
+            downloaded locally and are never part of the repository.
+          </p>
+        </div>
+      {:else}
+        <p class="note">Training on the first {Math.min(trainCount, TRAIN_COUNT)} digits.</p>
+
+        <label class="preset">
+          <span>Network</span>
+          <select
+            data-testid="autoencoder-preset"
+            value={selectedPreset ?? 'custom'}
+            onchange={choosePreset}
+          >
+            {#each PRESETS as preset (preset.id)}
+              <option value={preset.id}>{preset.label}</option>
+            {/each}
+            {#if selectedPreset === null}
+              <option value="custom">Custom</option>
+            {/if}
+          </select>
+        </label>
+
+        <div class="scroll">
+          <ReconstructionGrid
+            model={session.model}
+            dataset={testData}
+            indices={reconstructionIndices}
+            redrawKey={session.redrawKey}
+          />
+        </div>
+      {/if}
+
+      <LossChart points={session.lossPoints} />
+    </div>
   {/snippet}
 </ExampleLayout>
 
@@ -221,5 +227,10 @@
   .scroll {
     overflow-x: auto;
     padding-bottom: var(--space-1);
+  }
+
+  .rest {
+    display: grid;
+    gap: var(--space-3);
   }
 </style>

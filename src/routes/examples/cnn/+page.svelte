@@ -76,6 +76,19 @@
     <NetworkEditor {store} onsave={session.save} onload={session.load} saving={session.saving} />
   {/snippet}
 
+  {#snippet training()}
+    <TrainingPanel
+      {store}
+      playing={session.playing}
+      disabled={!store.isValid || loadState !== 'ready'}
+      stats={session.stats}
+      onplay={session.play}
+      onpause={session.pause}
+      onstep={session.step}
+      onreset={session.resetModel}
+    />
+  {/snippet}
+
   {#snippet experiment()}
     {#if session.banner}
       <p class="banner" role="status">{session.banner}</p>
@@ -109,17 +122,6 @@
         redrawKey={session.redrawKey}
       />
     {/if}
-
-    <TrainingPanel
-      {store}
-      playing={session.playing}
-      disabled={!store.isValid || loadState !== 'ready'}
-      stats={session.stats}
-      onplay={session.play}
-      onpause={session.pause}
-      onstep={session.step}
-      onreset={session.resetModel}
-    />
 
     <LossChart points={session.lossPoints} />
   {/snippet}
