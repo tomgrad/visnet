@@ -145,7 +145,7 @@
       disabled={disabled || playing}
       onclick={onplay}
     >
-      Play
+      Train
     </button>
     <button type="button" data-testid="training-pause" disabled={!playing} onclick={onpause}>
       Pause
