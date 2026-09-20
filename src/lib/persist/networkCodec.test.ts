@@ -115,6 +115,15 @@ describe('networkCodec', () => {
     expect(restored?.blocks.at(-1)).toEqual(block);
   });
 
+  it('round-trips a batchnorm block', () => {
+    const net = createEmptyNetwork();
+    const block = { id: 'bn', kind: 'batchnorm' };
+    const restored = decodeNetwork(
+      JSON.stringify({ blocks: [...net.blocks, block], training: net.training })
+    );
+    expect(restored?.blocks.at(-1)).toEqual(block);
+  });
+
   it('accepts a payload with no positions and defaults them to empty', () => {
     const net = createEmptyNetwork();
     const restored = decodeNetwork(JSON.stringify({ blocks: net.blocks, training: net.training }));

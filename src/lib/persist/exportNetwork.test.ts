@@ -68,4 +68,11 @@ describe('toTypeScriptModule', () => {
     const module = toTypeScriptModule({ ...net, blocks });
     expect(module).not.toContain('colour');
   });
+
+  it('exports a batchnorm block as a plain literal', () => {
+    const net = createEmptyNetwork();
+    const block = { id: 'bn', kind: 'batchnorm' as const };
+    const module = toTypeScriptModule({ ...net, blocks: [...net.blocks, block] });
+    expect(module).toContain("{ id: 'bn', kind: 'batchnorm' }");
+  });
 });

@@ -40,6 +40,8 @@ function isBlock(value: unknown): value is Block {
       return typeof value.poolSize === 'number' && typeof value.stride === 'number';
     case 'upsampling2d':
       return typeof value.size === 'number';
+    case 'batchnorm':
+      return true;
     case 'reshape':
       return (
         Array.isArray(value.shape) &&
