@@ -1,5 +1,6 @@
 import * as tf from '@tensorflow/tfjs';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { PRESETS } from '../examples/autoencoder/example';
 import { createEmptyNetwork } from '../network/factory';
 import type { Network } from '../network/types';
 import { NetworkInvalidError, buildModel, compileModel, describeBuildError } from './buildModel';
@@ -233,6 +234,14 @@ describe('buildModel', () => {
     expect(model.inputs[0].shape).toEqual([null, 4, 4, 2]);
     expect(model.layers[0].outputShape).toEqual([null, 8, 8, 2]);
     expect(model.outputs[0].shape).toEqual([null, 2]);
+  });
+
+  it('builds every autoencoder preset to a full-size image', () => {
+    for (const preset of PRESETS) {
+      const model = build(preset.create());
+      expect(model.inputs[0].shape).toEqual([null, 28, 28, 1]);
+      expect(model.outputs[0].shape).toEqual([null, 28, 28, 1]);
+    }
   });
 });
 

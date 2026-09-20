@@ -3,6 +3,7 @@ import type { Block, Network } from '../../network/types';
 import type { StorageKeys } from '../../persist/storage';
 import { CONV_AUTOENCODER_NETWORK } from './networks/conv';
 import { DENSE_AUTOENCODER_NETWORK } from './networks/dense';
+import { UPSAMPLE_AUTOENCODER_NETWORK } from './networks/upsample';
 
 export const AUTOENCODER_STORAGE_KEYS: StorageKeys = {
   network: 'visnet:autoencoder:network:v1',
@@ -15,7 +16,7 @@ export const TRAIN_COUNT = 1000;
 export const SCATTER_COUNT = 500;
 export const RECONSTRUCTION_COUNT = 30;
 
-export type AutoencoderPresetId = 'dense' | 'conv';
+export type AutoencoderPresetId = 'dense' | 'conv' | 'upsample';
 
 export interface AutoencoderPreset {
   id: AutoencoderPresetId;
@@ -33,6 +34,11 @@ export const PRESETS: AutoencoderPreset[] = [
     id: 'conv',
     label: 'Convolutional (32-number code)',
     create: () => cloneNetwork(CONV_AUTOENCODER_NETWORK)
+  },
+  {
+    id: 'upsample',
+    label: 'Upsampling (32-number code)',
+    create: () => cloneNetwork(UPSAMPLE_AUTOENCODER_NETWORK)
   }
 ];
 

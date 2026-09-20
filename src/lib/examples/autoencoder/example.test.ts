@@ -3,8 +3,8 @@ import { findProblems } from '../../network/problems';
 import { PRESETS, presetFor } from './example';
 
 describe('autoencoder presets', () => {
-  it('offers a dense and a convolutional preset', () => {
-    expect(PRESETS.map((preset) => preset.id)).toEqual(['dense', 'conv']);
+  it('offers a dense, a convolutional, and an upsampling preset', () => {
+    expect(PRESETS.map((preset) => preset.id)).toEqual(['dense', 'conv', 'upsample']);
   });
 
   it.each(PRESETS.map((preset) => preset.id))('%s builds with no errors', (id) => {
@@ -12,12 +12,19 @@ describe('autoencoder presets', () => {
     expect(findProblems(preset.create(), { task: 'reconstruction' })).toEqual([]);
   });
 
-  it('gives both presets a rank-one code layer for the scatter', () => {
+  it('gives every preset a rank-one code layer for the scatter', () => {
     for (const preset of PRESETS) {
       const code = preset.create().blocks.find((block) => block.id === 'code');
       expect(code).toMatchObject({ kind: 'linear' });
       expect((code as { units: number }).units).toBeGreaterThanOrEqual(2);
     }
+  });
+
+  it('rebuilds with upsampling and convolution instead of transposed convolution', () => {
+    const preset = PRESETS.find((candidate) => candidate.id === 'upsample')!;
+    const kinds = preset.create().blocks.map((block) => block.kind);
+    expect(kinds).toContain('upsampling2d');
+    expect(kinds).not.toContain('conv2dtranspose');
   });
 });
 

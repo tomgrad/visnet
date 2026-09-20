@@ -63,7 +63,9 @@ Specifics:
   a button to step through the sample digits.
 - Train a dense or convolutional autoencoder on handwritten digits, watch the
   originals and their reconstructions side by side, and see the compressed code
-  of the selected layer as a scatter plot.
+  of the selected layer as a scatter plot. The convolutional autoencoder comes in
+  two decoder flavours: transposed convolution, and upsampling followed by
+  convolution.
 
 ## Digit data
 
