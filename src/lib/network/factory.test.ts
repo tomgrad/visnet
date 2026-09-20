@@ -34,6 +34,7 @@ describe('createBlock', () => {
       stride: 2,
       padding: 'same'
     });
+    expect(createBlock('batchnorm')).toEqual({ id: expect.any(String), kind: 'batchnorm' });
     expect(createBlock('reshape')).toMatchObject({ kind: 'reshape', shape: [1] });
     expect(createBlock('output')).toMatchObject({ kind: 'output', shape: [2] });
   });

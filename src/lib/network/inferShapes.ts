@@ -88,6 +88,7 @@ function outputShapeFor(block: Block, inShape: number[] | null): number[] | null
     case 'sigmoid':
     case 'tanh':
     case 'softmax':
+    case 'batchnorm':
     case 'output':
       return inShape ? [...inShape] : null;
     default:
@@ -104,6 +105,9 @@ function paramCountFor(block: Block, inShape: number[] | null): number | null {
     case 'conv2dtranspose':
       if (!inShape || inShape.length !== 3) return null;
       return block.kernelSize * block.kernelSize * inShape[2] * block.filters + block.filters;
+    case 'batchnorm':
+      if (!inShape || inShape.length === 0) return null;
+      return inShape[inShape.length - 1] * 2;
     default:
       return 0;
   }

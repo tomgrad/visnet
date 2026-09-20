@@ -49,6 +49,22 @@ describe('findProblems errors', () => {
     expect(errors(createEmptyNetwork())).toEqual([]);
   });
 
+  it('accepts a batch normalization block in a dense chain', () => {
+    const network = net([
+      { id: 'in', kind: 'input', shape: [8] },
+      { id: 'dense', kind: 'linear', units: 8 },
+      { id: 'bn', kind: 'batchnorm' },
+      { id: 'relu', kind: 'relu' },
+      { id: 'out', kind: 'output', shape: [8] }
+    ]);
+    expect(errors(network)).toEqual([]);
+  });
+
+  it('counts a batch normalization block as a learnable layer', () => {
+    const network = net([INPUT, { id: 'bn', kind: 'batchnorm' }, OUTPUT]);
+    expect(titles(network)).not.toContain('Nothing to learn');
+  });
+
   it('reports a missing input block', () => {
     expect(titles(net([{ id: 'a', kind: 'relu' }, OUTPUT]))).toContain('Missing Input block');
   });

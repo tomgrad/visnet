@@ -313,3 +313,29 @@ describe('inferShapes with an impossible pool', () => {
     expect(result.perBlock[1].outShape).toBeNull();
   });
 });
+
+describe('inferShapes on a batch normalization block', () => {
+  it('passes a flat shape through and counts two values per feature', () => {
+    const result = inferShapes(
+      net([
+        { id: 'in', kind: 'input', shape: [8] },
+        { id: 'bn', kind: 'batchnorm' },
+        { id: 'out', kind: 'output', shape: [8] }
+      ])
+    );
+    expect(result.perBlock[1].outShape).toEqual([8]);
+    expect(result.perBlock[1].paramCount).toBe(16);
+  });
+
+  it('passes an image shape through and counts two values per channel', () => {
+    const result = inferShapes(
+      net([
+        { id: 'in', kind: 'input', shape: [7, 7, 32] },
+        { id: 'bn', kind: 'batchnorm' },
+        { id: 'out', kind: 'output', shape: [7, 7, 32] }
+      ])
+    );
+    expect(result.perBlock[1].outShape).toEqual([7, 7, 32]);
+    expect(result.perBlock[1].paramCount).toBe(64);
+  });
+});

@@ -42,6 +42,8 @@ export function createBlock(kind: BlockKind): Block {
         stride: 2,
         padding: 'same'
       };
+    case 'batchnorm':
+      return { id: newBlockId(), kind: 'batchnorm' };
     case 'flatten':
       return { id: newBlockId(), kind: 'flatten' };
     case 'reshape':
