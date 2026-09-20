@@ -18,7 +18,7 @@ export const DENSE_AUTOENCODER_NETWORK = {
     { id: 'reshape', kind: 'reshape', shape: [28, 28, 1], colour: 'blue' },
     { id: 'output', kind: 'output', shape: [28, 28, 1], colour: 'amber' }
   ],
-  training: { loss: 'mse', optimizer: 'adam', learningRate: 0.0051, batchSize: 32 },
+  training: { loss: 'mse', optimizer: 'adam', learningRate: 0.001, batchSize: 32 },
   positions: {
     input: { x: 0, y: 0 },
     flatten: { x: 0, y: 170 },
