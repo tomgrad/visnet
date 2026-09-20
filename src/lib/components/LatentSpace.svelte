@@ -26,6 +26,7 @@
   let canvas = $state<HTMLCanvasElement | null>(null);
   let latent = $state<typeof import('../render/latent') | null>(null);
   let pair = $state(0);
+  let bounds = $state<LatentBounds | null>(null);
   let error = $state<string | null>(null);
 
   const target = $derived(probeTargetFor(store.network, store.selectedBlockId));
@@ -41,6 +42,12 @@
           ? 'This layer has fewer than two dimensions, so there is nothing to plot.'
           : null
   );
+  const rangeText = $derived(
+    bounds
+      ? `range: dim ${pair + 1} [${formatNumber(bounds.minX)}, ${formatNumber(bounds.maxX)}], ` +
+          `dim ${pair + 2} [${formatNumber(bounds.minY)}, ${formatNumber(bounds.maxY)}]`
+      : null
+  );
 
   $effect(() => {
     void store.selectedBlockId;
@@ -54,6 +61,10 @@
   onMount(async () => {
     latent = await import('../render/latent');
   });
+
+  function formatNumber(value: number): string {
+    return Number.parseFloat(value.toFixed(2)).toString();
+  }
 
   function toCanvas(x: number, y: number, bounds: LatentBounds): [number, number] {
     const spanX = bounds.maxX - bounds.minX || 1;
@@ -139,6 +150,7 @@
     context.fillStyle = `rgb(${BACKGROUND_RGB.join(',')})`;
     context.fillRect(0, 0, SIZE, SIZE);
     if (!currentModel || !currentTarget || !currentPlottable) {
+      bounds = null;
       error = null;
       return;
     }
@@ -154,8 +166,10 @@
         currentPair
       );
       draw(context, sample);
+      bounds = sample.bounds;
       error = null;
     } catch {
+      bounds = null;
       error = 'The latent space could not be drawn.';
     }
   });
@@ -177,6 +191,10 @@
   </div>
 
   <canvas bind:this={canvas} width={SIZE} height={SIZE} data-testid="latent-canvas"></canvas>
+
+  {#if rangeText}
+    <p class="range" data-testid="latent-range">{rangeText}</p>
+  {/if}
 
   {#if message}
     <figcaption data-testid="latent-message">{message}</figcaption>
@@ -226,6 +244,13 @@
 
   figcaption {
     max-width: 360px;
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+  }
+
+  .range {
+    max-width: 360px;
+    margin: 0;
     font-size: var(--text-xs);
     color: var(--color-text-muted);
   }

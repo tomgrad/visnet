@@ -81,6 +81,18 @@ describe('LatentSpace', () => {
     );
   });
 
+  it('shows the value range of each plotted dimension', async () => {
+    const current = sample();
+    current.bounds = { minX: -1, maxX: 1, minY: 0, maxY: 2 };
+    vi.mocked(projectLatent).mockReturnValue(current);
+    show(selectedStore(1));
+
+    await waitFor(() =>
+      expect(screen.getByTestId('latent-range').textContent).toContain('dim 2 [0, 2]')
+    );
+    expect(screen.getByTestId('latent-range').textContent).toContain('dim 1 [-1, 1]');
+  });
+
   it('cycles the dimension pair and wraps', async () => {
     show(selectedStore(1));
     await waitFor(() => screen.getByTestId('latent-next'));
