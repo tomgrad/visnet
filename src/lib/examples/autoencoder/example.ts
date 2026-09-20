@@ -11,9 +11,9 @@ export const AUTOENCODER_STORAGE_KEYS: StorageKeys = {
 
 export const AUTOENCODER_WEIGHTS_ID = 'autoencoder';
 
-export const TRAIN_COUNT = 5000;
+export const TRAIN_COUNT = 1000;
 export const SCATTER_COUNT = 500;
-export const RECONSTRUCTION_COUNT = 20;
+export const RECONSTRUCTION_COUNT = 30;
 
 export type AutoencoderPresetId = 'dense' | 'conv';
 

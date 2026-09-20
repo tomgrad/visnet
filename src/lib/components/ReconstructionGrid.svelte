@@ -18,6 +18,7 @@
   const CELL = 48;
   const GAP = 4;
   const PADDING = 6;
+  const PAIRS = 3;
 
   let canvas = $state<HTMLCanvasElement | null>(null);
   let reconstruction = $state<typeof import('../render/reconstruction') | null>(null);
@@ -73,9 +74,9 @@
     const context = element.getContext('2d');
     if (!context) return;
 
-    const columns = Math.max(1, Math.ceil(samples.length / 2));
+    const columns = Math.max(1, Math.ceil(samples.length / PAIRS));
     const width = columns * CELL + (columns - 1) * GAP;
-    const height = 4 * CELL + 3 * GAP;
+    const height = 2 * PAIRS * CELL + (2 * PAIRS - 1) * GAP;
     const ratio = globalThis.devicePixelRatio ?? 1;
     element.width = Math.round(width * ratio);
     element.height = Math.round(height * ratio);
@@ -141,7 +142,7 @@
   {#if message}
     <figcaption data-testid="reconstruction-message">{message}</figcaption>
   {:else}
-    <figcaption>Two pairs of rows: the originals, then the network's reconstructions.</figcaption>
+    <figcaption>Pairs of rows: the originals, then the network's reconstructions.</figcaption>
   {/if}
   {#if error}
     <figcaption class="error" data-testid="reconstruction-error">{error}</figcaption>

@@ -30,7 +30,9 @@
 <div
   class="block"
   class:selected
-  style="width: {NODE_WIDTH}px; min-height: {NODE_HEIGHT}px; background: {blockColourHex(info.colour)}"
+  style="width: {NODE_WIDTH}px; min-height: {NODE_HEIGHT}px; background: {blockColourHex(
+    info.colour
+  )}"
   data-testid="block-node"
   title={tooltip}
 >
