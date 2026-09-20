@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { NetworkStore } from '../editor/networkStore.svelte';
+import { BLOCK_DESCRIPTIONS } from '../network/descriptions';
 import InspectorPanel from './InspectorPanel.svelte';
 
 function storeWithSelection(index: number): NetworkStore {
@@ -205,6 +206,19 @@ describe('InspectorPanel', () => {
     store.select(store.network.blocks.at(-1)!.id);
     render(InspectorPanel, { props: { store } });
     expect(screen.queryByTestId('param-units')).toBeNull();
+  });
+
+  it('shows a batch normalization block with no editable parameters', () => {
+    const store = new NetworkStore();
+    store.updateBlock(store.network.blocks[0].id, { shape: [8] });
+    store.addBlock('batchnorm', 1);
+    store.select(store.network.blocks[1].id);
+    render(InspectorPanel, { props: { store } });
+
+    expect(screen.getByTestId('inspector')).toBeTruthy();
+    expect(screen.getByText(BLOCK_DESCRIPTIONS.batchnorm)).toBeTruthy();
+    expect(screen.queryAllByTestId(/^param-/)).toHaveLength(0);
+    expect(screen.queryByTestId('param-error')).toBeNull();
   });
 
   it('sets and clears a block colour', async () => {
