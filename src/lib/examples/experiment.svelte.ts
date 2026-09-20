@@ -233,6 +233,7 @@ export function createExperiment(options: {
     },
     resetModel() {
       releaseTrainer();
+      banner = null;
       runtime?.disposeModel(model);
       model = null;
       stats = null;

@@ -14,10 +14,9 @@ describe('autoencoder presets', () => {
 
   it('gives both presets a rank-one code layer for the scatter', () => {
     for (const preset of PRESETS) {
-      const code = preset
-        .create()
-        .blocks.find((block) => block.kind === 'linear' && block.units >= 2);
-      expect(code).toBeDefined();
+      const code = preset.create().blocks.find((block) => block.id === 'code');
+      expect(code).toMatchObject({ kind: 'linear' });
+      expect((code as { units: number }).units).toBeGreaterThanOrEqual(2);
     }
   });
 });

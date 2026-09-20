@@ -185,6 +185,15 @@ describe('positionFor', () => {
     position.x = 99;
     expect(moved.positions[id].x).toBe(5);
   });
+
+  it('returns a stored position that equals the auto slot', () => {
+    const network = net();
+    const id = network.blocks[2].id;
+    const auto = autoPosition(2);
+    const moved = { ...network, positions: { [id]: { ...auto } } };
+
+    expect(positionFor(moved, 2)).toEqual(auto);
+  });
 });
 
 describe('materializePositions', () => {
@@ -195,6 +204,26 @@ describe('materializePositions', () => {
 
     expect(result.positions[moved]).toEqual({ x: 5, y: 6 });
     expect(result.positions[net.blocks[0].id]).toEqual(autoPosition(0));
+    expect(Object.keys(result.positions)).toHaveLength(net.blocks.length);
+  });
+
+  it('keeps a stored position that equals the auto slot, as a fresh copy', () => {
+    const net = createEmptyNetwork();
+    const id = net.blocks[1].id;
+    const auto = autoPosition(1);
+    const input = { ...net, positions: { [id]: { ...auto } } };
+
+    const result = materializePositions(input);
+
+    expect(result.positions[id]).toEqual(auto);
+    expect(result.positions[id]).not.toBe(input.positions[id]);
+  });
+
+  it('drops positions for block ids that are not in the network', () => {
+    const net = createEmptyNetwork();
+    const result = materializePositions({ ...net, positions: { ghost: { x: 1, y: 2 } } });
+
+    expect(result.positions).not.toHaveProperty('ghost');
     expect(Object.keys(result.positions)).toHaveLength(net.blocks.length);
   });
 });
@@ -210,6 +239,12 @@ describe('isTidyLayout', () => {
     const net = createEmptyNetwork();
     const moved = { ...net, positions: { [net.blocks[1].id]: { x: 5, y: 6 } } };
     expect(isTidyLayout(moved)).toBe(false);
+  });
+
+  it('is true when a stored position equals the auto slot', () => {
+    const net = createEmptyNetwork();
+    const tidy = { ...net, positions: { [net.blocks[1].id]: autoPosition(1) } };
+    expect(isTidyLayout(tidy)).toBe(true);
   });
 });
 

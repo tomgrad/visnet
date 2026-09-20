@@ -49,7 +49,7 @@ export function positionFor(net: Network, index: number): NodePosition {
 export function materializePositions(net: Network): Network {
   const positions: Record<string, NodePosition> = {};
   net.blocks.forEach((block, index) => {
-    positions[block.id] = net.positions[block.id] ?? autoPosition(index);
+    positions[block.id] = positionFor(net, index);
   });
   return { ...net, positions };
 }

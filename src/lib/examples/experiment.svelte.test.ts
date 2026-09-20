@@ -132,4 +132,16 @@ describe('createExperiment', () => {
     session.step();
     expect(session.banner).toBeNull();
   });
+
+  it('clears the banner when the model is reset', async () => {
+    const { session } = mountExperiment();
+    await vi.waitFor(() => expect(session.model).not.toBeNull());
+    session.setData({ xs: { shape: [4, 2] }, ys: {} } as unknown as ModelData);
+    await vi.waitFor(() => expect(runtime.createTrainer).toHaveBeenCalledTimes(1));
+
+    session.banner = 'Training stopped. Reset the model and try again.';
+    session.resetModel();
+
+    expect(session.banner).toBeNull();
+  });
 });
