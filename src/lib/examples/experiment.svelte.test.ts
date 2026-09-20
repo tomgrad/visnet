@@ -11,7 +11,12 @@ const runtime = vi.hoisted(() => ({
   compileModel: vi.fn(),
   disposeModel: vi.fn(),
   disposeData: vi.fn(),
-  createTrainer: vi.fn(),
+  createTrainer: vi.fn(() => ({
+    play: vi.fn(async () => {}),
+    pause: vi.fn(),
+    step: vi.fn(async () => {}),
+    dispose: vi.fn()
+  })),
   toTensors: vi.fn(),
   imagesToTensors: vi.fn(),
   saveWeights: vi.fn(async () => {}),
@@ -81,6 +86,19 @@ describe('createExperiment', () => {
     await vi.waitFor(() => expect(runtime.buildModel).toHaveBeenCalledTimes(2));
   });
 
+  it('does not recreate the trainer when only a colour or position changes', async () => {
+    const { store, session } = mountExperiment();
+    await vi.waitFor(() => expect(session.model).not.toBeNull());
+    session.setData({ xs: { shape: [4, 2] }, ys: {} } as unknown as ModelData);
+    await vi.waitFor(() => expect(runtime.createTrainer).toHaveBeenCalledTimes(1));
+
+    store.updateBlock(store.network.blocks[1].id, { colour: 'blue' });
+    store.setPosition(store.network.blocks[1].id, { x: 5, y: 6 });
+    await tick();
+
+    expect(runtime.createTrainer).toHaveBeenCalledTimes(1);
+  });
+
   it('reads accuracy tracking from the store task', async () => {
     const store = new NetworkStore();
     store.task = 'reconstruction';
@@ -96,6 +114,22 @@ describe('createExperiment', () => {
     } as unknown as ModelData);
 
     await vi.waitFor(() => expect(runtime.createTrainer).toHaveBeenCalled());
-    expect(runtime.createTrainer.mock.calls.at(-1)?.[5]).toBe(false);
+    const lastCall = runtime.createTrainer.mock.calls.at(-1) as unknown[] | undefined;
+    expect(lastCall?.[5]).toBe(false);
+  });
+
+  it('clears the banner when training starts or steps', async () => {
+    const { session } = mountExperiment();
+    await vi.waitFor(() => expect(session.model).not.toBeNull());
+    session.setData({ xs: { shape: [4, 2] }, ys: {} } as unknown as ModelData);
+    await vi.waitFor(() => expect(runtime.createTrainer).toHaveBeenCalledTimes(1));
+
+    session.banner = 'The network changed, so training restarted with fresh weights.';
+    await session.play();
+    expect(session.banner).toBeNull();
+
+    session.banner = 'The network changed, so training restarted with fresh weights.';
+    session.step();
+    expect(session.banner).toBeNull();
   });
 });

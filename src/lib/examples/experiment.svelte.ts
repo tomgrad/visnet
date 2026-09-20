@@ -59,6 +59,7 @@ export function createExperiment(options: {
     JSON.stringify(store.network.blocks.map((block) => ({ ...block, colour: undefined })))
   );
   const trainingSignature = $derived(JSON.stringify(store.network.training));
+  const trainingBatchSize = $derived(store.network.training.batchSize);
 
   function handleStats(next: TrainStats): void {
     redrawKey += 1;
@@ -92,7 +93,7 @@ export function createExperiment(options: {
     const api = runtime;
     const currentModel = model;
     const currentData = data;
-    const batchSize = store.network.training.batchSize;
+    const batchSize = trainingBatchSize;
     releaseTrainer();
     if (!api || !currentModel || !currentData || !store.isValid || currentData.xs.shape[0] === 0) {
       return;
@@ -216,6 +217,7 @@ export function createExperiment(options: {
     },
     async play() {
       if (!trainer) return;
+      banner = null;
       playing = true;
       await trainer.play();
       playing = false;
@@ -225,7 +227,9 @@ export function createExperiment(options: {
       playing = false;
     },
     step() {
-      void trainer?.step();
+      if (!trainer) return;
+      banner = null;
+      void trainer.step();
     },
     resetModel() {
       releaseTrainer();
