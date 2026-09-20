@@ -10,10 +10,15 @@
   import { NetworkStore } from '$lib/editor/networkStore.svelte';
   import { createExperiment } from '$lib/examples/experiment.svelte';
   import { DatasetStore } from '$lib/examples/mlp/datasetStore.svelte';
-  import { CLASS_LABELS, MLP_STORAGE_KEYS, MLP_WEIGHTS_ID } from '$lib/examples/mlp/example';
+  import {
+    CLASS_LABELS,
+    MLP_STORAGE_KEYS,
+    MLP_WEIGHTS_ID,
+    createMlpNetwork
+  } from '$lib/examples/mlp/example';
   import { createBrowserStorage } from '$lib/persist/storage';
 
-  const store = new NetworkStore();
+  const store = new NetworkStore(createMlpNetwork());
   const datasetStore = new DatasetStore();
   store.expectedClasses = 2;
   const storage = createBrowserStorage(MLP_STORAGE_KEYS);
@@ -70,6 +75,26 @@
     {#if session.banner}
       <p class="banner" role="status">{session.banner}</p>
     {/if}
+
+    <DecisionBoundary
+      model={session.model}
+      redrawKey={session.redrawKey}
+      dataset={datasetStore.dataset}
+      selectedLabel={datasetStore.selectedLabel}
+      onaddpoint={(x, y) => datasetStore.addPoint(x, y)}
+      caption={!session.runtime
+        ? 'Loading the network. The boundary appears in a moment.'
+        : store.isValid
+          ? 'Each coloured area is the class the network predicts at that spot. Click to add a point.'
+          : 'Fix the problems listed in the editor before the boundary can be drawn.'}
+    />
+
+    <LatentSpace
+      model={session.model}
+      {store}
+      dataset={datasetStore.dataset}
+      redrawKey={session.redrawKey}
+    />
 
     <div class="dataset">
       <h2>Data</h2>
@@ -129,26 +154,6 @@
         {/each}
       </fieldset>
     </div>
-
-    <DecisionBoundary
-      model={session.model}
-      redrawKey={session.redrawKey}
-      dataset={datasetStore.dataset}
-      selectedLabel={datasetStore.selectedLabel}
-      onaddpoint={(x, y) => datasetStore.addPoint(x, y)}
-      caption={!session.runtime
-        ? 'Loading the network. The boundary appears in a moment.'
-        : store.isValid
-          ? 'Each coloured area is the class the network predicts at that spot. Click to add a point.'
-          : 'Fix the problems listed in the editor before the boundary can be drawn.'}
-    />
-
-    <LatentSpace
-      model={session.model}
-      {store}
-      dataset={datasetStore.dataset}
-      redrawKey={session.redrawKey}
-    />
 
     <LossChart points={session.lossPoints} />
   {/snippet}
