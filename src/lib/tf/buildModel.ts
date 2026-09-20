@@ -65,6 +65,8 @@ function layerFor(block: Block, inputShape: number[] | undefined): tf.layers.Lay
       return tf.layers.flatten({ inputShape });
     case 'reshape':
       return tf.layers.reshape({ targetShape: block.shape, inputShape });
+    case 'batchnorm':
+      return tf.layers.batchNormalization({ axis: -1, inputShape });
     case 'relu':
     case 'sigmoid':
     case 'tanh':

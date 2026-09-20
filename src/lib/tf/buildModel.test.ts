@@ -236,6 +236,43 @@ describe('buildModel', () => {
     expect(model.outputs[0].shape).toEqual([null, 2]);
   });
 
+  it('builds a batch normalization layer after a dense layer', () => {
+    const network: Network = {
+      blocks: [
+        { id: 'in', kind: 'input', shape: [8] },
+        { id: 'dense', kind: 'linear', units: 8 },
+        { id: 'bn', kind: 'batchnorm' },
+        { id: 'out', kind: 'output', shape: [8] }
+      ],
+      training: { loss: 'mse', optimizer: 'sgd', learningRate: 0.1, batchSize: 4 },
+      positions: {}
+    };
+    const model = build(network);
+    expect(model.layers.map((layer) => layer.getClassName())).toEqual([
+      'Dense',
+      'BatchNormalization'
+    ]);
+    expect(model.outputs[0].shape).toEqual([null, 8]);
+  });
+
+  it('builds a batch normalization layer after a convolution without changing the image shape', () => {
+    const network: Network = {
+      blocks: [
+        { id: 'in', kind: 'input', shape: [7, 7, 2] },
+        { id: 'conv', kind: 'conv2d', filters: 4, kernelSize: 3, stride: 1, padding: 'same' },
+        { id: 'bn', kind: 'batchnorm' },
+        { id: 'flat', kind: 'flatten' },
+        { id: 'dense', kind: 'linear', units: 2 },
+        { id: 'out', kind: 'output', shape: [2] }
+      ],
+      training: { loss: 'mse', optimizer: 'sgd', learningRate: 0.1, batchSize: 4 },
+      positions: {}
+    };
+    const model = build(network);
+    expect(model.layers[1].getClassName()).toBe('BatchNormalization');
+    expect(model.layers[1].outputShape).toEqual([null, 7, 7, 4]);
+  });
+
   it('builds every autoencoder preset to a full-size image', () => {
     for (const preset of PRESETS) {
       const model = build(preset.create());
