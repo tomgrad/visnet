@@ -3,7 +3,6 @@
   import DecisionBoundary from '$lib/components/DecisionBoundary.svelte';
   import ExampleLayout from '$lib/components/ExampleLayout.svelte';
   import LatentSpace from '$lib/components/LatentSpace.svelte';
-  import LossChart from '$lib/components/LossChart.svelte';
   import NetworkEditor from '$lib/components/NetworkEditor.svelte';
   import TrainingPanel from '$lib/components/TrainingPanel.svelte';
   import { GENERATOR_DESCRIPTIONS, GENERATOR_NAMES } from '$lib/data/points';
@@ -63,6 +62,7 @@
       {store}
       playing={session.playing}
       disabled={!store.isValid}
+      lossPoints={session.lossPoints}
       stats={session.stats}
       onplay={session.play}
       onpause={session.pause}
@@ -154,8 +154,6 @@
         {/each}
       </fieldset>
     </div>
-
-    <LossChart points={session.lossPoints} />
   {/snippet}
 </ExampleLayout>
 

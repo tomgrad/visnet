@@ -3,7 +3,6 @@
   import CodeScatter from '$lib/components/CodeScatter.svelte';
   import ExampleLayout from '$lib/components/ExampleLayout.svelte';
   import FeatureMaps from '$lib/components/FeatureMaps.svelte';
-  import LossChart from '$lib/components/LossChart.svelte';
   import NetworkEditor from '$lib/components/NetworkEditor.svelte';
   import ReconstructionGrid from '$lib/components/ReconstructionGrid.svelte';
   import TrainingPanel from '$lib/components/TrainingPanel.svelte';
@@ -87,6 +86,7 @@
       playing={session.playing}
       disabled={!store.isValid || loadState !== 'ready'}
       showAccuracy={false}
+      lossPoints={session.lossPoints}
       stats={session.stats}
       onplay={session.play}
       onpause={session.pause}
@@ -171,8 +171,6 @@
           />
         </div>
       {/if}
-
-      <LossChart points={session.lossPoints} />
     </div>
   {/snippet}
 </ExampleLayout>

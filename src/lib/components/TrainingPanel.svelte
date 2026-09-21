@@ -2,11 +2,13 @@
   import type { NetworkStore } from '../editor/networkStore.svelte';
   import { PARAM_DESCRIPTIONS } from '../network/descriptions';
   import type { TrainStats } from '../training/Trainer';
+  import LossChart from './LossChart.svelte';
 
   let {
     store,
     playing,
     disabled,
+    lossPoints,
     stats = null,
     showAccuracy = true,
     onplay,
@@ -17,6 +19,7 @@
     store: NetworkStore;
     playing: boolean;
     disabled: boolean;
+    lossPoints: number[];
     stats?: TrainStats | null;
     showAccuracy?: boolean;
     onplay: () => void;
@@ -72,6 +75,22 @@
 
 <div class="training" data-testid="training-panel">
   <h2>Training</h2>
+
+  <div class="controls">
+    <button
+      type="button"
+      data-testid="training-play"
+      disabled={disabled || playing}
+      onclick={onplay}
+    >
+      Train
+    </button>
+    <button type="button" data-testid="training-pause" disabled={!playing} onclick={onpause}>
+      Pause
+    </button>
+    <button type="button" data-testid="training-step" {disabled} onclick={onstep}>Step</button>
+    <button type="button" data-testid="training-reset" onclick={onreset}>Reset</button>
+  </div>
 
   <label>
     <span>Loss</span>
@@ -138,24 +157,6 @@
     <p class="error" data-testid="training-error">{error}</p>
   {/if}
 
-  <div class="controls">
-    <button
-      type="button"
-      data-testid="training-play"
-      disabled={disabled || playing}
-      onclick={onplay}
-    >
-      Train
-    </button>
-    <button type="button" data-testid="training-pause" disabled={!playing} onclick={onpause}>
-      Pause
-    </button>
-    <button type="button" data-testid="training-step" {disabled} onclick={onstep}>
-      Step one batch
-    </button>
-    <button type="button" data-testid="training-reset" onclick={onreset}>Reset model</button>
-  </div>
-
   {#if disabled}
     <p class="blocked" data-testid="training-blocked">
       There are problems to fix below before training. The network cannot be built until they are
@@ -192,6 +193,8 @@
       </dl>
     {/if}
   </div>
+
+  <LossChart points={lossPoints} />
 </div>
 
 <style>
@@ -240,13 +243,14 @@
   }
 
   .controls {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: var(--space-2);
   }
 
   .controls button {
-    padding: var(--space-1) var(--space-3);
+    padding: var(--space-1) var(--space-2);
+    text-align: center;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
     background: var(--color-surface);

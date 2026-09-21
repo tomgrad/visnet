@@ -2,7 +2,6 @@
   import { onDestroy, onMount } from 'svelte';
   import ExampleLayout from '$lib/components/ExampleLayout.svelte';
   import FeatureMaps from '$lib/components/FeatureMaps.svelte';
-  import LossChart from '$lib/components/LossChart.svelte';
   import NetworkEditor from '$lib/components/NetworkEditor.svelte';
   import SampleGrid from '$lib/components/SampleGrid.svelte';
   import TrainingPanel from '$lib/components/TrainingPanel.svelte';
@@ -81,6 +80,7 @@
       {store}
       playing={session.playing}
       disabled={!store.isValid || loadState !== 'ready'}
+      lossPoints={session.lossPoints}
       stats={session.stats}
       onplay={session.play}
       onpause={session.pause}
@@ -122,8 +122,6 @@
         redrawKey={session.redrawKey}
       />
     {/if}
-
-    <LossChart points={session.lossPoints} />
   {/snippet}
 </ExampleLayout>
 

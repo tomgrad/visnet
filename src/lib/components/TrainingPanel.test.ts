@@ -13,7 +13,7 @@ function panel(overrides: Partial<Record<string, unknown>> = {}) {
     onreset: vi.fn()
   };
   const view = render(TrainingPanel, {
-    props: { store, playing: false, disabled: false, ...handlers, ...overrides }
+    props: { store, playing: false, disabled: false, lossPoints: [], ...handlers, ...overrides }
   });
   return { store, view, ...handlers };
 }
@@ -35,6 +35,36 @@ const EPOCH_END = {
 };
 
 describe('TrainingPanel', () => {
+  it('labels the four controls Train, Pause, Step, and Reset', () => {
+    panel();
+    for (const [testId, label] of [
+      ['training-play', 'Train'],
+      ['training-pause', 'Pause'],
+      ['training-step', 'Step'],
+      ['training-reset', 'Reset']
+    ]) {
+      expect(screen.getByTestId(testId).textContent?.trim()).toBe(label);
+    }
+  });
+
+  it('puts the controls above the training settings', () => {
+    panel();
+    const controls = screen.getByTestId('training-play').closest('.controls');
+    const settings = screen.getByTestId('training-loss');
+    expect(controls).not.toBeNull();
+    expect(
+      controls!.compareDocumentPosition(settings) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
+
+  it('shows the loss chart at the bottom of the panel', () => {
+    panel();
+    const chart = screen.getByTestId('loss-chart');
+    const stats = screen.getByTestId('stats-readout');
+    expect(screen.getByTestId('training-panel').contains(chart)).toBe(true);
+    expect(stats.compareDocumentPosition(chart) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('writes a loss change through to the network', async () => {
     const { store } = panel();
     await userEvent.selectOptions(screen.getByTestId('training-loss'), 'mse');
