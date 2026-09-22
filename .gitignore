@@ -18,6 +18,10 @@ coverage/
 # downloaded MNIST subset (never committed)
 static/mnist/
 
+# downloaded Fluent Emoji set and its raw PNG cache (never committed)
+static/emoji/
+.cache/
+
 # scratch notebooks and their downloaded datasets
 ipynb/
 

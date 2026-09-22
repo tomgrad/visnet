@@ -12,6 +12,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "data:emoji": "node scripts/prepare-emoji.mjs",
     "data:mnist": "node scripts/prepare-mnist.mjs",
     "lint": "eslint .",
     "format": "prettier --write .",

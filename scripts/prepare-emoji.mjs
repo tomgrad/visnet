@@ -1,3 +1,8 @@
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { PNG } from 'pngjs';
+
 export function select3dPaths(tree) {
   const entries = tree && Array.isArray(tree.tree) ? tree.tree : [];
   return entries
@@ -58,4 +63,112 @@ export function encodeEmoji(images, rows, cols, channels) {
   view.setUint32(12, 0, true);
   images.forEach((image, index) => bytes.set(image, 16 + index * rows * cols * channels));
   return buffer;
+}
+
+const REPO = 'microsoft/fluentui-emoji';
+const TREE_URL = `https://api.github.com/repos/${REPO}/git/trees/main?recursive=1`;
+const RAW = `https://raw.githubusercontent.com/${REPO}/main/`;
+const OUT_DIR = fileURLToPath(new URL('../static/emoji/', import.meta.url));
+const CACHE_DIR = fileURLToPath(new URL('../.cache/emoji/', import.meta.url));
+const SIZE = 64;
+const CHANNELS = 3;
+const CONCURRENCY = 8;
+
+function flag(args, name, fallback) {
+  const match = args.find((arg) => arg.startsWith(`${name}=`));
+  if (!match) return fallback;
+  const value = Number(match.slice(name.length + 1));
+  if (!Number.isInteger(value) || value <= 0) {
+    throw new Error(`${name} needs a positive whole number.`);
+  }
+  return value;
+}
+
+function cacheName(path) {
+  return path.replace(/[^A-Za-z0-9._-]+/g, '_');
+}
+
+async function fetchBuffer(url, attempts = 3) {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return Buffer.from(await response.arrayBuffer());
+    } catch (error) {
+      if (attempt >= attempts) throw new Error(`${url}: ${error.message}`, { cause: error });
+      await new Promise((resolve) => setTimeout(resolve, attempt * 250));
+    }
+  }
+}
+
+async function mapLimit(items, limit, worker) {
+  let next = 0;
+  const run = async () => {
+    while (next < items.length) {
+      const index = next++;
+      await worker(items[index], index);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, run));
+}
+
+async function present(path) {
+  try {
+    await readFile(path);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function main() {
+  const args = process.argv.slice(2);
+  const force = args.includes('--force');
+  const limit = flag(args, '--limit', Infinity);
+
+  const outputPath = join(OUT_DIR, 'emoji.bin');
+  if (!force && (await present(outputPath))) {
+    console.log(`Already prepared at ${outputPath}. Pass --force to download again.`);
+    return;
+  }
+
+  console.log(`Listing 3D emoji from ${REPO}`);
+  const tree = JSON.parse((await fetchBuffer(TREE_URL)).toString('utf8'));
+  const all = select3dPaths(tree);
+  if (all.length === 0) throw new Error('No 3D emoji PNGs were found in the repository tree.');
+  const paths = all.slice(0, limit);
+  console.log(`Preparing ${paths.length} of ${all.length} emoji`);
+
+  await mkdir(CACHE_DIR, { recursive: true });
+  await mkdir(OUT_DIR, { recursive: true });
+
+  const images = new Array(paths.length);
+  let done = 0;
+  await mapLimit(paths, CONCURRENCY, async (path, index) => {
+    const cached = join(CACHE_DIR, cacheName(path));
+    let raw;
+    if (!force && (await present(cached))) {
+      raw = await readFile(cached);
+    } else {
+      raw = await fetchBuffer(`${RAW}${path.split('/').map(encodeURIComponent).join('/')}`);
+      await writeFile(cached, raw);
+    }
+    const png = PNG.sync.read(raw);
+    images[index] = downscaleTo(compositeOnWhite(png), png.width, png.height, SIZE);
+    done += 1;
+    if (done % 100 === 0) console.log(`  ${done}/${paths.length}`);
+  });
+
+  const buffer = encodeEmoji(images, SIZE, SIZE, CHANNELS);
+  await writeFile(outputPath, new Uint8Array(buffer));
+  console.log(`Wrote ${images.length} emoji, ${SIZE}x${SIZE}x${CHANNELS}.`);
+  console.log(`  ${outputPath} (${buffer.byteLength} bytes)`);
+  console.log('Fluent Emoji is MIT-licensed by Microsoft.');
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch((error) => {
+    console.error(error.message);
+    process.exitCode = 1;
+  });
 }
