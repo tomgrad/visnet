@@ -11,7 +11,9 @@ export const EMOJI_FORMAT_VERSION = 1;
 export const EMOJI_HEADER_BYTES = 16;
 
 export class EmojiDataUnavailableError extends Error {
-  constructor(message = 'The emoji images are not prepared. Run `npm run data:emoji`, then reload.') {
+  constructor(
+    message = 'The emoji images are not prepared. Run `npm run data:emoji`, then reload.'
+  ) {
     super(message);
     this.name = 'EmojiDataUnavailableError';
   }
