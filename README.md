@@ -80,6 +80,10 @@ is committed to this repository and nothing downloads it at build or install tim
 you run it, the example page explains what to do rather than failing. MNIST is a
 derivative of the NIST Special Database 19.
 
+`npm run data:emoji` downloads every 3D emoji from Microsoft's Fluent Emoji
+(MIT-licensed) and writes a 64×64 RGB set into `static/emoji/` (gitignored).
+Pass `--limit=<n>` to prepare a smaller slice while developing.
+
 ## Architecture
 
 The engine is framework-independent. `src/lib/network/` defines networks, infers
