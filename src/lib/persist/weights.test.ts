@@ -2,7 +2,7 @@ import * as tf from '@tensorflow/tfjs';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { createEmptyNetwork } from '../network/factory';
 import { buildModel } from '../tf/buildModel';
-import { shapesMatch, weightShapes, weightsUrl } from './weights';
+import { shapesMatch, vaeWeightsUrls, weightShapes, weightsUrl } from './weights';
 
 let models: tf.Sequential[] = [];
 
@@ -58,5 +58,14 @@ describe('weightsUrl', () => {
     expect(weightsUrl('mlp')).toBe('indexeddb://visnet/weights/mlp');
     expect(weightsUrl('cnn')).toBe('indexeddb://visnet/weights/cnn');
     expect(weightsUrl('mlp')).not.toBe(weightsUrl('cnn'));
+  });
+});
+
+describe('vaeWeightsUrls', () => {
+  it('namespaces the encoder and decoder under the example id', () => {
+    const urls = vaeWeightsUrls('vae');
+    expect(urls.encoder).toBe('indexeddb://visnet/weights/vae/encoder');
+    expect(urls.decoder).toBe('indexeddb://visnet/weights/vae/decoder');
+    expect(urls.encoder).not.toBe(urls.decoder);
   });
 });

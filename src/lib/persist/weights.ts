@@ -4,6 +4,10 @@ export function weightsUrl(id: string): string {
   return `indexeddb://visnet/weights/${id}`;
 }
 
+export function vaeWeightsUrls(id: string): { encoder: string; decoder: string } {
+  return { encoder: weightsUrl(`${id}/encoder`), decoder: weightsUrl(`${id}/decoder`) };
+}
+
 export function weightShapes(model: tf.LayersModel): number[][] {
   return model.getWeights().map((tensor) => [...tensor.shape]);
 }
@@ -33,4 +37,22 @@ export async function loadWeightsInto(model: tf.LayersModel, id: string): Promis
   } finally {
     saved?.dispose();
   }
+}
+
+export async function saveVaeWeights(
+  models: { encoder: tf.LayersModel; decoder: tf.LayersModel },
+  id: string
+): Promise<void> {
+  const urls = vaeWeightsUrls(id);
+  await models.encoder.save(urls.encoder);
+  await models.decoder.save(urls.decoder);
+}
+
+export async function loadVaeWeightsInto(
+  models: { encoder: tf.LayersModel; decoder: tf.LayersModel },
+  id: string
+): Promise<boolean> {
+  const encoderLoaded = await loadWeightsInto(models.encoder, `${id}/encoder`);
+  const decoderLoaded = await loadWeightsInto(models.decoder, `${id}/decoder`);
+  return encoderLoaded && decoderLoaded;
 }
