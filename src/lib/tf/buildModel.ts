@@ -86,7 +86,7 @@ export function compileModel(model: tf.LayersModel, training: TrainingConfig): v
   model.compile({ optimizer, loss: LOSSES[training.loss] });
 }
 
-export function buildModel(net: Network): tf.Sequential {
+export function buildModel(net: Network, extraLayers: tf.layers.Layer[] = []): tf.Sequential {
   const problems = findProblems(net).filter((problem) => problem.severity === 'error');
   if (problems.length > 0) throw new NetworkInvalidError(problems);
 
@@ -94,11 +94,16 @@ export function buildModel(net: Network): tf.Sequential {
   const inputShape = inputBlock && inputBlock.kind === 'input' ? inputBlock.shape : undefined;
 
   const layers = net.blocks.filter((block) => block.kind !== 'input' && block.kind !== 'output');
+  const head = [...layers, ...extraLayers];
 
   const model = tf.sequential();
   try {
-    layers.forEach((block, index) => {
-      model.add(layerFor(block, index === 0 ? inputShape : undefined));
+    head.forEach((block, index) => {
+      model.add(
+        index < layers.length
+          ? layerFor(block as Block, index === 0 ? inputShape : undefined)
+          : (block as tf.layers.Layer)
+      );
     });
     compileModel(model, net.training);
   } catch (error) {

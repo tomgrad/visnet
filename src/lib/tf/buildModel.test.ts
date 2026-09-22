@@ -7,8 +7,8 @@ import { NetworkInvalidError, buildModel, compileModel, describeBuildError } fro
 
 let models: tf.Sequential[] = [];
 
-function build(net: Network): tf.Sequential {
-  const model = buildModel(net);
+function build(net: Network, extraLayers: tf.layers.Layer[] = []): tf.Sequential {
+  const model = buildModel(net, extraLayers);
   models.push(model);
   return model;
 }
@@ -279,6 +279,20 @@ describe('buildModel', () => {
       expect(model.inputs[0].shape).toEqual([null, 28, 28, 1]);
       expect(model.outputs[0].shape).toEqual([null, 28, 28, 1]);
     }
+  });
+
+  it('appends extra layers before compiling', () => {
+    const network: Network = {
+      blocks: [
+        { id: 'in', kind: 'input', shape: [8] },
+        { id: 'dense', kind: 'linear', units: 8 },
+        { id: 'out', kind: 'output', shape: [8] }
+      ],
+      training: { loss: 'mse', optimizer: 'sgd', learningRate: 0.1, batchSize: 4 },
+      positions: {}
+    };
+    const model = build(network, [tf.layers.dense({ units: 3 })]);
+    expect(model.outputs[0].shape).toEqual([null, 3]);
   });
 });
 
