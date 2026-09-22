@@ -53,3 +53,37 @@ describe('syncTraining', () => {
     expect(next.decoder.training.learningRate).toBe(0.05);
   });
 });
+
+import { vaeProblems } from './vae';
+
+const errorsOf = (vae: ReturnType<typeof createVaeNetwork>) =>
+  vaeProblems(vae).filter((problem) => problem.severity === 'error');
+
+describe('vaeProblems', () => {
+  it('accepts the default VAE', () => {
+    expect(vaeProblems(createVaeNetwork(2))).toEqual([]);
+  });
+
+  it('reports a latent size that is not a positive whole number', () => {
+    const vae = syncLatentSize(createVaeNetwork(2), 0);
+    expect(errorsOf(vae).map((problem) => problem.title)).toContain(
+      'Latent size must be a whole number'
+    );
+  });
+
+  it('reports an encoder that does not produce the latent size', () => {
+    const vae = createVaeNetwork(2);
+    const blocks = vae.encoder.blocks.map((block, index) =>
+      index === vae.encoder.blocks.length - 1 ? { ...block, shape: [3] } : block
+    );
+    const broken = { ...vae, encoder: { ...vae.encoder, blocks } };
+    expect(errorsOf(broken).map((problem) => problem.title)).toContain(
+      'The encoder does not produce the latent size'
+    );
+  });
+
+  it('does not report the decoder flat-input convolution warning', () => {
+    const titles = vaeProblems(createVaeNetwork(2)).map((problem) => problem.title);
+    expect(titles).not.toContain('Convolution layer without image input');
+  });
+});
