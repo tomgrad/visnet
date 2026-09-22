@@ -2,6 +2,7 @@ import { onDestroy, onMount, untrack } from 'svelte';
 import type { NetworkStore } from '../editor/networkStore.svelte';
 import type { NetworkStorage } from '../persist/storage';
 import type { TrainStats } from '../training/Trainer';
+import { createStatsTracker, WEIGHTS_DISCARDED_NOTICE } from './experimentStats';
 import {
   loadRuntime,
   type Model,
@@ -9,8 +10,6 @@ import {
   type Runtime,
   type TrainerHandle
 } from './runtime';
-
-const WEIGHTS_DISCARDED_NOTICE = 'The network changed, so training restarted with fresh weights.';
 
 export interface Experiment {
   runtime: Runtime | null;
@@ -44,6 +43,7 @@ export function createExperiment(options: {
   let model = $state.raw<Model | null>(null);
   let data = $state.raw<ModelData | null>(null);
   let playing = $state(false);
+  const tracker = createStatsTracker();
   let stats = $state<TrainStats | null>(null);
   let lossPoints = $state<number[]>([]);
   let banner = $state<string | null>(null);
@@ -61,13 +61,21 @@ export function createExperiment(options: {
   const trainingSignature = $derived(JSON.stringify(store.network.training));
   const trainingBatchSize = $derived(store.network.training.batchSize);
 
+  function syncStats(): void {
+    stats = tracker.stats;
+    lossPoints = tracker.lossPoints;
+    redrawKey = tracker.redrawKey;
+  }
+
+  function resetStats(): void {
+    tracker.reset();
+    syncStats();
+  }
+
   function handleStats(next: TrainStats): void {
-    redrawKey += 1;
-    stats = next;
-    if (next.epochMeanLoss !== null) {
-      trained = true;
-      lossPoints = [...lossPoints, next.epochMeanLoss].slice(-200);
-    }
+    if (next.epochMeanLoss !== null) trained = true;
+    tracker.track(next);
+    syncStats();
   }
 
   function handleError(error: unknown): void {
@@ -114,8 +122,7 @@ export function createExperiment(options: {
     builtSignature = architecture;
     compiledTraining = trainingSignature;
     releaseTrainer();
-    stats = null;
-    lossPoints = [];
+    resetStats();
     const hadTrained = trained;
     trained = false;
     api.disposeModel(model);
@@ -236,8 +243,7 @@ export function createExperiment(options: {
       banner = null;
       runtime?.disposeModel(model);
       model = null;
-      stats = null;
-      lossPoints = [];
+      resetStats();
       trained = false;
       builtSignature = '';
     },
