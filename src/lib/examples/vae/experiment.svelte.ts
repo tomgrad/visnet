@@ -81,6 +81,9 @@ export function createVaeExperiment(options: {
     })
   );
   const isValid = $derived(controller.isValid);
+  const latentSize = $derived(controller.latentSize);
+  const batchSize = $derived(controller.training.batchSize);
+  const learningRate = $derived(controller.training.learningRate);
 
   function vaeNetwork(): VaeNetwork {
     return {
@@ -132,8 +135,9 @@ export function createVaeExperiment(options: {
     const currentEncoder = encoder;
     const currentDecoder = decoder;
     const currentData = data;
-    const training = controller.training;
-    const latentSize = controller.latentSize;
+    const currentLatentSize = latentSize;
+    const currentBatchSize = batchSize;
+    const currentLearningRate = learningRate;
     releaseTrainer();
     if (
       !api ||
@@ -148,8 +152,12 @@ export function createVaeExperiment(options: {
     trainer = api.createVaeTrainer(
       { encoder: currentEncoder, decoder: currentDecoder },
       currentData,
-      training,
-      latentSize,
+      {
+        ...untrack(() => controller.training),
+        batchSize: currentBatchSize,
+        learningRate: currentLearningRate
+      },
+      currentLatentSize,
       handleStats,
       handleError
     );
