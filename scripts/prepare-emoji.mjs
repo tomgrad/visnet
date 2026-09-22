@@ -1,4 +1,5 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { access, mkdir, open, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { PNG } from 'pngjs';
@@ -6,7 +7,7 @@ import { PNG } from 'pngjs';
 export function select3dPaths(tree) {
   const entries = tree && Array.isArray(tree.tree) ? tree.tree : [];
   return entries
-    .map((entry) => entry.path)
+    .map((entry) => entry?.path)
     .filter((path) => typeof path === 'string' && /^assets\/.*\/3D\/.*_3d\.png$/.test(path))
     .sort();
 }
@@ -84,20 +85,59 @@ function flag(args, name, fallback) {
   return value;
 }
 
-function cacheName(path) {
-  return path.replace(/[^A-Za-z0-9._-]+/g, '_');
+export function cacheName(path) {
+  return createHash('sha1').update(path).digest('hex') + '.png';
+}
+
+export function isPreparedFile(header, byteLength) {
+  if (!header || header.byteLength < 16) return false;
+  const view = new DataView(header.buffer, header.byteOffset, header.byteLength);
+  const magic = String.fromCharCode(
+    view.getUint8(0),
+    view.getUint8(1),
+    view.getUint8(2),
+    view.getUint8(3)
+  );
+  if (magic !== 'VSNE') return false;
+  if (view.getUint8(4) !== 1) return false;
+  const rows = view.getUint8(5);
+  const cols = view.getUint8(6);
+  const channels = view.getUint8(7);
+  const count = view.getUint32(8, true);
+  if (rows === 0 || cols === 0 || channels === 0 || count === 0) return false;
+  return byteLength === 16 + count * rows * cols * channels;
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function fetchBuffer(url, attempts = 3) {
   for (let attempt = 1; ; attempt++) {
+    let response;
     try {
-      const response = await fetch(url);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      return Buffer.from(await response.arrayBuffer());
+      response = await fetch(url);
     } catch (error) {
       if (attempt >= attempts) throw new Error(`${url}: ${error.message}`, { cause: error });
-      await new Promise((resolve) => setTimeout(resolve, attempt * 250));
+      await sleep(attempt * 250);
+      continue;
     }
+
+    if (response.ok) {
+      try {
+        return Buffer.from(await response.arrayBuffer());
+      } catch (error) {
+        if (attempt >= attempts) throw new Error(`${url}: ${error.message}`, { cause: error });
+        await sleep(attempt * 250);
+        continue;
+      }
+    }
+
+    const retryable = response.status >= 500 || response.status === 429;
+    if (!retryable || attempt >= attempts) {
+      throw new Error(`${url}: HTTP ${response.status}`);
+    }
+    await sleep(attempt * 250);
   }
 }
 
@@ -114,10 +154,30 @@ async function mapLimit(items, limit, worker) {
 
 async function present(path) {
   try {
-    await readFile(path);
+    await access(path);
     return true;
   } catch {
     return false;
+  }
+}
+
+async function preparedFileIsValid(path) {
+  let file;
+  try {
+    file = await open(path, 'r');
+  } catch {
+    return false;
+  }
+  try {
+    const { size } = await file.stat();
+    const header = new Uint8Array(16);
+    const { bytesRead } = await file.read(header, 0, 16, 0);
+    if (bytesRead < 16) return false;
+    return isPreparedFile(header, size);
+  } catch {
+    return false;
+  } finally {
+    await file.close();
   }
 }
 
@@ -127,7 +187,7 @@ async function main() {
   const limit = flag(args, '--limit', Infinity);
 
   const outputPath = join(OUT_DIR, 'emoji.bin');
-  if (!force && (await present(outputPath))) {
+  if (!force && (await preparedFileIsValid(outputPath))) {
     console.log(`Already prepared at ${outputPath}. Pass --force to download again.`);
     return;
   }

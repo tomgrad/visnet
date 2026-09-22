@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { compositeOnWhite, downscaleTo, encodeEmoji, select3dPaths } from './prepare-emoji.mjs';
+import {
+  cacheName,
+  compositeOnWhite,
+  downscaleTo,
+  encodeEmoji,
+  isPreparedFile,
+  select3dPaths
+} from './prepare-emoji.mjs';
 
 function rgba(
   width: number,
@@ -37,6 +44,62 @@ describe('select3dPaths', () => {
     expect(select3dPaths(null)).toEqual([]);
     expect(select3dPaths({})).toEqual([]);
   });
+
+  it('skips a null entry instead of throwing', () => {
+    const tree = {
+      tree: [null, { path: 'assets/Cat/3D/cat_3d.png' }]
+    };
+    expect(select3dPaths(tree)).toEqual(['assets/Cat/3D/cat_3d.png']);
+  });
+});
+
+describe('cacheName', () => {
+  it('distinguishes paths that differ only by separator type', () => {
+    expect(cacheName('assets/A b/3D/x_3d.png')).not.toBe(cacheName('assets/A_b/3D/x_3d.png'));
+  });
+});
+
+function header(count = 2, mutate?: (bytes: Uint8Array) => void): Uint8Array {
+  const rows = 2;
+  const cols = 2;
+  const channels = 3;
+  const bytes = new Uint8Array(16);
+  bytes.set([0x56, 0x53, 0x4e, 0x45], 0);
+  bytes[4] = 1;
+  bytes[5] = rows;
+  bytes[6] = cols;
+  bytes[7] = channels;
+  new DataView(bytes.buffer).setUint32(8, count, true);
+  mutate?.(bytes);
+  return bytes;
+}
+
+describe('isPreparedFile', () => {
+  it('accepts a valid header with the matching length', () => {
+    expect(isPreparedFile(header(2), 16 + 2 * 2 * 2 * 3)).toBe(true);
+  });
+
+  it('rejects a wrong magic', () => {
+    expect(
+      isPreparedFile(
+        header(2, (bytes) => (bytes[0] = 0x58)),
+        16 + 2 * 2 * 2 * 3
+      )
+    ).toBe(false);
+  });
+
+  it('rejects a wrong version', () => {
+    expect(
+      isPreparedFile(
+        header(2, (bytes) => (bytes[4] = 2)),
+        16 + 2 * 2 * 2 * 3
+      )
+    ).toBe(false);
+  });
+
+  it('rejects a mismatched length', () => {
+    expect(isPreparedFile(header(2), 16 + 2 * 2 * 2 * 3 + 1)).toBe(false);
+  });
 });
 
 describe('compositeOnWhite', () => {
@@ -62,9 +125,18 @@ describe('downscaleTo', () => {
     expect(Array.from(downscaleTo(rgb, 2, 2, 1))).toEqual([15, 15, 15]);
   });
 
-  it('always produces the requested size, even from a smaller source', () => {
+  it('repeats the nearest source pixel when upscaling a smaller source', () => {
     const rgb = new Uint8Array([1, 2, 3, 4, 5, 6]);
-    expect(downscaleTo(rgb, 2, 1, 4).length).toBe(4 * 4 * 3);
+    const row = [1, 2, 3, 1, 2, 3, 4, 5, 6, 4, 5, 6];
+    expect(Array.from(downscaleTo(rgb, 2, 1, 4))).toEqual([...row, ...row, ...row, ...row]);
+  });
+
+  it('averages non-divisible 3x3 boxes down to 2x2', () => {
+    const values = [10, 20, 30, 40, 50, 60, 70, 80, 90];
+    const rgb = new Uint8Array(values.flatMap((value) => [value, value, value]));
+    expect(Array.from(downscaleTo(rgb, 3, 3, 2))).toEqual([
+      10, 10, 10, 25, 25, 25, 55, 55, 55, 70, 70, 70
+    ]);
   });
 });
 

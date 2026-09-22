@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { emojiAt, parseEmoji } from './emoji';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { EmojiDataUnavailableError, emojiAt, loadEmojiData, parseEmoji } from './emoji';
 
 const ROWS = 2;
 const COLS = 2;
@@ -54,5 +54,69 @@ describe('emojiAt', () => {
   it('throws for an out-of-range index', () => {
     const dataset = parseEmoji(buffer(1))!;
     expect(() => emojiAt(dataset, 1)).toThrow(RangeError);
+  });
+});
+
+function ok(body: ArrayBuffer): Response {
+  return { ok: true, arrayBuffer: async () => body } as unknown as Response;
+}
+
+function notFound(): Response {
+  return { ok: false, status: 404, arrayBuffer: async () => buffer(2) } as unknown as Response;
+}
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
+describe('loadEmojiData', () => {
+  it('fetches /emoji/emoji.bin and returns the parsed dataset', async () => {
+    const fetchMock = vi.fn(async () => ok(buffer(2)));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const data = await loadEmojiData();
+
+    expect(data).toMatchObject({ count: 2, rows: ROWS, cols: COLS, channels: CHANNELS });
+    expect(data.pixels.length).toBe(2 * ROWS * COLS * CHANNELS);
+    expect(fetchMock).toHaveBeenCalledWith('/emoji/emoji.bin');
+  });
+
+  it('honours a custom base path', async () => {
+    const fetchMock = vi.fn(async () => ok(buffer(1)));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await loadEmojiData('/assets/emoji');
+
+    expect(fetchMock).toHaveBeenCalledWith('/assets/emoji/emoji.bin');
+  });
+
+  it('reports a missing asset with the prep command', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => notFound())
+    );
+
+    await expect(loadEmojiData()).rejects.toThrow(EmojiDataUnavailableError);
+    await expect(loadEmojiData()).rejects.toThrow(/npm run data:emoji/);
+  });
+
+  it('reports a corrupt asset', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ok(new ArrayBuffer(4)))
+    );
+
+    await expect(loadEmojiData()).rejects.toThrow(EmojiDataUnavailableError);
+  });
+
+  it('reports a failed request', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new TypeError('Failed to fetch');
+      })
+    );
+
+    await expect(loadEmojiData()).rejects.toThrow(EmojiDataUnavailableError);
   });
 });
