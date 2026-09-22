@@ -1,8 +1,14 @@
 import * as tf from '@tensorflow/tfjs';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
+import type { EmojiDataset } from './emoji';
 import type { ImageDataset } from './images';
 import { generate } from './points';
-import { imagesToReconstruction, imagesToTensors, toTensors } from './tensors';
+import {
+  colourImagesToReconstruction,
+  imagesToReconstruction,
+  imagesToTensors,
+  toTensors
+} from './tensors';
 
 let created: tf.Tensor[] = [];
 
@@ -139,5 +145,35 @@ describe('imagesToReconstruction', () => {
     expect(Array.from(xs.dataSync())[1]).toBeCloseTo(1, 5);
     xs.dispose();
     ys.dispose();
+  });
+});
+
+function colourDataset(): EmojiDataset {
+  const pixels = new Uint8Array([0, 51, 102, 153, 204, 255, 255, 0, 0, 0, 255, 0]);
+  return { count: 2, rows: 1, cols: 2, channels: 3, pixels };
+}
+
+describe('colourImagesToReconstruction', () => {
+  it('builds three-channel [n, rows, cols, 3] tensors normalised to [0, 1]', () => {
+    const { xs, ys } = colourImagesToReconstruction(colourDataset());
+    created.push(xs, ys);
+
+    expect(xs.shape).toEqual([2, 1, 2, 3]);
+    expect(ys.shape).toEqual([2, 1, 2, 3]);
+    const expected = [0, 0.2, 0.4, 0.6, 0.8, 1, 1, 0, 0, 0, 1, 0].map((value) =>
+      Math.fround(value)
+    );
+    expect(Array.from(xs.dataSync())).toEqual(expected);
+    expect(Array.from(ys.dataSync())).toEqual(expected);
+  });
+
+  it('selects a subset by index', () => {
+    const { xs, ys } = colourImagesToReconstruction(colourDataset(), [1]);
+    created.push(xs, ys);
+
+    expect(xs.shape).toEqual([1, 1, 2, 3]);
+    expect(Array.from(xs.dataSync())).toEqual(
+      [1, 0, 0, 0, 1, 0].map((value) => Math.fround(value))
+    );
   });
 });
