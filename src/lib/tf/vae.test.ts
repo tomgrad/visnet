@@ -40,6 +40,21 @@ describe('buildVaeModels', () => {
     expect(built.encoder.outputs[0].shape).toEqual([null, 16]);
     expect(built.decoder.inputs[0].shape).toEqual([null, 8]);
   });
+
+  it('disposes the encoder when the decoder cannot be built', () => {
+    const before = tf.memory().numTensors;
+    const vae = createVaeNetwork(2);
+    const decoder = {
+      ...vae.decoder,
+      blocks: vae.decoder.blocks.map((block) =>
+        block.kind === 'linear' ? { ...block, units: 3 } : block
+      )
+    };
+
+    expect(() => buildVaeModels({ ...vae, decoder })).toThrow();
+
+    expect(tf.memory().numTensors).toBe(before);
+  });
 });
 
 describe('splitLatent', () => {

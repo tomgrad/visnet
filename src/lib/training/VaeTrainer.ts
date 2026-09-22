@@ -65,8 +65,9 @@ export class VaeTrainer {
       let batchLoss: number;
       try {
         const cost = this.optimizer.minimize(() => this.loss(batchXs), true, this.variables);
-        batchLoss = cost ? (cost.dataSync()[0] as number) : 0;
-        cost?.dispose();
+        if (!cost) throw new Error('The optimizer did not return the batch loss.');
+        batchLoss = cost.dataSync()[0] as number;
+        cost.dispose();
         if (this.disposed) return;
       } finally {
         batchXs.dispose();

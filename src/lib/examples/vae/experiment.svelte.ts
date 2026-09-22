@@ -224,7 +224,7 @@ export function createVaeExperiment(options: {
       banner =
         'This browser will not let the app save your work, so changes last only until you reload.';
     }
-    runtime = await loadRuntime(options.weightsId);
+    runtime = await loadRuntime(options.weightsId, { vae: true });
   });
 
   onDestroy(() => {

@@ -48,17 +48,25 @@ export interface Runtime {
   generate(models: VaeModels, z: tf.Tensor): tf.Tensor;
 }
 
-export async function loadRuntime(weightsId: string): Promise<Runtime> {
-  const [builder, tensors, trainerModule, weights, vaeModule, vaeTrainerModule] = await Promise.all(
-    [
-      import('../tf/buildModel'),
-      import('../data/tensors'),
-      import('../training/Trainer'),
-      import('../persist/weights'),
-      import('../tf/vae'),
-      import('../training/VaeTrainer')
-    ]
-  );
+export interface RuntimeOptions {
+  vae?: boolean;
+}
+
+export async function loadRuntime(
+  weightsId: string,
+  options: RuntimeOptions = {}
+): Promise<Runtime> {
+  const [builder, tensors, trainerModule, weights] = await Promise.all([
+    import('../tf/buildModel'),
+    import('../data/tensors'),
+    import('../training/Trainer'),
+    import('../persist/weights')
+  ]);
+  const vaeModule = options.vae ? await import('../tf/vae') : null;
+  const vaeTrainerModule = options.vae ? await import('../training/VaeTrainer') : null;
+  const requireVae = (): never => {
+    throw new Error('The VAE runtime was not loaded. Call loadRuntime with { vae: true }.');
+  };
 
   return {
     buildModel: (net) => builder.buildModel(net),
@@ -85,20 +93,23 @@ export async function loadRuntime(weightsId: string): Promise<Runtime> {
       ),
     saveWeights: (model) => weights.saveWeights(model, weightsId),
     loadWeightsInto: (model) => weights.loadWeightsInto(model, weightsId),
-    buildVaeModels: (vae) => vaeModule.buildVaeModels(vae),
+    buildVaeModels: (vae) => (vaeModule ? vaeModule.buildVaeModels(vae) : requireVae()),
     createVaeTrainer: (models, data, training, latentSize, onStats, onError) =>
-      new vaeTrainerModule.VaeTrainer(
-        models,
-        data,
-        training,
-        latentSize,
-        onStats,
-        undefined,
-        onError
-      ),
+      vaeTrainerModule
+        ? new vaeTrainerModule.VaeTrainer(
+            models,
+            data,
+            training,
+            latentSize,
+            onStats,
+            undefined,
+            onError
+          )
+        : requireVae(),
     saveVaeWeights: (models) => weights.saveVaeWeights(models, weightsId),
     loadVaeWeightsInto: (models) => weights.loadVaeWeightsInto(models, weightsId),
-    reconstruct: (models, xs, latentSize) => vaeModule.reconstruct(models, xs, latentSize),
-    generate: (models, z) => vaeModule.generate(models, z)
+    reconstruct: (models, xs, latentSize) =>
+      vaeModule ? vaeModule.reconstruct(models, xs, latentSize) : requireVae(),
+    generate: (models, z) => (vaeModule ? vaeModule.generate(models, z) : requireVae())
   };
 }

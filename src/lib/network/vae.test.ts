@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { findProblems } from './problems';
-import { createVaeNetwork, syncLatentSize, syncTraining } from './vae';
+import { createVaeNetwork, syncLatentSize, syncTraining, vaeProblems } from './vae';
 
 describe('createVaeNetwork', () => {
   it('builds an encoder ending at the latent and a decoder starting from it', () => {
@@ -54,8 +54,6 @@ describe('syncTraining', () => {
   });
 });
 
-import { vaeProblems } from './vae';
-
 const errorsOf = (vae: ReturnType<typeof createVaeNetwork>) =>
   vaeProblems(vae).filter((problem) => problem.severity === 'error');
 
@@ -85,5 +83,24 @@ describe('vaeProblems', () => {
   it('does not report the decoder flat-input convolution warning', () => {
     const titles = vaeProblems(createVaeNetwork(2)).map((problem) => problem.title);
     expect(titles).not.toContain('Convolution layer without image input');
+  });
+
+  it('reports the flat-input convolution warning for the encoder', () => {
+    const vae = createVaeNetwork(2);
+    const blocks = vae.encoder.blocks.map((block) =>
+      block.kind === 'input' ? { ...block, shape: [64] } : block
+    );
+    blocks.splice(1, 0, {
+      id: 'flat-conv',
+      kind: 'conv2d',
+      filters: 4,
+      kernelSize: 3,
+      stride: 1,
+      padding: 'same'
+    });
+    const titles = vaeProblems({ ...vae, encoder: { ...vae.encoder, blocks } }).map(
+      (problem) => problem.title
+    );
+    expect(titles).toContain('Convolution layer without image input');
   });
 });

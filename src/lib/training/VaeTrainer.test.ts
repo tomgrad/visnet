@@ -30,7 +30,8 @@ function tinySetup() {
 describe('VaeTrainer', () => {
   it('reduces the combined loss and updates both models', async () => {
     const { models, xs } = tinySetup();
-    const before = models.decoder.getWeights().map((tensor) => tensor.dataSync()[0]);
+    const decoderBefore = models.decoder.getWeights().map((tensor) => tensor.dataSync()[0]);
+    const encoderBefore = models.encoder.getWeights().map((tensor) => tensor.dataSync()[0]);
     const losses: number[] = [];
     const trainer = new VaeTrainer(
       models,
@@ -47,8 +48,10 @@ describe('VaeTrainer', () => {
 
     expect(losses.length).toBeGreaterThan(0);
     expect(losses[losses.length - 1]).toBeLessThan(losses[0]);
-    const after = models.decoder.getWeights().map((tensor) => tensor.dataSync()[0]);
-    expect(after).not.toEqual(before);
+    const decoderAfter = models.decoder.getWeights().map((tensor) => tensor.dataSync()[0]);
+    expect(decoderAfter).not.toEqual(decoderBefore);
+    const encoderAfter = models.encoder.getWeights().map((tensor) => tensor.dataSync()[0]);
+    expect(encoderAfter).not.toEqual(encoderBefore);
   }, 120_000);
 
   it('reports no accuracy', async () => {
@@ -62,8 +65,9 @@ describe('VaeTrainer', () => {
       (stats) => seen.push(stats),
       async () => {}
     );
-    await trainer.step();
+    for (let step = 0; step < 4; step++) await trainer.step();
     trainer.dispose();
+    expect(seen.some((stats) => stats.epochMeanLoss !== null)).toBe(true);
     expect(seen.every((stats) => stats.epochAccuracy === null)).toBe(true);
   }, 120_000);
 });

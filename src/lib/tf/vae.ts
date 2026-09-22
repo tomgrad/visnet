@@ -10,8 +10,14 @@ export interface VaeModels {
 export function buildVaeModels(vae: VaeNetwork): VaeModels {
   const head = tf.layers.dense({ units: 2 * vae.latentSize });
   const encoder = buildModel(vae.encoder, [head]);
-  const decoder = buildModel(vae.decoder);
-  return { encoder, decoder };
+  try {
+    const decoder = buildModel(vae.decoder);
+    return { encoder, decoder };
+  } catch (error) {
+    encoder.optimizer.dispose();
+    encoder.dispose();
+    throw error;
+  }
 }
 
 export function splitLatent(output: tf.Tensor, latentSize: number): [tf.Tensor, tf.Tensor] {
